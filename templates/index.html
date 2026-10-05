@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DuoHub — English Mastery Hub</title>
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Top App Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div class="brand-text">
+          <h1>DuoHub</h1>
+          <span class="subtext">English Mastery System</span>
+        </div>
+      </div>
+
+      <!-- Day Selector -->
+      <div class="day-picker-control">
+        <button id="btn-prev-day" class="btn-icon" title="Día anterior">◀</button>
+        <div class="current-day-badge">
+          <span class="day-label">DÍA</span>
+          <span id="current-day-number" class="day-num">1</span>
+        </div>
+        <button id="btn-next-day" class="btn-icon" title="Día siguiente">▶</button>
+      </div>
+
+      <!-- Duo Accountability & User Toggle -->
+      <div class="header-right">
+        <!-- Streak -->
+        <div class="streak-badge" title="Racha de días consecutivos completando al menos 3 pilares">
+          <span class="fire-icon">🔥</span>
+          <span id="streak-count">0</span>
+          <span class="streak-label">días de racha</span>
+        </div>
+
+        <!-- User Switcher -->
+        <div class="duo-switcher">
+          <div class="user-pill active" id="user-pill-1" onclick="switchUser(1)">
+            <span class="user-dot"></span>
+            <span class="user-name">Javier</span>
+            <span class="user-progress" id="user-1-stat">0/5</span>
+          </div>
+          <div class="user-pill" id="user-pill-2" onclick="switchUser(2)">
+            <span class="user-dot"></span>
+            <span class="user-name">Compañero</span>
+            <span class="user-progress" id="user-2-stat">0/5</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-content">
+    
+    <!-- Partner Accountability Bar -->
+    <div class="accountability-banner">
+      <div class="banner-left">
+        <span class="banner-icon">🤝</span>
+        <div>
+          <strong id="active-user-greeting">Entrenando como Javier</strong>
+          <p id="partner-status-text">Tu compañero lleva 0 de 5 tareas completadas hoy.</p>
+        </div>
+      </div>
+      <div class="daily-progress-container">
+        <div class="progress-bar-wrap">
+          <div id="daily-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+        </div>
+        <span id="daily-progress-text" class="progress-percent">0/5 Completado</span>
+      </div>
+    </div>
+
+    <!-- 5 Pillars Navigation Bar -->
+    <nav class="pillar-tabs">
+      <button class="pillar-tab active" data-tab="vocab" onclick="showPillar('vocab')">
+        <span class="tab-icon">📖</span>
+        <span class="tab-name">1. Vocabulario (5)</span>
+        <span class="tab-check" id="tab-check-vocab">○</span>
+      </button>
+      <button class="pillar-tab" data-tab="reading" onclick="showPillar('reading')">
+        <span class="tab-icon">📑</span>
+        <span class="tab-name">2. Lectura & Resumen</span>
+        <span class="tab-check" id="tab-check-reading">○</span>
+      </button>
+      <button class="pillar-tab" data-tab="listening" onclick="showPillar('listening')">
+        <span class="tab-icon">🎧</span>
+        <span class="tab-name">3. Listening & Dictado</span>
+        <span class="tab-check" id="tab-check-listening">○</span>
+      </button>
+      <button class="pillar-tab" data-tab="shadowing" onclick="showPillar('shadowing')">
+        <span class="tab-icon">🎙️</span>
+        <span class="tab-name">4. Shadowing Studio</span>
+        <span class="tab-check" id="tab-check-shadowing">○</span>
+      </button>
+      <button class="pillar-tab" data-tab="speaking" onclick="showPillar('speaking')">
+        <span class="tab-icon">💬</span>
+        <span class="tab-name">5. Speaking (WhatsApp)</span>
+        <span class="tab-check" id="tab-check-speaking">○</span>
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- PILLAR 1: VOCABULARY -->
+    <!-- ========================================== -->
+    <section id="panel-vocab" class="pillar-panel active">
+      <div class="panel-header">
+        <div>
+          <h2>Paso 1: Vocabulario Esencial (5 Palabras del Día)</h2>
+          <p class="section-desc">Pronuncia cada palabra en voz alta, comprende su contexto y fuérzate a usarla en tu día.</p>
+        </div>
+        <button id="btn-complete-vocab" class="btn btn-primary" onclick="markVocabDone()">
+          ✓ Marcar Vocabulario Completado
+        </button>
+      </div>
+
+      <!-- Words Grid -->
+      <div id="vocab-cards-grid" class="vocab-grid">
+        <!-- Injected via JavaScript -->
+        <div class="loading-state">Cargando vocabulario del día...</div>
+      </div>
+
+      <!-- Quick Interactive Practice -->
+      <div class="card practice-box">
+        <h3>💡 Mini Desafío de Activación Mental</h3>
+        <p>Escribe una frase rápida en inglés utilizando al menos <strong>dos</strong> de las palabras de hoy:</p>
+        <div class="practice-input-group">
+          <input type="text" id="vocab-practice-input" placeholder="Ej: We can achieve our goal; however, it requires daily focus...">
+          <button class="btn btn-secondary" onclick="checkVocabPractice()">Verificar Uso</button>
+        </div>
+        <div id="vocab-practice-feedback" class="feedback-msg"></div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PILLAR 2: READING & SUMMARY EVALUATOR -->
+    <!-- ========================================== -->
+    <section id="panel-reading" class="pillar-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Paso 2: Lectura Inmersiva & Resumen Gramatical</h2>
+          <p class="section-desc">Lee con atención durante 15 minutos. Luego escribe un resumen en inglés de lo que comprendiste para ser evaluado.</p>
+        </div>
+      </div>
+
+      <div class="reading-split-layout">
+        <!-- Left: Reading Reader -->
+        <div class="card reading-article-card">
+          <div class="article-meta">
+            <div class="meta-tags">
+              <span id="reading-level" class="badge badge-accent">B1 Intermediate</span>
+              <span id="reading-topic" class="badge badge-neutral">Habits</span>
+            </div>
+            <!-- 15-Minute Countdown Timer Widget -->
+            <div class="timer-widget">
+              <span class="timer-icon">⏱️</span>
+              <span id="reading-timer-display" class="timer-display">15:00</span>
+              <button id="btn-timer-toggle" class="btn btn-sm btn-outline" onclick="toggleReadingTimer()">Iniciar</button>
+              <button id="btn-timer-reset" class="btn btn-sm btn-ghost" onclick="resetReadingTimer()">Reiniciar</button>
+            </div>
+          </div>
+
+          <h3 id="reading-title" class="reading-title">Cargando lectura...</h3>
+          <div id="reading-content" class="reading-content-body">
+            <!-- Reading text injected by JS -->
+          </div>
+
+          <div class="reading-footer-tags">
+            <span class="tag-title">Palabras clave del texto:</span>
+            <div id="reading-keywords" class="keyword-pills"></div>
+          </div>
+        </div>
+
+        <!-- Right: Summary & AI / Grammar Evaluator -->
+        <div class="card summary-studio-card">
+          <div class="studio-header">
+            <h3>📝 Tu Resumen en Inglés</h3>
+            <span id="summary-word-count" class="word-counter">0 palabras (Mínimo: 50)</span>
+          </div>
+          <p class="studio-instruction">
+            Resume las ideas clave con tus propias palabras. El evaluador auditará tu gramática, conectores y detectará si usaste las palabras del día.
+          </p>
+
+          <textarea id="summary-textarea" class="summary-input" rows="10" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
+
+          <div class="studio-actions">
+            <button id="btn-evaluate-summary" class="btn btn-primary btn-block" onclick="submitSummaryForEvaluation()">
+              ✨ Auditar y Evaluar Mi Resumen
+            </button>
+          </div>
+
+          <!-- Evaluation Results Container -->
+          <div id="summary-evaluation-results" class="evaluation-results-box" style="display: none;">
+            <!-- Injected via JavaScript -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PILLAR 3: LISTENING & DICTATION LAB -->
+    <!-- ========================================== -->
+    <section id="panel-listening" class="pillar-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Paso 3: Deep Listening & Dictado (Técnica Dictogloss)</h2>
+          <p class="section-desc">
+            1ª Escucha: Comprende la idea general sin subtítulos. 2ª Escucha: Transcribe frase por frase. Al final compara con el diff visual.
+          </p>
+        </div>
+      </div>
+
+      <div class="card listening-studio-card">
+        <!-- Audio Player Controls -->
+        <div class="audio-control-bar">
+          <div class="audio-info">
+            <h3 id="listening-title">Clip de Audio del Día</h3>
+            <span id="listening-level" class="badge badge-accent">B1</span>
+          </div>
+
+          <div class="audio-controls-center">
+            <button class="btn btn-secondary btn-icon" onclick="listeningRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
+            <button id="btn-play-listening" class="btn btn-primary btn-icon-lg" onclick="togglePlayListening()">▶ Reproducir</button>
+            <button class="btn btn-secondary btn-icon" onclick="listeningForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
+            
+            <div class="speed-selector">
+              <label>Velocidad:</label>
+              <select id="listening-speed-select" onchange="changeListeningSpeed(this.value)">
+                <option value="0.75">0.75x (Lento)</option>
+                <option value="0.9">0.9x</option>
+                <option value="1.0" selected>1.0x (Normal)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dictation Editor -->
+        <div class="dictation-workspace">
+          <div class="dictation-prompt">
+            <label for="listening-dictation-input"><strong>Tipea exactamente lo que escuchas:</strong></label>
+            <span class="tip-pill">No mires el texto real hasta terminar de escribir</span>
+          </div>
+
+          <textarea id="listening-dictation-input" class="dictation-input" rows="5" placeholder="Listen carefully and type what you hear word for word..."></textarea>
+
+          <div class="dictation-actions">
+            <button class="btn btn-primary" onclick="verifyDictationDiff()">
+              🔍 Comparar Dictado (Diff Visual)
+            </button>
+          </div>
+        </div>
+
+        <!-- Diff Results Window -->
+        <div id="listening-diff-results" class="diff-results-card" style="display: none;">
+          <div class="diff-header">
+            <h4>Resultado de la Comparación</h4>
+            <div id="listening-accuracy-pill" class="accuracy-pill">--% Exactitud</div>
+          </div>
+
+          <div class="diff-legend">
+            <span class="legend-item"><span class="color-dot dot-correct"></span> Correcto</span>
+            <span class="legend-item"><span class="color-dot dot-missed"></span> Palabra Omitida</span>
+            <span class="legend-item"><span class="color-dot dot-wrong"></span> Error / Reemplazo</span>
+            <span class="legend-item"><span class="color-dot dot-extra"></span> Palabra Extra</span>
+          </div>
+
+          <div id="diff-tokens-display" class="diff-stream-container">
+            <!-- Tokens injected by JS -->
+          </div>
+
+          <div class="real-transcript-reveal">
+            <button class="btn btn-sm btn-ghost" onclick="toggleOriginalTranscript()">
+              👁️ Ver Transcripción Original Completa
+            </button>
+            <div id="original-transcript-box" class="transcript-box" style="display: none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PILLAR 4: SHADOWING STUDIO -->
+    <!-- ========================================== -->
+    <section id="panel-shadowing" class="pillar-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Paso 4: Shadowing Studio (5 Minutos)</h2>
+          <p class="section-desc">
+            Escucha la frase de un hablante nativo y repítela al mismo tiempo (como un eco). Grábate directamente desde el navegador para comparar tu entonación.
+          </p>
+        </div>
+      </div>
+
+      <div class="card shadowing-card">
+        <div class="shadowing-instructions-banner">
+          <div class="info-icon">🗣️</div>
+          <div>
+            <strong>Instrucciones de la técnica de Shadowing (Prof. Arguelles):</strong>
+            <p>1. Escucha la frase nativa. 2. Repítela en voz alta sincronizada con el audio. 3. Graba tu voz con el micrófono para verificar si pronunciaste claramente las consonantes finales y el ritmo.</p>
+          </div>
+        </div>
+
+        <!-- Chunks Playlist -->
+        <div class="chunks-section">
+          <h4>Frases de Práctica para Hoy:</h4>
+          <div id="shadowing-chunks-list" class="chunks-list">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Voice Recorder Module -->
+        <div class="recorder-dock">
+          <div class="recorder-controls">
+            <button id="btn-record-mic" class="btn btn-record" onclick="toggleRecording()">
+              <span class="rec-dot"></span> Iniciar Grabación
+            </button>
+            <span id="recording-timer" class="rec-timer">00:00</span>
+          </div>
+
+          <!-- Playback Row -->
+          <div id="recording-playback-row" class="playback-row" style="display: none;">
+            <div class="playback-item">
+              <label>Tu Grabación:</label>
+              <audio id="user-audio-player" controls></audio>
+            </div>
+            <button class="btn btn-success" onclick="markShadowingDone()">
+              ✓ Guardar y Marcar Shadowing Completado
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PILLAR 5: SPEAKING CHALLENGE (WHATSAPP) -->
+    <!-- ========================================== -->
+    <section id="panel-speaking" class="pillar-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Paso 5: Reto de Speaking (Audio de WhatsApp 5+ Min)</h2>
+          <p class="section-desc">
+            Envíale un audio a tu compañero por WhatsApp respondiendo a la pregunta del día. ¡Intenta incluir las 5 palabras del vocabulario!
+          </p>
+        </div>
+      </div>
+
+      <div class="speaking-split-layout">
+        <!-- Left: Prompt & Guidelines -->
+        <div class="card speaking-prompt-card">
+          <div class="prompt-badge-row">
+            <span class="badge badge-accent">Tema de Conversación</span>
+            <span id="speaking-topic-name" class="topic-name">Rutina Diaria</span>
+          </div>
+
+          <h3 id="speaking-question" class="speaking-question-title">Cargando tema...</h3>
+
+          <div class="prompt-guidelines">
+            <h4>Guía de Estructura Sugerida:</h4>
+            <div id="speaking-guidelines-content" class="guidelines-text">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
+          <!-- 5-Minute Timer -->
+          <div class="speaking-timer-box">
+            <div class="speaking-timer-display" id="speaking-timer-display">05:00</div>
+            <div class="speaking-timer-buttons">
+              <button id="btn-speaking-timer-toggle" class="btn btn-outline" onclick="toggleSpeakingTimer()">Iniciar Temporizador</button>
+              <button class="btn btn-ghost" onclick="resetSpeakingTimer()">Reiniciar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Target Words Checklist & Confirmation -->
+        <div class="card target-words-card">
+          <h3>🎯 Palabras Objetivo a Forzar en tu Audio</h3>
+          <p>Marca las palabras que lograste pronunciar durante tu grabación:</p>
+
+          <div id="speaking-target-words-list" class="target-words-checklist">
+            <!-- Injected by JS -->
+          </div>
+
+          <div class="whatsapp-action-box">
+            <p class="action-note">Una vez enviado el audio a tu compañero por WhatsApp:</p>
+            <button id="btn-complete-speaking" class="btn btn-success btn-lg btn-block" onclick="markSpeakingDone()">
+              🚀 ¡Audio Enviado a Mi Compañero!
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Celebration Modal (When 5/5 tasks completed) -->
+  <div id="celebration-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-emoji">🏆</div>
+      <h2>¡Misión Diaria Cumplida!</h2>
+      <p id="celebration-text">Completaste los 5 pilares de entrenamiento de hoy. Tu racha continúa viva.</p>
+      <button class="btn btn-primary" onclick="closeCelebrationModal()">Continuar</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/vocab.js"></script>
+  <script src="/static/js/reading.js"></script>
+  <script src="/static/js/listening.js"></script>
+  <script src="/static/js/shadowing.js"></script>
+  <script src="/static/js/speaking.js"></script>
+</body>
+</html>
