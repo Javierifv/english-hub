@@ -21,7 +21,10 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         display_name TEXT NOT NULL,
-        avatar_color TEXT DEFAULT '#6366F1',
+        avatar_color TEXT DEFAULT '#0B72E7',
+        words_per_day INTEGER DEFAULT 5,
+        selection_mode TEXT DEFAULT 'progressive',
+        pin TEXT DEFAULT '1234',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
@@ -39,6 +42,22 @@ def init_db():
         example_en TEXT,
         example_es TEXT,
         category TEXT DEFAULT 'general'
+    );
+    """)
+
+    # 2b. User Word Progress (SRS / Active Recall & Personal Sentences)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_word_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        word_id INTEGER NOT NULL,
+        mastery_level INTEGER DEFAULT 1,
+        review_count INTEGER DEFAULT 0,
+        personal_sentence TEXT,
+        last_reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (word_id) REFERENCES vocabulary (id),
+        UNIQUE(user_id, word_id)
     );
     """)
 
@@ -108,14 +127,25 @@ def init_db():
     );
     """)
 
+    # Safe migration: ensure new columns exist in users table
+    cursor.execute("PRAGMA table_info(users)")
+    existing_cols = {col[1] for col in cursor.fetchall()}
+    if "words_per_day" not in existing_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN words_per_day INTEGER DEFAULT 5")
+    if "selection_mode" not in existing_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN selection_mode TEXT DEFAULT 'progressive'")
+    if "pin" not in existing_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN pin TEXT DEFAULT '1234'")
+
     # Seed Default Users
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color) VALUES ('javier', 'Javier', '#6366F1')")
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color) VALUES ('partner', 'Compañero', '#10B981')")
+        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin) VALUES ('javier', 'Javier', '#0B72E7', 5, 'progressive', '1234')")
+        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin) VALUES ('partner', 'Compañero', '#00C48C', 5, 'progressive', '1234')")
 
     conn.commit()
     seed_initial_curriculum(conn)
+    seed_pdf_curriculum_if_needed(conn)
     conn.close()
 
 def seed_initial_curriculum(conn):
@@ -453,6 +483,78 @@ You and your partner are not competitors; you are each other's training ground. 
     """, speaking_seed)
 
     conn.commit()
+
+def seed_pdf_curriculum_if_needed(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM vocabulary")
+    current_count = cursor.fetchone()[0]
+    if current_count >= 100:
+        return
+
+    pdf_path = os.path.join(os.path.dirname(__file__), "material", "Domina el Vocabulario Inglés - English Path_260514_013310.pdf")
+    if not os.path.exists(pdf_path):
+        return
+
+    try:
+        from pypdf import PdfReader
+        import re
+
+        reader = PdfReader(pdf_path)
+        word_pattern = re.compile(r"^([a-zA-Z\s\',-]{2,30})\s*(?:[\u2013\u2014\x96\x97\-]|\uFFFD)\s*(.+)$")
+        
+        extracted = []
+        seen = set()
+
+        # Check existing words in DB
+        cursor.execute("SELECT LOWER(word) FROM vocabulary")
+        for row in cursor.fetchall():
+            seen.add(row[0].strip())
+
+        for p_idx in range(4, len(reader.pages)):
+            text = reader.pages[p_idx].extract_text()
+            if not text:
+                continue
+            for line in text.split("\n"):
+                line = line.strip()
+                if not line or len(line) > 120 or "Capítulo" in line or "Vocabulario" in line:
+                    continue
+                m = word_pattern.match(line)
+                if m:
+                    en = m.group(1).strip()
+                    es = m.group(2).strip()
+                    if len(en.split()) <= 4 and not any(c.isdigit() for c in en):
+                        clean_en = en.lower()
+                        if clean_en not in seen:
+                            seen.add(clean_en)
+                            extracted.append((en, es))
+
+        cursor.execute("SELECT COALESCE(MAX(day_number), 0) FROM vocabulary")
+        start_day = max(cursor.fetchone()[0] + 1, 8)
+
+        count = 0
+        curr_day = start_day
+        for en, es in extracted:
+            cursor.execute("""
+                INSERT INTO vocabulary (day_number, word, ipa, part_of_speech, translation, definition, example_en, example_es, category)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                curr_day,
+                en,
+                "",
+                "vocab-book",
+                es,
+                f"Essential vocabulary word: {en}",
+                f"We can use '{en}' in daily conversations.",
+                f"Podemos usar '{en}' en conversaciones cotidianas.",
+                "book-curriculum"
+            ))
+            count += 1
+            if count % 5 == 0:
+                curr_day += 1
+
+        conn.commit()
+    except Exception as e:
+        print("Note: PDF curriculum seed skipped or failed:", e)
 
 if __name__ == "__main__":
     init_db()
