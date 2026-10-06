@@ -1,24 +1,112 @@
 /**
  * DUOHUB - Pillar 2: Reading & Summary Evaluator Controller
+ * Supports CEFR Levels (A1, B1, B2, All), Robinson Crusoe Chapters & Audio Narration
  */
 
 let timerSeconds = 15 * 60; // 15 minutes default
 let timerInterval = null;
 let isTimerRunning = false;
 
+let currentReadingData = null;
+let readingChaptersList = [];
+let currentChapterIndex = 0;
+
 async function loadReadingData(day) {
+  const level = state.readingLevel || (state.currentUser === 1 ? 'A1' : 'B1');
+  await selectReadingLevel(level, false);
+}
+
+async function selectReadingLevel(lvl, loadFirst = true) {
+  state.readingLevel = lvl;
+  state.readingLevelSetByUser = true;
+
+  // Update active pill button
+  document.querySelectorAll(".reading-toolbar .level-pill-btn").forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  const btnMap = {
+    'A1': 'reading-level-btn-a1',
+    'B1': 'reading-level-btn-b1',
+    'B2': 'reading-level-btn-b2',
+    'all': 'reading-level-btn-all'
+  };
+
+  const activeBtn = document.getElementById(btnMap[lvl] || 'reading-level-btn-all');
+  if (activeBtn) activeBtn.classList.add("active");
+
+  // Fetch list of chapters for this level
   try {
-    const res = await fetch(`/api/reading?day=${day}`);
+    const listRes = await fetch(`/api/reading/list?level=${lvl}`);
+    readingChaptersList = await listRes.json();
+
+    const select = document.getElementById("reading-chapter-select");
+    if (select && readingChaptersList.length > 0) {
+      select.innerHTML = readingChaptersList.map((r, idx) => `
+        <option value="${r.id}">Cap. ${r.chapter}: ${r.title.replace('Robinson Crusoe (L1): ', '').replace('Robinson Crusoe (L2): ', '').replace('Robinson Crusoe (L3): ', '').slice(0, 32)}</option>
+      `).join("");
+
+      currentChapterIndex = 0;
+      select.value = readingChaptersList[0].id;
+
+      if (loadFirst) {
+        await loadReadingById(readingChaptersList[0].id);
+      } else {
+        await loadReadingById(readingChaptersList[0].id);
+      }
+    }
+  } catch (err) {
+    console.error("Error loading reading chapter list:", err);
+  }
+}
+
+async function navReadingChapter(delta) {
+  if (!readingChaptersList || readingChaptersList.length === 0) return;
+  const newIdx = currentChapterIndex + delta;
+  if (newIdx >= 0 && newIdx < readingChaptersList.length) {
+    currentChapterIndex = newIdx;
+    const select = document.getElementById("reading-chapter-select");
+    if (select) select.value = readingChaptersList[currentChapterIndex].id;
+    await loadReadingById(readingChaptersList[currentChapterIndex].id);
+  }
+}
+
+async function onReadingChapterDropdownChange(readingId) {
+  const idx = readingChaptersList.findIndex(r => r.id === parseInt(readingId));
+  if (idx !== -1) {
+    currentChapterIndex = idx;
+    await loadReadingById(readingId);
+  }
+}
+
+async function loadReadingById(readingId) {
+  try {
+    const res = await fetch(`/api/reading?id=${readingId}`);
     const reading = await res.json();
+    currentReadingData = reading;
 
     if (reading.error) {
-      document.getElementById("reading-title").textContent = "No hay lectura disponible para este día.";
+      document.getElementById("reading-title").textContent = "No hay lectura disponible.";
       return;
     }
 
     document.getElementById("reading-title").textContent = reading.title;
     document.getElementById("reading-level").textContent = `${reading.level} Level`;
     document.getElementById("reading-topic").textContent = reading.topic;
+
+    // Audio Player setup
+    const audioContainer = document.getElementById("reading-audio-container");
+    const audioPlayer = document.getElementById("reading-audio-player");
+    if (reading.audio_url && reading.audio_url.trim().length > 0) {
+      audioPlayer.src = reading.audio_url;
+      audioContainer.style.display = "flex";
+    } else {
+      audioContainer.style.display = "none";
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.src = "";
+      }
+    }
 
     // Render content with interactive click-to-pronounce
     const contentBox = document.getElementById("reading-content");
@@ -36,12 +124,12 @@ async function loadReadingData(day) {
 
     // Render Key Vocabulary pills
     const keywordsBox = document.getElementById("reading-keywords");
-    if (reading.key_vocabulary && Array.isArray(reading.key_vocabulary)) {
+    if (reading.key_vocabulary && Array.isArray(reading.key_vocabulary) && reading.key_vocabulary.length > 0) {
       keywordsBox.innerHTML = reading.key_vocabulary.map(kw => `
         <span class="keyword-pill" onclick="speakEnglish('${escapeQuotes(kw)}', 0.9)" title="Escuchar">${kw}</span>
       `).join("");
     } else {
-      keywordsBox.innerHTML = `<span class="tag-title">Lectura general</span>`;
+      keywordsBox.innerHTML = `<span class="tag-title" style="color: var(--text-dim); font-size: 0.85rem;">Capítulo literario graduado en MCER</span>`;
     }
 
     // Load existing summary if already written
@@ -123,7 +211,7 @@ function updateWordCount() {
   counter.textContent = `${words} palabras (Mínimo recomendado: 50)`;
 
   if (words >= 50) {
-    counter.style.color = "var(--success-emerald)";
+    counter.style.color = "var(--busuu-emerald)";
   } else {
     counter.style.color = "var(--text-dim)";
   }
@@ -167,7 +255,7 @@ async function submitSummaryForEvaluation() {
     alert("Error de conexión al evaluar.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "✨ Auditar y Evaluar Mi Resumen";
+    btn.textContent = "✨ Auditar y Evaluar con Gemini Flash";
   }
 }
 
@@ -176,7 +264,7 @@ function renderSummaryFeedback(f) {
   container.style.display = "block";
 
   const matchedHtml = f.matched_vocab && f.matched_vocab.length > 0
-    ? `<span class="eval-pill eval-pill-vocab">🎯 Palabras del día usadas: ${f.matched_vocab.join(", ")} (+Bonus)</span>`
+    ? `<span class="eval-pill eval-pill-vocab">🎯 Palabras usadas: ${f.matched_vocab.join(", ")}</span>`
     : `<span class="eval-pill" style="background: rgba(255,255,255,0.05); color: var(--text-dim);">No usaste palabras del vocabulario de hoy</span>`;
 
   let correctionsHtml = "";
@@ -194,14 +282,14 @@ function renderSummaryFeedback(f) {
     `;
   } else {
     correctionsHtml = `
-      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.65rem; margin-bottom: 0.85rem; font-size: 0.82rem; color: var(--success-emerald);">
+      <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-sm); padding: 0.65rem; margin-bottom: 0.85rem; font-size: 0.82rem; color: var(--busuu-emerald);">
         ✓ No se detectaron errores comunes de preposiciones ni concordancia básica. ¡Gran redacción!
       </div>
     `;
   }
 
   container.innerHTML = `
-    <h4 style="margin-bottom: 0.75rem; color: #FFF;">Resultados de la Auditoría:</h4>
+    <h4 style="margin-bottom: 0.75rem; color: #FFF;">Resultados de la Auditoría (${f.source || 'IA'}):</h4>
     <div class="eval-metric-pills">
       <span class="eval-pill eval-pill-cefr">Nivel Estimado: ${f.estimated_cefr}</span>
       <span class="eval-pill" style="background: rgba(255,255,255,0.08); color: var(--text-main);">${f.word_count} palabras</span>

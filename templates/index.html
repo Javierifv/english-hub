@@ -234,11 +234,37 @@
       <div class="panel-header">
         <div>
           <h2>Paso 2: Lectura Inmersiva & Resumen con IA (Gemini Flash)</h2>
-          <p class="section-desc">Lee con atención durante 15 minutos. Luego escribe un resumen en inglés de lo que comprendiste para recibir auditoría profunda.</p>
+          <p class="section-desc">Lee con atención durante 15 minutos. Graduado por nivel MCER con narración en audio y evaluación profunda.</p>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-view-partner-summary" onclick="openPartnerSummaryModal()">
           👥 Ver Resumen de Mi Compañero
         </button>
+      </div>
+
+      <!-- Reading CEFR Level & Chapter Navigator Toolbar -->
+      <div class="reading-toolbar">
+        <div class="level-pills-group">
+          <span class="toolbar-label">Nivel de Lectura:</span>
+          <button type="button" class="level-pill-btn active pill-a1" id="reading-level-btn-a1" onclick="selectReadingLevel('A1')">
+            📗 A1 / A2 (L1 - Javier)
+          </button>
+          <button type="button" class="level-pill-btn" id="reading-level-btn-b1" onclick="selectReadingLevel('B1')">
+            📘 B1 (L2 - Compañero)
+          </button>
+          <button type="button" class="level-pill-btn" id="reading-level-btn-b2" onclick="selectReadingLevel('B2')">
+            📙 B2 (L3)
+          </button>
+          <button type="button" class="level-pill-btn" id="reading-level-btn-all" onclick="selectReadingLevel('all')">
+            🌐 Todos
+          </button>
+        </div>
+        <div class="chapter-nav-group">
+          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(-1)" title="Capítulo Anterior">◀ Anterior</button>
+          <select id="reading-chapter-select" class="chapter-dropdown" onchange="onReadingChapterDropdownChange(this.value)">
+            <!-- Chapters populated by JS -->
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(1)" title="Siguiente Capítulo">Siguiente ▶</button>
+        </div>
       </div>
 
       <div class="reading-split-layout">
@@ -246,8 +272,8 @@
         <div class="card reading-article-card">
           <div class="article-meta">
             <div class="meta-tags">
-              <span id="reading-level" class="badge badge-accent">B1 Intermediate</span>
-              <span id="reading-topic" class="badge badge-neutral">Habits</span>
+              <span id="reading-level" class="badge badge-accent">A1 Elementary</span>
+              <span id="reading-topic" class="badge badge-neutral">Robinson Crusoe</span>
             </div>
             <!-- 15-Minute Countdown Timer Widget -->
             <div class="timer-widget">
@@ -256,6 +282,15 @@
               <button id="btn-timer-toggle" class="btn btn-sm btn-outline" onclick="toggleReadingTimer()">Iniciar</button>
               <button id="btn-timer-reset" class="btn btn-sm btn-ghost" onclick="resetReadingTimer()">Reiniciar</button>
             </div>
+          </div>
+
+          <!-- Embedded Audio Player Bar if chapter has audio -->
+          <div id="reading-audio-container" class="reading-audio-bar" style="display: none;">
+            <div class="audio-bar-info">
+              <span class="audio-bar-icon">🎧</span>
+              <span class="audio-bar-title">Narración Lenta de Estudio:</span>
+            </div>
+            <audio id="reading-audio-player" controls preload="none"></audio>
           </div>
 
           <h3 id="reading-title" class="reading-title">Cargando lectura...</h3>
@@ -303,8 +338,31 @@
         <div>
           <h2>Paso 3: Deep Listening & Dictado (Técnica Dictogloss)</h2>
           <p class="section-desc">
-            1ª Escucha: Comprende la idea general sin subtítulos. 2ª Escucha: Transcribe frase por frase. Al final compara con el diff visual.
+            Audios oficiales British Council con voces neuronales HD. Selecciona tu nivel (A1 para Javier, A2 para compañero), escucha y tipea.
           </p>
+        </div>
+      </div>
+
+      <!-- Listening CEFR Level & Track Navigator Toolbar -->
+      <div class="listening-toolbar">
+        <div class="level-pills-group">
+          <span class="toolbar-label">Nivel de Listening:</span>
+          <button type="button" class="level-pill-btn active pill-a1" id="listening-level-btn-a1" onclick="selectListeningLevel('A1')">
+            🟢 A1 - Principiante (Javier)
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-a2" onclick="selectListeningLevel('A2')">
+            🔵 A2 - Pre-intermedio (Compañero)
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-all" onclick="selectListeningLevel('all')">
+            🌐 Todos
+          </button>
+        </div>
+        <div class="track-nav-group">
+          <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(-1)" title="Pista Anterior">◀ Anterior</button>
+          <select id="listening-track-select" class="chapter-dropdown" onchange="onListeningTrackDropdownChange(this.value)">
+            <!-- Tracks populated by JS -->
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(1)" title="Siguiente Pista">Siguiente ▶</button>
         </div>
       </div>
 
@@ -313,10 +371,11 @@
         <div class="audio-control-bar">
           <div class="audio-info">
             <h3 id="listening-title">Clip de Audio del Día</h3>
-            <span id="listening-level" class="badge badge-accent">B1</span>
+            <span id="listening-level" class="badge badge-accent">A1</span>
           </div>
 
           <div class="audio-controls-center">
+            <audio id="listening-html5-audio" preload="auto"></audio>
             <button class="btn btn-secondary btn-icon" onclick="listeningRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
             <button id="btn-play-listening" class="btn btn-primary btn-icon-lg" onclick="togglePlayListening()">▶ Reproducir</button>
             <button class="btn btn-secondary btn-icon" onclick="listeningForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
@@ -522,6 +581,24 @@
             </button>
             <button type="button" class="pill-opt" data-val="random" onclick="selectSelectionMode('random')">
               🎲 Al Azar (Sincronizado)
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tu Nivel Objetivo (MCER / CEFR):</label>
+          <div class="pill-selector" id="setting-preferred-level-pills">
+            <button type="button" class="pill-opt" data-val="A1" onclick="selectPreferredLevel('A1')">
+              📗 A1 (Principiante / Básico - Javier)
+            </button>
+            <button type="button" class="pill-opt" data-val="A2" onclick="selectPreferredLevel('A2')">
+              🔵 A2 (Pre-Intermedio - Compañero)
+            </button>
+            <button type="button" class="pill-opt" data-val="B1" onclick="selectPreferredLevel('B1')">
+              📘 B1 (Intermedio)
+            </button>
+            <button type="button" class="pill-opt" data-val="B2" onclick="selectPreferredLevel('B2')">
+              📙 B2 (Intermedio Alto)
             </button>
           </div>
         </div>

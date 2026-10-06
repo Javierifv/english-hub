@@ -136,12 +136,30 @@ def init_db():
         cursor.execute("ALTER TABLE users ADD COLUMN selection_mode TEXT DEFAULT 'progressive'")
     if "pin" not in existing_cols:
         cursor.execute("ALTER TABLE users ADD COLUMN pin TEXT DEFAULT '1234'")
+    if "preferred_level" not in existing_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN preferred_level TEXT DEFAULT 'A1'")
+        cursor.execute("UPDATE users SET preferred_level = 'A1' WHERE username = 'javier'")
+        cursor.execute("UPDATE users SET preferred_level = 'A2' WHERE username = 'partner'")
+
+    # Safe migration: ensure audio_url exists in readings
+    cursor.execute("PRAGMA table_info(readings)")
+    existing_r_cols = {col[1] for col in cursor.fetchall()}
+    if "audio_url" not in existing_r_cols:
+        cursor.execute("ALTER TABLE readings ADD COLUMN audio_url TEXT")
+
+    # Safe migration: ensure audio_filename and source exist in listening_shadowing
+    cursor.execute("PRAGMA table_info(listening_shadowing)")
+    existing_l_cols = {col[1] for col in cursor.fetchall()}
+    if "audio_filename" not in existing_l_cols:
+        cursor.execute("ALTER TABLE listening_shadowing ADD COLUMN audio_filename TEXT")
+    if "source" not in existing_l_cols:
+        cursor.execute("ALTER TABLE listening_shadowing ADD COLUMN source TEXT")
 
     # Seed Default Users
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin) VALUES ('javier', 'Javier', '#0B72E7', 5, 'progressive', '1234')")
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin) VALUES ('partner', 'Compañero', '#00C48C', 5, 'progressive', '1234')")
+        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('javier', 'Javier', '#0B72E7', 5, 'progressive', '1234', 'A1')")
+        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('partner', 'Compañero', '#00C48C', 5, 'progressive', '1234', 'A2')")
 
     conn.commit()
     seed_initial_curriculum(conn)

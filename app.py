@@ -5,7 +5,7 @@ import sqlite3
 import random
 import urllib.request
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from database import get_db, init_db
 
 # Load environment variables from .env
@@ -26,6 +26,11 @@ app.secret_key = "duohub-english-training-key"
 
 # Ensure DB initialized
 init_db()
+
+@app.route("/audio/<path:filename>")
+def serve_audio(filename):
+    audio_dir = os.path.join(os.path.dirname(__file__), "material", "listening")
+    return send_from_directory(audio_dir, filename)
 
 # Common English false friends and preposition error heuristics for instant fallback
 COMMON_GRAMMAR_RULES = [
@@ -164,7 +169,7 @@ def index():
 def get_users():
     conn = get_db()
     users = conn.execute("""
-        SELECT id, username, display_name, avatar_color, words_per_day, selection_mode 
+        SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, preferred_level 
         FROM users ORDER BY id ASC
     """).fetchall()
     conn.close()
@@ -178,21 +183,22 @@ def update_profile():
     words_per_day = int(data.get("words_per_day", 5))
     selection_mode = data.get("selection_mode", "progressive")
     pin = data.get("pin", "1234")
+    preferred_level = data.get("preferred_level", "A1")
 
     conn = get_db()
     cursor = conn.cursor()
     if display_name:
         cursor.execute("""
             UPDATE users 
-            SET display_name = ?, words_per_day = ?, selection_mode = ?, pin = ?
+            SET display_name = ?, words_per_day = ?, selection_mode = ?, pin = ?, preferred_level = ?
             WHERE id = ?
-        """, (display_name, words_per_day, selection_mode, pin, user_id))
+        """, (display_name, words_per_day, selection_mode, pin, preferred_level, user_id))
     else:
         cursor.execute("""
             UPDATE users 
-            SET words_per_day = ?, selection_mode = ?
+            SET words_per_day = ?, selection_mode = ?, preferred_level = ?
             WHERE id = ?
-        """, (words_per_day, selection_mode, user_id))
+        """, (words_per_day, selection_mode, preferred_level, user_id))
     conn.commit()
     conn.close()
     return jsonify({"success": True})
@@ -513,13 +519,45 @@ def complete_vocab():
 
 @app.route("/api/reading", methods=["GET"])
 def get_reading():
-    day_number = request.args.get("day", default=1, type=int)
+    reading_id = request.args.get("id", type=int)
+    level = request.args.get("level")
+    day_number = request.args.get("day", type=int)
+    chapter_num = request.args.get("chapter", type=int)
+
     conn = get_db()
-    reading = conn.execute("SELECT * FROM readings WHERE day_number = ?", (day_number,)).fetchone()
-    
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM readings WHERE 1=1"
+    params = []
+
+    if reading_id:
+        query += " AND id = ?"
+        params.append(reading_id)
+    else:
+        if level and level != "all":
+            query += " AND level = ?"
+            params.append(level)
+        if chapter_num:
+            query += " AND day_number = ?"
+            params.append(chapter_num)
+        elif day_number:
+            query += " AND day_number = ?"
+            params.append(day_number)
+
+    query += " ORDER BY id ASC LIMIT 1"
+    reading = cursor.execute(query, params).fetchone()
+
+    # Fallback if specific chapter not found for that level
+    if not reading and level and level != "all":
+        reading = cursor.execute("SELECT * FROM readings WHERE level = ? ORDER BY id ASC LIMIT 1", (level,)).fetchone()
+
     if not reading:
-        reading = conn.execute("SELECT * FROM readings ORDER BY day_number DESC LIMIT 1").fetchone()
-        
+        reading = cursor.execute("SELECT * FROM readings ORDER BY id ASC LIMIT 1").fetchone()
+
+    # Get level breakdown
+    level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM readings GROUP BY level ORDER BY level ASC").fetchall()
+    levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
+
     conn.close()
     if reading:
         r_dict = dict(reading)
@@ -528,8 +566,21 @@ def get_reading():
                 r_dict["key_vocabulary"] = json.loads(r_dict["key_vocabulary"])
             except Exception:
                 pass
+        r_dict["available_levels"] = levels_summary
         return jsonify(r_dict)
     return jsonify({"error": "Reading not found"}), 404
+
+@app.route("/api/reading/list", methods=["GET"])
+def get_reading_list():
+    level = request.args.get("level")
+    conn = get_db()
+    cursor = conn.cursor()
+    if level and level != "all":
+        rows = cursor.execute("SELECT id, day_number as chapter, title, level, estimated_minutes, audio_url FROM readings WHERE level = ? ORDER BY day_number ASC", (level,)).fetchall()
+    else:
+        rows = cursor.execute("SELECT id, day_number as chapter, title, level, estimated_minutes, audio_url FROM readings ORDER BY id ASC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 @app.route("/api/reading/evaluate", methods=["POST"])
 def evaluate_reading():
@@ -651,11 +702,39 @@ Analyze the student's text carefully and return a JSON object with this EXACT st
 
 @app.route("/api/listening", methods=["GET"])
 def get_listening():
-    day_number = request.args.get("day", default=1, type=int)
+    clip_id = request.args.get("id", type=int)
+    level = request.args.get("level")
+    day_number = request.args.get("day", type=int)
+
     conn = get_db()
-    clip = conn.execute("SELECT * FROM listening_shadowing WHERE day_number = ?", (day_number,)).fetchone()
+    cursor = conn.cursor()
+
+    query = "SELECT * FROM listening_shadowing WHERE 1=1"
+    params = []
+
+    if clip_id:
+        query += " AND id = ?"
+        params.append(clip_id)
+    else:
+        if level and level != "all":
+            query += " AND level = ?"
+            params.append(level)
+        if day_number:
+            query += " AND day_number = ?"
+            params.append(day_number)
+
+    query += " ORDER BY id ASC LIMIT 1"
+    clip = cursor.execute(query, params).fetchone()
+
+    if not clip and level and level != "all":
+        clip = cursor.execute("SELECT * FROM listening_shadowing WHERE level = ? ORDER BY id ASC LIMIT 1", (level,)).fetchone()
+
     if not clip:
-        clip = conn.execute("SELECT * FROM listening_shadowing ORDER BY day_number DESC LIMIT 1").fetchone()
+        clip = cursor.execute("SELECT * FROM listening_shadowing ORDER BY id ASC LIMIT 1").fetchone()
+
+    level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM listening_shadowing GROUP BY level ORDER BY level ASC").fetchall()
+    levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
+
     conn.close()
     if clip:
         c_dict = dict(clip)
@@ -664,8 +743,21 @@ def get_listening():
                 c_dict["shadowing_chunks"] = json.loads(c_dict["shadowing_chunks"])
             except Exception:
                 pass
+        c_dict["available_levels"] = levels_summary
         return jsonify(c_dict)
     return jsonify({"error": "Clip not found"}), 404
+
+@app.route("/api/listening/list", methods=["GET"])
+def get_listening_list():
+    level = request.args.get("level")
+    conn = get_db()
+    cursor = conn.cursor()
+    if level and level != "all":
+        rows = cursor.execute("SELECT id, day_number, title, level, duration_seconds, audio_url, source FROM listening_shadowing WHERE level = ? ORDER BY day_number ASC", (level,)).fetchall()
+    else:
+        rows = cursor.execute("SELECT id, day_number, title, level, duration_seconds, audio_url, source FROM listening_shadowing ORDER BY id ASC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
 
 def calculate_word_diff(user_text, real_text):
     clean_user = re.findall(r"\b[\w'-]+\b", user_text.lower())
@@ -713,10 +805,14 @@ def verify_listening():
     user_id = data.get("user_id", 1)
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
+    clip_id = data.get("clip_id")
     user_text = (data.get("user_text") or "").strip()
 
     conn = get_db()
-    clip = conn.execute("SELECT transcript FROM listening_shadowing WHERE day_number = ?", (day_number,)).fetchone()
+    if clip_id:
+        clip = conn.execute("SELECT transcript FROM listening_shadowing WHERE id = ?", (clip_id,)).fetchone()
+    else:
+        clip = conn.execute("SELECT transcript FROM listening_shadowing WHERE day_number = ?", (day_number,)).fetchone()
     if not clip:
         conn.close()
         return jsonify({"error": "Clip transcript not found"}), 404

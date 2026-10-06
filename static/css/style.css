@@ -1481,3 +1481,142 @@ body {
   border-color: var(--busuu-emerald);
 }
 .target-word-item.checked .target-word-name { color: var(--busuu-emerald); font-weight: 800; }
+
+/* --- CEFR Level Selectors & Navigation Toolbars --- */
+.reading-toolbar,
+.listening-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.level-pills-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.toolbar-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-right: 0.25rem;
+}
+
+.level-pill-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.level-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.level-pill-btn.active {
+  background: var(--busuu-blue);
+  color: #FFF;
+  border-color: var(--busuu-blue);
+  box-shadow: 0 3px 0 var(--busuu-blue-shadow);
+}
+
+.level-pill-btn.active.pill-a1 {
+  background: var(--busuu-emerald);
+  border-color: var(--busuu-emerald);
+  box-shadow: 0 3px 0 var(--busuu-emerald-shadow);
+}
+
+.level-pill-btn.active.pill-a2 {
+  background: var(--busuu-blue);
+  border-color: var(--busuu-blue);
+  box-shadow: 0 3px 0 var(--busuu-blue-shadow);
+}
+
+.level-pill-btn.active.pill-b1 {
+  background: #6366F1;
+  border-color: #6366F1;
+  box-shadow: 0 3px 0 #4338CA;
+}
+
+.level-pill-btn.active.pill-b2 {
+  background: var(--busuu-amber);
+  border-color: var(--busuu-amber);
+  box-shadow: 0 3px 0 var(--busuu-amber-shadow);
+  color: #1E293B;
+}
+
+.chapter-nav-group,
+.track-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.chapter-dropdown {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 280px;
+}
+
+.chapter-dropdown:focus {
+  outline: none;
+  border-color: var(--busuu-blue);
+}
+
+/* Audio Player Bar in Reading */
+.reading-audio-bar {
+  background: rgba(11, 114, 231, 0.1);
+  border: 1px solid rgba(11, 114, 231, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.audio-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.audio-bar-icon { font-size: 1.25rem; }
+.audio-bar-title { font-size: 0.9rem; font-weight: 700; color: #93C5FD; }
+
+.reading-audio-bar audio {
+  height: 36px;
+  outline: none;
+  border-radius: 999px;
+  flex-grow: 1;
+  max-width: 360px;
+}

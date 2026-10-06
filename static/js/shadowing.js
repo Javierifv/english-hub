@@ -10,12 +10,15 @@ let recordTimerInterval = null;
 
 async function loadShadowingData(day) {
   try {
-    const res = await fetch(`/api/listening?day=${day}`);
+    const lvl = state.listeningLevel || (state.currentUser === 1 ? 'A1' : 'A2');
+    const clipId = (currentListeningClip && currentListeningClip.id) ? currentListeningClip.id : '';
+    const url = clipId ? `/api/listening?id=${clipId}` : `/api/listening?level=${lvl}`;
+    const res = await fetch(url);
     const data = await res.json();
 
     const list = document.getElementById("shadowing-chunks-list");
     if (!data.shadowing_chunks || data.shadowing_chunks.length === 0) {
-      list.innerHTML = `<div class="empty-state">No hay frases de shadowing registradas para hoy.</div>`;
+      list.innerHTML = `<div class="empty-state">No hay frases de shadowing registradas para este audio.</div>`;
       return;
     }
 

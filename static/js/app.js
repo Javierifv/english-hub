@@ -13,7 +13,15 @@ const state = {
   userInfo: null,
   usersList: [],
   selectedWordsPerDay: 5,
-  selectedSelectionMode: 'progressive'
+  selectedSelectionMode: 'progressive',
+  preferredLevel: 'A1',
+  selectedPreferredLevel: 'A1',
+  readingLevel: 'A1',
+  readingLevelSetByUser: false,
+  readingChapter: 1,
+  listeningLevel: 'A1',
+  listeningLevelSetByUser: false,
+  listeningTrack: 1
 };
 
 // Speech synthesis voice helper
@@ -106,6 +114,15 @@ async function fetchStatusAndRefresh() {
     state.userInfo = data.user;
     state.selectedWordsPerDay = data.user ? data.user.words_per_day : 5;
     state.selectedSelectionMode = data.user ? data.user.selection_mode : 'progressive';
+    state.preferredLevel = (data.user && data.user.preferred_level) ? data.user.preferred_level : (state.currentUser === 1 ? 'A1' : 'A2');
+    state.selectedPreferredLevel = state.preferredLevel;
+
+    if (!state.readingLevelSetByUser) {
+      state.readingLevel = state.preferredLevel;
+    }
+    if (!state.listeningLevelSetByUser) {
+      state.listeningLevel = state.preferredLevel;
+    }
 
     updateHeaderUI();
     loadCurrentPillarData();
@@ -120,7 +137,8 @@ function updateHeaderUI() {
 
   // Active user greeting
   const activeName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : (state.currentUser === 1 ? 'Javier' : 'Compañero');
-  document.getElementById("active-user-greeting").textContent = `Entrenando como ${activeName}`;
+  const userLvl = state.preferredLevel || (state.currentUser === 1 ? 'A1' : 'A2');
+  document.getElementById("active-user-greeting").textContent = `Entrenando como ${activeName} (${userLvl})`;
 
   // Update tabs label
   const wCount = state.userInfo ? state.userInfo.words_per_day : 5;
@@ -213,6 +231,7 @@ function openSettingsModal() {
     document.getElementById("setting-display-name").value = state.userInfo.display_name || "";
     selectWordsPerDay(state.userInfo.words_per_day || 5);
     selectSelectionMode(state.userInfo.selection_mode || "progressive");
+    selectPreferredLevel(state.userInfo.preferred_level || (state.currentUser === 1 ? 'A1' : 'A2'));
   }
   document.getElementById("settings-modal").style.display = "flex";
 }
@@ -235,6 +254,13 @@ function selectSelectionMode(mode) {
   });
 }
 
+function selectPreferredLevel(lvl) {
+  state.selectedPreferredLevel = lvl;
+  document.querySelectorAll("#setting-preferred-level-pills .pill-opt").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.val === lvl);
+  });
+}
+
 async function saveUserSettings() {
   const newName = (document.getElementById("setting-display-name").value || "").trim();
   try {
@@ -245,12 +271,15 @@ async function saveUserSettings() {
         user_id: state.currentUser,
         display_name: newName,
         words_per_day: state.selectedWordsPerDay,
-        selection_mode: state.selectedSelectionMode
+        selection_mode: state.selectedSelectionMode,
+        preferred_level: state.selectedPreferredLevel
       })
     });
     const data = await res.json();
     if (data.success) {
       closeSettingsModal();
+      state.readingLevelSetByUser = false;
+      state.listeningLevelSetByUser = false;
       await fetchUsersAndStatus();
     }
   } catch (err) {
