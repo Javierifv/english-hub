@@ -10,13 +10,14 @@ let isAudioPlaying = false;
 let listeningSpeed = 1.0;
 
 async function loadListeningData(day) {
-  const level = state.listeningLevel || (state.currentUser === 1 ? 'A1' : 'A2');
-  await selectListeningLevel(level, false);
+  const savedLevel = localStorage.getItem('duohub_listening_lvl_u' + state.currentUser) || state.listeningLevel || 'A1';
+  await selectListeningLevel(savedLevel, false);
 }
 
 async function selectListeningLevel(lvl, loadFirst = true) {
   state.listeningLevel = lvl;
   state.listeningLevelSetByUser = true;
+  localStorage.setItem('duohub_listening_lvl_u' + state.currentUser, lvl);
 
   // Update level buttons in toolbar
   document.querySelectorAll(".listening-toolbar .level-pill-btn").forEach(btn => {
@@ -38,13 +39,23 @@ async function selectListeningLevel(lvl, loadFirst = true) {
 
     const select = document.getElementById("listening-track-select");
     if (select && listeningTracksList.length > 0) {
-      select.innerHTML = listeningTracksList.map((t, idx) => `
+      select.innerHTML = listeningTracksList.map((t) => `
         <option value="${t.id}">[${t.level}] ${t.title} (~${t.duration_seconds}s)</option>
       `).join("");
 
-      currentTrackIndex = 0;
-      select.value = listeningTracksList[0].id;
-      await loadListeningById(listeningTracksList[0].id);
+      // Check if user had a saved track
+      const savedTrackId = parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
+      const foundIdx = listeningTracksList.findIndex(t => t.id === savedTrackId);
+
+      if (foundIdx !== -1) {
+        currentTrackIndex = foundIdx;
+        select.value = savedTrackId;
+      } else {
+        currentTrackIndex = 0;
+        select.value = listeningTracksList[0].id;
+      }
+
+      await loadListeningById(select.value);
     }
   } catch (err) {
     console.error("Error loading listening track list:", err);
@@ -58,7 +69,8 @@ async function navListeningTrack(delta) {
     currentTrackIndex = newIdx;
     const select = document.getElementById("listening-track-select");
     if (select) select.value = listeningTracksList[currentTrackIndex].id;
-    await loadListeningById(listeningTracksList[currentChapterIndex = currentTrackIndex].id);
+    localStorage.setItem('duohub_listening_id_u' + state.currentUser, listeningTracksList[currentTrackIndex].id);
+    await loadListeningById(listeningTracksList[currentTrackIndex].id);
   }
 }
 
@@ -66,6 +78,7 @@ async function onListeningTrackDropdownChange(clipId) {
   const idx = listeningTracksList.findIndex(t => t.id === parseInt(clipId));
   if (idx !== -1) {
     currentTrackIndex = idx;
+    localStorage.setItem('duohub_listening_id_u' + state.currentUser, clipId);
     await loadListeningById(clipId);
   }
 }
@@ -234,6 +247,7 @@ async function verifyDictationDiff() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: state.currentUser,
+        date: state.currentDate,
         day: state.currentDay,
         clip_id: currentListeningClip.id,
         user_text: userText

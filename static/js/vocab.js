@@ -15,7 +15,7 @@ async function loadVocabData(day) {
     currentDayWords = words;
 
     if (!words || words.length === 0) {
-      container.innerHTML = `<div class="empty-state">No hay palabras cargadas para el Día ${day}.</div>`;
+      container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
       return;
     }
 
@@ -480,6 +480,7 @@ async function markVocabDone() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: state.currentUser,
+        date: state.currentDate,
         day: state.currentDay,
         notes: document.getElementById("vocab-practice-input").value
       })

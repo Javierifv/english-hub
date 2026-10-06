@@ -1,23 +1,21 @@
-# 📚 Matriz de Trazabilidad: Lecturas (Readings DuoHub)
-**Fecha de Generación:** 2026-10-06  
+# 📚 Matriz de Trazabilidad: Lecturas (Robinson Crusoe in Levels)
+**Fecha de Verificación:** 2026-10-06  
 **Fuente Principal:** [Robinson Crusoe in Levels](https://www.robinsoncrusoeinlevels.com/)  
-**Total de Lecturas Disponibles:** 93 capítulos  
+**Total de Lecturas Disponibles:** 92 capítulos verificados  
 
 ---
 
 ## 🎯 Distribución por Marco Común Europeo (MCER / CEFR)
 
-| Nivel CEFR | Nivel Original | Perfil Recomendado | Capítulos | Palabras Promedio | Audio Disponible |
+| Nivel CEFR | Nivel Web | Capítulos Disponibles | Rango de Capítulos | Vocabulario & Estilo | Audio |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **A1 / A2** | Level 1 | Principiante / Básico (**Javier**) | 31 (Cap. 1 al 31) | ~500 - 800 palabras | ✅ Narración Lenta (MP3 CDN) |
-| **B1** | Level 2 | Intermedio (**Compañero**) | 31 (Cap. 1 al 31) | ~600 - 900 palabras | ✅ Narración Normal (MP3 CDN) |
-| **B2** | Level 3 | Intermedio Alto / Avanzado | 31 (Cap. 1 al 31) | ~700 - 1100 palabras | ✅ Narración Nativa (MP3 CDN) |
+| **A1 / A2** | Level 1 | 30 capítulos | Cap. 2 al 31 | Oraciones simples en presente/pasado, ritmo pausado | ✅ Narración Lenta (MP3) |
+| **B1** | Level 2 | 31 capítulos | Cap. 1 al 31 | Tiempo pasado continuo, oraciones compuestas | ✅ Narración Normal (MP3) |
+| **B2** | Level 3 | 31 capítulos | Cap. 1 al 31 | Vocabulario literario ampliado, tiempos perfectos | ✅ Narración Nativa (MP3) |
 
-> [!TIP]
-> **Pauta de Aprendizaje en Pareja:**  
-> - **Javier** puede iniciar directamente con el bloque **A1 (Level 1)**, donde el vocabulario está graduado y las oraciones son directas, con narración de ritmo pausado.  
-> - El **compañero** puede seleccionar **B1 (Level 2)** o **B2 (Level 3)** de forma totalmente independiente.  
-> - La app permite filtrar por nivel con un solo clic.
+> [!NOTE]
+> **Accesibilidad Universal:**  
+> Ambos compañeros tienen acceso a todos los niveles y todos los capítulos en el selector. No hay restricciones artificiales de usuario. Cada uno puede elegir el nivel y capítulo que desee estudiar en cualquier momento.
 
 ---
 
@@ -25,96 +23,323 @@
 
 | # | Nivel CEFR | Cap. | Título | Palabras | Min. Sugeridos | Audio MP3 | Enlace Original |
 | :---: | :---: | :---: | :--- | :---: | :---: | :---: | :---: |
-| 1 | **A1** | 1 | Robinson Crusoe (L1): Ch. 1 - CHAPTER 1 – HAT | 421 | 10 min | N/A | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter1/) |
-| 2 | **A1** | 2 | Robinson Crusoe (L1): Ch. 2 - Chapter 2 L1 | 1009 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L1-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter2/) |
-| 3 | **A1** | 3 | Robinson Crusoe (L1): Ch. 3 - Chapter 3 L1 | 1101 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L1-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter3/) |
-| 4 | **A1** | 4 | Robinson Crusoe (L1): Ch. 4 - Chapter 4 L1 | 1091 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter4/) |
-| 5 | **A1** | 5 | Robinson Crusoe (L1): Ch. 5 - Chapter 5 L1 | 1027 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter5/) |
-| 6 | **A1** | 6 | Robinson Crusoe (L1): Ch. 6 - CHAPTER 6 – WIFE | 1003 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch6-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter6/) |
-| 7 | **A1** | 7 | Robinson Crusoe (L1): Ch. 7 - CHAPTER 7 – HURRICANE | 1058 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch7-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter7/) |
-| 8 | **A1** | 8 | Robinson Crusoe (L1): Ch. 8 - CHAPTER 8 – ISLAND | 1000 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch8-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter8/) |
-| 9 | **A1** | 9 | Robinson Crusoe (L1): Ch. 9 - CHAPTER 9 – TENT | 1120 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch9-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter9/) |
-| 10 | **A1** | 10 | Robinson Crusoe (L1): Ch. 10 - CHAPTER 10 – CALENDAR | 1098 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch10-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter10/) |
-| 11 | **A1** | 11 | Robinson Crusoe (L1): Ch. 11 - CHAPTER 11 – BOOK | 428 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch11-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter11/) |
-| 12 | **A1** | 12 | Robinson Crusoe (L1): Ch. 12 - CHAPTER 12 – CORN | 1006 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch12-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter12/) |
-| 13 | **A1** | 13 | Robinson Crusoe (L1): Ch. 13 - CHAPTER 13 – DREAM | 980 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch13-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter13/) |
-| 14 | **A1** | 14 | Robinson Crusoe (L1): Ch. 14 - CHAPTER 14 – HOUSE | 979 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch14-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter14/) |
-| 15 | **A1** | 15 | Robinson Crusoe (L1): Ch. 15 - CHAPTER 15 – BASKET | 1051 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch15-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter15/) |
-| 16 | **A1** | 16 | Robinson Crusoe (L1): Ch. 16 - CHAPTER 16 – BREAD | 1072 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch16-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter16/) |
-| 17 | **A1** | 17 | Robinson Crusoe (L1): Ch. 17 - CHAPTER 17 – CANOE | 974 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch17-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter17/) |
-| 18 | **A1** | 18 | Robinson Crusoe (L1): Ch. 18 - CHAPTER 18 – FOOT | 1007 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch18-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter18/) |
-| 19 | **A1** | 19 | Robinson Crusoe (L1): Ch. 19 - CHAPTER 19 – CANNIBALS | 1091 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch19-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter19/) |
-| 20 | **A1** | 20 | Robinson Crusoe (L1): Ch. 20 - CHAPTER 20 – CAVE | 840 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch20-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter20/) |
-| 21 | **A1** | 21 | Robinson Crusoe (L1): Ch. 21 - CHAPTER 21 – VISITORS | 1273 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch21-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter21/) |
-| 22 | **A1** | 22 | Robinson Crusoe (L1): Ch. 22 - CHAPTER 22 – FRIDAY | 1275 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch22-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter22/) |
-| 23 | **A1** | 23 | Robinson Crusoe (L1): Ch. 23 - CHAPTER 23 – CONVERSATION | 1184 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch23-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter23/) |
-| 24 | **A1** | 24 | Robinson Crusoe (L1): Ch. 24 - CHAPTER 24 – KNIFE | 1086 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch24-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter24/) |
-| 25 | **A1** | 25 | Robinson Crusoe (L1): Ch. 25 - CHAPTER 25 – FATHER | 1276 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch25-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter25/) |
-| 26 | **A1** | 26 | Robinson Crusoe (L1): Ch. 26 - CHAPTER 26 – DINNER | 1159 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch26-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter26/) |
-| 27 | **A1** | 27 | Robinson Crusoe (L1): Ch. 27 - CHAPTER 27 – ENGLISHMEN | 937 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch27-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter27/) |
-| 28 | **A1** | 28 | Robinson Crusoe (L1): Ch. 28 - CHAPTER 28 – CONTROL | 1269 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch28-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter28/) |
-| 29 | **A1** | 29 | Robinson Crusoe (L1): Ch. 29 - CHAPTER 29 – PLAN | 776 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch29-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter29/) |
-| 30 | **A1** | 30 | Robinson Crusoe (L1): Ch. 30 - CHAPTER 30 – SON | 830 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch30-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter30/) |
-| 31 | **A1** | 31 | Robinson Crusoe (L1): Ch. 31 - CHAPTER 31– BRAZIL | 768 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch31-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter31/) |
-| 32 | **B1** | 1 | Robinson Crusoe (L2): Ch. 1 - Chapter 1 L2 | 1278 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch1-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter1/) |
-| 33 | **B1** | 2 | Robinson Crusoe (L2): Ch. 2 - Chapter 2 L2 | 1244 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter2/) |
-| 34 | **B1** | 3 | Robinson Crusoe (L2): Ch. 3 - Chapter 3 L2 | 1251 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter3/) |
-| 35 | **B1** | 4 | Robinson Crusoe (L2): Ch. 4 - Chapter 4 L2 | 1224 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter4/) |
-| 36 | **B1** | 5 | Robinson Crusoe (L2): Ch. 5 - Chapter 5 L2 | 1057 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter5/) |
-| 37 | **B1** | 6 | Robinson Crusoe (L2): Ch. 6 - CHAPTER 6 – WIFE | 1069 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH6.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter6/) |
-| 38 | **B1** | 7 | Robinson Crusoe (L2): Ch. 7 - CHAPTER 7 – HURRICANE | 1087 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH7.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter7/) |
-| 39 | **B1** | 8 | Robinson Crusoe (L2): Ch. 8 - CHAPTER 8 – ISLAND | 1108 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH8.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter8/) |
-| 40 | **B1** | 9 | Robinson Crusoe (L2): Ch. 9 - CHAPTER 9 – TENT | 4 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH9.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter9/) |
-| 41 | **B1** | 10 | Robinson Crusoe (L2): Ch. 10 - CHAPTER 10 – CALENDAR | 1184 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH10.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter10/) |
-| 42 | **B1** | 11 | Robinson Crusoe (L2): Ch. 11 - CHAPTER 11 – BOOK | 1075 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH11.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter11/) |
-| 43 | **B1** | 12 | Robinson Crusoe (L2): Ch. 12 - CHAPTER 12 – CORN | 1033 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH12.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter12/) |
-| 44 | **B1** | 13 | Robinson Crusoe (L2): Ch. 13 - CHAPTER 13 – DREAM | 1021 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH13.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter13/) |
-| 45 | **B1** | 14 | Robinson Crusoe (L2): Ch. 14 - CHAPTER 14 – HOUSE | 1021 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH14.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter14/) |
-| 46 | **B1** | 15 | Robinson Crusoe (L2): Ch. 15 - CHAPTER 15 – BASKET | 1120 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH15.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter15/) |
-| 47 | **B1** | 16 | Robinson Crusoe (L2): Ch. 16 - CHAPTER 16 – BREAD | 1077 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH16.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter16/) |
-| 48 | **B1** | 17 | Robinson Crusoe (L2): Ch. 17 - CHAPTER 17 – CANOE | 951 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH17.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter17/) |
-| 49 | **B1** | 18 | Robinson Crusoe (L2): Ch. 18 - CHAPTER 18 – FOOT | 1029 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH18.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter18/) |
-| 50 | **B1** | 19 | Robinson Crusoe (L2): Ch. 19 - CHAPTER 19 – CANNIBALS | 1099 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH19.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter19/) |
-| 51 | **B1** | 20 | Robinson Crusoe (L2): Ch. 20 - CHAPTER 20 – CAVE | 1107 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH20.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter20/) |
-| 52 | **B1** | 21 | Robinson Crusoe (L2): Ch. 21 - CHAPTER 21 – VISITORS | 1279 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH21.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter21/) |
-| 53 | **B1** | 22 | Robinson Crusoe (L2): Ch. 22 - CHAPTER 22 – FRIDAY | 1312 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH22.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter22/) |
-| 54 | **B1** | 23 | Robinson Crusoe (L2): Ch. 23 - CHAPTER 23 – CONVERSATION | 1258 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH23.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter23/) |
-| 55 | **B1** | 24 | Robinson Crusoe (L2): Ch. 24 - CHAPTER 24 – KNIFE | 1322 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH24.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter24/) |
-| 56 | **B1** | 25 | Robinson Crusoe (L2): Ch. 25 - CHAPTER 25 – FATHER | 1279 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH25.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter25/) |
-| 57 | **B1** | 26 | Robinson Crusoe (L2): Ch. 26 - CHAPTER 26 – DINNER | 673 | 11 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH26.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter26/) |
-| 58 | **B1** | 27 | Robinson Crusoe (L2): Ch. 27 - CHAPTER 27 – ENGLISHMEN | 288 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH27.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter27/) |
-| 59 | **B1** | 28 | Robinson Crusoe (L2): Ch. 28 - CHAPTER 28 – CONTROL | 1271 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH28.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter28/) |
-| 60 | **B1** | 29 | Robinson Crusoe (L2): Ch. 29 - CHAPTER 29 – PLAN | 807 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH29.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter29/) |
-| 61 | **B1** | 30 | Robinson Crusoe (L2): Ch. 30 - CHAPTER 30 – SON | 844 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH30.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter30/) |
-| 62 | **B1** | 31 | Robinson Crusoe (L2): Ch. 31 - CHAPTER 31 – BRAZIL | 796 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH31.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter31/) |
-| 63 | **B2** | 1 | Robinson Crusoe (L3): Ch. 1 - Chapter 1 L3 | 1266 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch1-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter1/) |
-| 64 | **B2** | 2 | Robinson Crusoe (L3): Ch. 2 - Chapter 2 L3 | 1332 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter2/) |
-| 65 | **B2** | 3 | Robinson Crusoe (L3): Ch. 3 - Chapter 3 L3 | 1343 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter3/) |
-| 66 | **B2** | 4 | Robinson Crusoe (L3): Ch. 4 - Chapter 4 L3 | 1304 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter4/) |
-| 67 | **B2** | 5 | Robinson Crusoe (L3): Ch. 5 - Chapter 5 L3 | 1097 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter5/) |
-| 68 | **B2** | 6 | Robinson Crusoe (L3): Ch. 6 - CHAPTER 6 – WIFE | 1107 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH6.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter6/) |
-| 69 | **B2** | 7 | Robinson Crusoe (L3): Ch. 7 - CHAPTER 7 – HURRICANE | 1223 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH7.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter7/) |
-| 70 | **B2** | 8 | Robinson Crusoe (L3): Ch. 8 - CHAPTER 8 – ISLAND | 1218 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH8.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter8/) |
-| 71 | **B2** | 9 | Robinson Crusoe (L3): Ch. 9 - CHAPTER 9 – TENT | 832 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH9.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter9/) |
-| 72 | **B2** | 10 | Robinson Crusoe (L3): Ch. 10 - CHAPTER 10 – CALENDAR | 1218 | 20 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH10.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter10/) |
-| 73 | **B2** | 11 | Robinson Crusoe (L3): Ch. 11 - CHAPTER 11 – BOOK | 1035 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH11.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter11/) |
-| 74 | **B2** | 12 | Robinson Crusoe (L3): Ch. 12 - CHAPTER 12 – CORN | 1033 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH12.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter12/) |
-| 75 | **B2** | 13 | Robinson Crusoe (L3): Ch. 13 - CHAPTER 13 – DREAM | 963 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH13.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter13/) |
-| 76 | **B2** | 14 | Robinson Crusoe (L3): Ch. 14 - CHAPTER 14 – HOUSE | 980 | 16 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH14.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter14/) |
-| 77 | **B2** | 15 | Robinson Crusoe (L3): Ch. 15 - CHAPTER 15 – BASKET | 1003 | 17 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH15.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter15/) |
-| 78 | **B2** | 16 | Robinson Crusoe (L3): Ch. 16 - CHAPTER 16 – BREAD | 1051 | 18 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH16.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter16/) |
-| 79 | **B2** | 17 | Robinson Crusoe (L3): Ch. 17 - CHAPTER 17 – CANOE | 1160 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH17.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter17/) |
-| 80 | **B2** | 18 | Robinson Crusoe (L3): Ch. 18 - CHAPTER 18 – FOOT | 1131 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH18.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter18/) |
-| 81 | **B2** | 19 | Robinson Crusoe (L3): Ch. 19 - CHAPTER 19 – CANNIBALS | 1161 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH19.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter19/) |
-| 82 | **B2** | 20 | Robinson Crusoe (L3): Ch. 20 - CHAPTER 20 – CAVE | 1144 | 19 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH20.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter20/) |
-| 83 | **B2** | 21 | Robinson Crusoe (L3): Ch. 21 - CHAPTER 21 – VISITORS | 1332 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH21.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter21/) |
-| 84 | **B2** | 22 | Robinson Crusoe (L3): Ch. 22 - CHAPTER 22 – FRIDAY | 1284 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH22.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter22/) |
-| 85 | **B2** | 23 | Robinson Crusoe (L3): Ch. 23 - CHAPTER 23 – CONVERSATION | 1277 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH23.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter23/) |
-| 86 | **B2** | 24 | Robinson Crusoe (L3): Ch. 24 - CHAPTER 24 – KNIFE | 1254 | 21 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH24.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter24/) |
-| 87 | **B2** | 25 | Robinson Crusoe (L3): Ch. 25 - CHAPTER 25 – FATHER | 1339 | 22 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH25.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter25/) |
-| 88 | **B2** | 26 | Robinson Crusoe (L3): Ch. 26 - CHAPTER 26 – DINNER | 1415 | 24 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH26.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter26/) |
-| 89 | **B2** | 27 | Robinson Crusoe (L3): Ch. 27 - CHAPTER 27 – ENGLISHMEN | 332 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH27.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter27/) |
-| 90 | **B2** | 28 | Robinson Crusoe (L3): Ch. 28 - CHAPTER 28 – CONTROL | 658 | 11 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH28.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter28/) |
-| 91 | **B2** | 29 | Robinson Crusoe (L3): Ch. 29 - CHAPTER 29 – PLAN | 784 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH29.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter29/) |
-| 92 | **B2** | 30 | Robinson Crusoe (L3): Ch. 30 - CHAPTER 30 – SON | 848 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH30.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter30/) |
-| 93 | **B2** | 31 | Robinson Crusoe (L3): Ch. 31 - Chapter 31 L3 | 827 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH31.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter31/) |
+| 1 | **A1** | 2 | [Nivel 1 (A1/A2)] Cap. 2 – Storm
+
+
+chapter | 471 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L1-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter2/) |
+| 2 | **A1** | 3 | [Nivel 1 (A1/A2)] Cap. 3 – Woman
+
+
+chapter | 519 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L1-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter3/) |
+| 3 | **A1** | 4 | [Nivel 1 (A1/A2)] Cap. 4 – Lion
+
+
+chapter | 524 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter4/) |
+| 4 | **A1** | 5 | [Nivel 1 (A1/A2)] Cap. 5 – Ship
+
+
+chapter | 492 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter5/) |
+| 5 | **A1** | 6 | [Nivel 1 (A1/A2)] Cap. 6 – Wife
+
+
+chapter | 486 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch6-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter6/) |
+| 6 | **A1** | 7 | [Nivel 1 (A1/A2)] Cap. 7 – Hurricane
+
+
+chapter | 499 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch7-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter7/) |
+| 7 | **A1** | 8 | [Nivel 1 (A1/A2)] Cap. 8 – Island
+
+
+chapter | 483 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch8-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter8/) |
+| 8 | **A1** | 9 | [Nivel 1 (A1/A2)] Cap. 9 – Tent
+
+
+chapter | 541 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch9-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter9/) |
+| 9 | **A1** | 10 | [Nivel 1 (A1/A2)] Cap. 10 – Calendar
+
+
+chapter | 528 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch10-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter10/) |
+| 10 | **A1** | 11 | [Nivel 1 (A1/A2)] Cap. 11 – Book | 428 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch11-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter11/) |
+| 11 | **A1** | 12 | [Nivel 1 (A1/A2)] Cap. 12 – Corn
+
+
+chapter | 484 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch12-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter12/) |
+| 12 | **A1** | 13 | [Nivel 1 (A1/A2)] Cap. 13 – Dream
+
+
+chapter | 471 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch13-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter13/) |
+| 13 | **A1** | 14 | [Nivel 1 (A1/A2)] Cap. 14 – House
+
+
+chapter | 475 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch14-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter14/) |
+| 14 | **A1** | 15 | [Nivel 1 (A1/A2)] Cap. 15 – Basket
+
+
+chapter | 509 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch15-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter15/) |
+| 15 | **A1** | 16 | [Nivel 1 (A1/A2)] Cap. 16 – Bread
+
+
+chapter | 525 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch16-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter16/) |
+| 16 | **A1** | 17 | [Nivel 1 (A1/A2)] Cap. 17 – Canoe
+
+
+chapter | 481 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch17-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter17/) |
+| 17 | **A1** | 18 | [Nivel 1 (A1/A2)] Cap. 18 – Foot
+
+
+chapter | 493 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch18-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter18/) |
+| 18 | **A1** | 19 | [Nivel 1 (A1/A2)] Cap. 19 – Cannibals
+
+
+chapter | 538 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch19-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter19/) |
+| 19 | **A1** | 20 | [Nivel 1 (A1/A2)] Cap. 20 – Cave
+
+
+chapter | 821 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch20-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter20/) |
+| 20 | **A1** | 21 | [Nivel 1 (A1/A2)] Cap. 21 – Visitors
+
+
+chapter | 627 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch21-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter21/) |
+| 21 | **A1** | 22 | [Nivel 1 (A1/A2)] Cap. 22 – Friday
+
+
+chapter | 630 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch22-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter22/) |
+| 22 | **A1** | 23 | [Nivel 1 (A1/A2)] Cap. 23 – Conversation
+
+
+chapter | 575 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch23-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter23/) |
+| 23 | **A1** | 24 | [Nivel 1 (A1/A2)] Cap. 24 – Knife
+
+
+chapter | 534 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch24-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter24/) |
+| 24 | **A1** | 25 | [Nivel 1 (A1/A2)] Cap. 25 – Father
+
+
+chapter | 628 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch25-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter25/) |
+| 25 | **A1** | 26 | [Nivel 1 (A1/A2)] Cap. 26 – Dinner
+
+
+chapter | 571 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch26-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter26/) |
+| 26 | **A1** | 27 | [Nivel 1 (A1/A2)] Cap. 27 – Englishmen
+
+
+chapter | 906 | 14 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch27-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter27/) |
+| 27 | **A1** | 28 | [Nivel 1 (A1/A2)] Cap. 28 – Control
+
+
+chapter | 626 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch28-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter28/) |
+| 28 | **A1** | 29 | [Nivel 1 (A1/A2)] Cap. 29 – Plan | 776 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch29-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter29/) |
+| 29 | **A1** | 30 | [Nivel 1 (A1/A2)] Cap. 30 – Son | 830 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch30-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter30/) |
+| 30 | **A1** | 31 | [Nivel 1 (A1/A2)] Cap. 31 – Brazil | 768 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L1-Ch31-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level1/chapter31/) |
+| 31 | **B1** | 1 | [Nivel 2 (B1)] Cap. 1 – Family | 584 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch1-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter1/) |
+| 32 | **B1** | 2 | [Nivel 2 (B1)] Cap. 2 – Storm
+
+
+chapter | 585 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter2/) |
+| 33 | **B1** | 3 | [Nivel 2 (B1)] Cap. 3 – Woman
+
+
+chapter | 604 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter3/) |
+| 34 | **B1** | 4 | [Nivel 2 (B1)] Cap. 4 – Lion
+
+
+chapter | 598 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter4/) |
+| 35 | **B1** | 5 | [Nivel 2 (B1)] Cap. 5 – Ship
+
+
+chapter | 517 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L2-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter5/) |
+| 36 | **B1** | 6 | [Nivel 2 (B1)] Cap. 6 – Wife
+
+
+chapter | 518 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH6.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter6/) |
+| 37 | **B1** | 7 | [Nivel 2 (B1)] Cap. 7 – Hurricane
+
+
+chapter | 529 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH7.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter7/) |
+| 38 | **B1** | 8 | [Nivel 2 (B1)] Cap. 8 – Island
+
+
+chapter | 539 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH8.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter8/) |
+| 39 | **B1** | 9 | [Nivel 2 (B1)] Cap. 9 – Tent | 4 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH9.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter9/) |
+| 40 | **B1** | 10 | [Nivel 2 (B1)] Cap. 10 – Calendar
+
+
+chapter | 579 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH10.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter10/) |
+| 41 | **B1** | 11 | [Nivel 2 (B1)] Cap. 11 – Book
+
+
+chapter | 523 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH11.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter11/) |
+| 42 | **B1** | 12 | [Nivel 2 (B1)] Cap. 12 – Corn
+
+
+chapter | 504 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH12.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter12/) |
+| 43 | **B1** | 13 | [Nivel 2 (B1)] Cap. 13 – Dream
+
+
+chapter | 503 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH13.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter13/) |
+| 44 | **B1** | 14 | [Nivel 2 (B1)] Cap. 14 – House
+
+
+chapter | 495 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH14.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter14/) |
+| 45 | **B1** | 15 | [Nivel 2 (B1)] Cap. 15 – Basket
+
+
+chapter | 542 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH15.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter15/) |
+| 46 | **B1** | 16 | [Nivel 2 (B1)] Cap. 16 – Bread
+
+
+chapter | 529 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH16.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter16/) |
+| 47 | **B1** | 17 | [Nivel 2 (B1)] Cap. 17 – Canoe
+
+
+chapter | 469 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH17.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter17/) |
+| 48 | **B1** | 18 | [Nivel 2 (B1)] Cap. 18 – Foot
+
+
+chapter | 504 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH18.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter18/) |
+| 49 | **B1** | 19 | [Nivel 2 (B1)] Cap. 19 – Cannibals
+
+
+chapter | 539 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH19.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter19/) |
+| 50 | **B1** | 20 | [Nivel 2 (B1)] Cap. 20 – Cave
+
+
+chapter | 540 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH20.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter20/) |
+| 51 | **B1** | 21 | [Nivel 2 (B1)] Cap. 21 – Visitors
+
+
+chapter | 630 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH21.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter21/) |
+| 52 | **B1** | 22 | [Nivel 2 (B1)] Cap. 22 – Friday
+
+
+chapter | 645 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH22.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter22/) |
+| 53 | **B1** | 23 | [Nivel 2 (B1)] Cap. 23 – Conversation
+
+
+chapter | 614 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH23.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter23/) |
+| 54 | **B1** | 24 | [Nivel 2 (B1)] Cap. 24 – Knife
+
+
+chapter | 647 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH24.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter24/) |
+| 55 | **B1** | 25 | [Nivel 2 (B1)] Cap. 25 – Father
+
+
+chapter | 627 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH25.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter25/) |
+| 56 | **B1** | 26 | [Nivel 2 (B1)] Cap. 26 – Dinner
+
+
+chapter | 650 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH26.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter26/) |
+| 57 | **B1** | 27 | [Nivel 2 (B1)] Cap. 27 – Englishmen | 288 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH27.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter27/) |
+| 58 | **B1** | 28 | [Nivel 2 (B1)] Cap. 28 – Control
+
+
+chapter | 628 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH28.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter28/) |
+| 59 | **B1** | 29 | [Nivel 2 (B1)] Cap. 29 – Plan | 807 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH29.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter29/) |
+| 60 | **B1** | 30 | [Nivel 2 (B1)] Cap. 30 – Son | 844 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH30.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter30/) |
+| 61 | **B1** | 31 | [Nivel 2 (B1)] Cap. 31 – Brazil | 796 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L2-CH31.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level2/chapter31/) |
+| 62 | **B2** | 1 | [Nivel 3 (B2)] Cap. 1 – Family | 593 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch1-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter1/) |
+| 63 | **B2** | 2 | [Nivel 3 (B2)] Cap. 2 – Storm
+
+
+chapter | 652 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch2-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter2/) |
+| 64 | **B2** | 3 | [Nivel 3 (B2)] Cap. 3 – Woman
+
+
+chapter | 659 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch3-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter3/) |
+| 65 | **B2** | 4 | [Nivel 3 (B2)] Cap. 4 – Lion
+
+
+chapter | 641 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch4-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter4/) |
+| 66 | **B2** | 5 | [Nivel 3 (B2)] Cap. 5 – Ship
+
+
+chapter | 539 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/11/RC-L3-Ch5-slow.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter5/) |
+| 67 | **B2** | 6 | [Nivel 3 (B2)] Cap. 6 – Wife
+
+
+chapter | 547 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH6.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter6/) |
+| 68 | **B2** | 7 | [Nivel 3 (B2)] Cap. 7 – Hurricane
+
+
+chapter | 603 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH7.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter7/) |
+| 69 | **B2** | 8 | [Nivel 3 (B2)] Cap. 8 – Island
+
+
+chapter | 604 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH8.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter8/) |
+| 70 | **B2** | 9 | [Nivel 3 (B2)] Cap. 9 – Tent
+
+
+chapter | 806 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH9.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter9/) |
+| 71 | **B2** | 10 | [Nivel 3 (B2)] Cap. 10 – Calendar
+
+
+chapter | 605 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH10.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter10/) |
+| 72 | **B2** | 11 | [Nivel 3 (B2)] Cap. 11 – Book
+
+
+chapter | 513 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH11.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter11/) |
+| 73 | **B2** | 12 | [Nivel 3 (B2)] Cap. 12 – Corn
+
+
+chapter | 511 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH12.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter12/) |
+| 74 | **B2** | 13 | [Nivel 3 (B2)] Cap. 13 – Dream
+
+
+chapter | 474 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH13.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter13/) |
+| 75 | **B2** | 14 | [Nivel 3 (B2)] Cap. 14 – House
+
+
+chapter | 482 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH14.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter14/) |
+| 76 | **B2** | 15 | [Nivel 3 (B2)] Cap. 15 – Basket
+
+
+chapter | 495 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH15.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter15/) |
+| 77 | **B2** | 16 | [Nivel 3 (B2)] Cap. 16 – Bread
+
+
+chapter | 521 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH16.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter16/) |
+| 78 | **B2** | 17 | [Nivel 3 (B2)] Cap. 17 – Canoe
+
+
+chapter | 574 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH17.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter17/) |
+| 79 | **B2** | 18 | [Nivel 3 (B2)] Cap. 18 – Foot
+
+
+chapter | 557 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH18.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter18/) |
+| 80 | **B2** | 19 | [Nivel 3 (B2)] Cap. 19 – Cannibals
+
+
+chapter | 571 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH19.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter19/) |
+| 81 | **B2** | 20 | [Nivel 3 (B2)] Cap. 20 – Cave
+
+
+chapter | 566 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH20.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter20/) |
+| 82 | **B2** | 21 | [Nivel 3 (B2)] Cap. 21 – Visitors
+
+
+chapter | 663 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH21.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter21/) |
+| 83 | **B2** | 22 | [Nivel 3 (B2)] Cap. 22 – Friday
+
+
+chapter | 639 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH22.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter22/) |
+| 84 | **B2** | 23 | [Nivel 3 (B2)] Cap. 23 – Conversation
+
+
+chapter | 634 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH23.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter23/) |
+| 85 | **B2** | 24 | [Nivel 3 (B2)] Cap. 24 – Knife
+
+
+chapter | 624 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH24.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter24/) |
+| 86 | **B2** | 25 | [Nivel 3 (B2)] Cap. 25 – Father
+
+
+chapter | 665 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH25.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter25/) |
+| 87 | **B2** | 26 | [Nivel 3 (B2)] Cap. 26 – Dinner
+
+
+chapter | 700 | 11 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH26.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter26/) |
+| 88 | **B2** | 27 | [Nivel 3 (B2)] Cap. 27 – Englishmen | 332 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH27.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter27/) |
+| 89 | **B2** | 28 | [Nivel 3 (B2)] Cap. 28 – Control | 658 | 10 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH28.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter28/) |
+| 90 | **B2** | 29 | [Nivel 3 (B2)] Cap. 29 – Plan | 784 | 12 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH29.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter29/) |
+| 91 | **B2** | 30 | [Nivel 3 (B2)] Cap. 30 – Son | 848 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH30.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter30/) |
+| 92 | **B2** | 31 | [Nivel 3 (B2)] Cap. 31 – Brazil | 823 | 13 min | [Escuchar MP3](https://www.robinsoncrusoeinlevels.com/wp-content/uploads/2018/10/RC-L3-CH31.mp3) | [Ver Web](https://www.robinsoncrusoeinlevels.com/level3/chapter31/) |

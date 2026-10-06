@@ -27,51 +27,56 @@ def fetch_all_pages():
             all_pages.extend(data)
     return all_pages
 
-def clean_html_content(raw_html):
+def clean_chapter_content(raw_html):
     soup = BeautifulSoup(raw_html, 'html.parser')
     
-    # Remove navigation buttons and promo blocks
+    # Remove promos and buttons
     for div in soup.find_all('div', class_=re.compile(r'et_pb_promo|et_pb_button|et_pb_cta')):
         div.decompose()
-    for a in soup.find_all('a'):
-        if 'Next chapter' in a.get_text() or 'englishinshop' in a.get('href', ''):
-            a.decompose()
-            
-    # Extract audio URLs before stripping
-    audio_urls = []
-    for a in soup.find_all('a', href=re.compile(r'\.mp3$')):
-        audio_urls.append(a['href'])
-    for audio in soup.find_all('audio'):
-        if audio.get('src'):
-            audio_urls.append(audio['src'])
-        for src in audio.find_all('source'):
-            if src.get('src'):
-                audio_urls.append(src['src'])
-                
-    # Also regex for any remaining mp3 in raw html
-    raw_mp3s = re.findall(r'https?://[^\s"\'<>]+\.mp3', raw_html)
-    for m in raw_mp3s:
-        if m not in audio_urls:
-            audio_urls.append(m)
+        
+    audio_urls = re.findall(r'https?://[^\s"\'<>]+\.mp3', raw_html)
+    valid_audio = ""
+    for a in audio_urls:
+        if 'RC-L' in a:
+            valid_audio = a
+            break
+    if not valid_audio and audio_urls:
+        valid_audio = audio_urls[0]
 
-    # Get clean text paragraphs
-    paragraphs = []
+    extracted_title = ""
+    story_paragraphs = []
+    
     for p in soup.find_all('p'):
         text = p.get_text().strip()
-        # Filter out audio url lines and junk
-        if not text or text.endswith('.mp3') or 'You can buy the whole book' in text:
+        if not text:
             continue
-        paragraphs.append(text)
-        
-    cleaned_text = "\n\n".join(paragraphs)
-    # If soup didn't catch p tags cleanly:
-    if not cleaned_text:
-        cleaned_text = soup.get_text()
-        
-    return cleaned_text, audio_urls
+        # Filter metadata headers
+        if re.search(r'robinson crusoe in levels is a book', text, re.IGNORECASE):
+            continue
+        if re.search(r'students can read this book', text, re.IGNORECASE):
+            continue
+        if re.match(r'^level\s*\d+$', text, re.IGNORECASE):
+            continue
+        if re.match(r'^chapter\s*\d+$', text, re.IGNORECASE):
+            continue
+        if text.startswith('http') and text.endswith('.mp3'):
+            continue
+        if 'buy the whole book' in text.lower() or 'next chapter' in text.lower():
+            continue
+            
+        # Check if it's the chapter title like "CHAPTER 2 – STORM"
+        ch_title_match = re.search(r'chapter\s*\d+\s*[–-]\s*([a-zA-Z\s]+)', text, re.IGNORECASE)
+        if ch_title_match and not extracted_title:
+            extracted_title = ch_title_match.group(1).strip().capitalize()
+            continue
 
-def parse_chapter_number_and_level(slug, link, title):
-    # Level: 1 -> A1, 2 -> B1, 3 -> B2
+        # Remaining paragraph is actual story text
+        story_paragraphs.append(text)
+        
+    clean_text = "\n\n".join(story_paragraphs)
+    return clean_text, valid_audio, extracted_title
+
+def parse_chapter_info(slug, link, title):
     level_code = "A1"
     level_num = 1
     if "/level2/" in link or "L2" in title:
@@ -84,7 +89,6 @@ def parse_chapter_number_and_level(slug, link, title):
         level_code = "A1"
         level_num = 1
         
-    # Chapter number
     ch_match = re.search(r'chapter(\d+)', slug.lower())
     if not ch_match:
         ch_match = re.search(r'chapter\s*(\d+)', title.lower())
@@ -92,56 +96,39 @@ def parse_chapter_number_and_level(slug, link, title):
     return level_num, level_code, ch_num
 
 def main():
-    print("Fetching pages from Robinson Crusoe in Levels...")
+    print("Fetching fresh pages from Robinson Crusoe in Levels...")
     pages = fetch_all_pages()
-    print(f"Total pages fetched: {len(pages)}")
     
-    chapter_pages = []
+    valid_chapters = []
     for p in pages:
         slug = p.get('slug', '')
         link = p.get('link', '')
         title = unescape(p.get('title', {}).get('rendered', ''))
         
-        # Only chapters (e.g. level1/chapter1)
-        if re.search(r'chapter\d+', slug) and ('/level1/' in link or '/level2/' in link or '/level3/' in link):
-            level_num, level_code, ch_num = parse_chapter_number_and_level(slug, link, title)
-            if ch_num > 0:
-                chapter_pages.append((level_num, ch_num, level_code, p))
-                
-    # Sort by level, then chapter number
-    chapter_pages.sort(key=lambda x: (x[0], x[1]))
-    print(f"Filtered {len(chapter_pages)} Robinson Crusoe chapters.")
-    
-    # Connect DB and ensure columns
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    
-    # Check if audio_url column exists in readings
-    cur.execute("PRAGMA table_info(readings)")
-    cols = [col[1] for col in cur.fetchall()]
-    if 'audio_url' not in cols:
-        print("Adding audio_url column to readings table...")
-        cur.execute("ALTER TABLE readings ADD COLUMN audio_url TEXT")
-        conn.commit()
-        
-    records = []
-    for level_num, ch_num, level_code, p in chapter_pages:
-        raw_html = p.get('content', {}).get('rendered', '')
-        text, audio_urls = clean_html_content(raw_html)
-        audio_url = audio_urls[0] if audio_urls else ""
-        
-        # Clean title
-        title_raw = unescape(p.get('title', {}).get('rendered', ''))
-        # Try to find subtitle from first line of text like "CHAPTER 1 – HAT"
-        subtitle = ""
-        lines = text.split("\n")
-        first_line = lines[0].strip() if lines else ""
-        if "CHAPTER" in first_line.upper():
-            subtitle = first_line
-            # remove it from main text so it doesn't duplicate
-            text = "\n".join(lines[1:]).strip()
+        # EXCLUDE the dummy page id 2 ("The Little Prince" slug chapter1)
+        if p.get('id') == 2 or 'little-prince' in p.get('content', {}).get('rendered', ''):
+            continue
             
-        final_title = f"Robinson Crusoe (L{level_num}): Ch. {ch_num} - {subtitle if subtitle else title_raw}"
+        if re.search(r'chapter\d+', slug) and ('/level1/' in link or '/level2/' in link or '/level3/' in link):
+            level_num, level_code, ch_num = parse_chapter_info(slug, link, title)
+            # Level 1 only has chapters >= 2 on the website
+            if level_num == 1 and ch_num < 2:
+                continue
+            if ch_num > 0:
+                valid_chapters.append((level_num, ch_num, level_code, p))
+                
+    valid_chapters.sort(key=lambda x: (x[0], x[1]))
+    print(f"Total valid Robinson Crusoe chapters: {len(valid_chapters)}")
+
+    records = []
+    for level_num, ch_num, level_code, p in valid_chapters:
+        raw_html = p.get('content', {}).get('rendered', '')
+        text, audio_url, extracted_sub = clean_chapter_content(raw_html)
+        
+        level_label = f"Nivel {level_num} ({'A1/A2' if level_num==1 else ('B1' if level_num==2 else 'B2')})"
+        sub_title = f" – {extracted_sub}" if extracted_sub else ""
+        final_title = f"[{level_label}] Cap. {ch_num}{sub_title}"
+        
         word_count = len(text.split())
         source_url = p.get('link', '')
         
@@ -154,15 +141,24 @@ def main():
             'audio_url': audio_url,
             'source': source_url,
             'words': word_count,
-            'topic': 'Robinson Crusoe Classic Literature'
+            'topic': 'Robinson Crusoe'
         })
 
-    # Clear existing Robinson Crusoe readings if any, and insert
-    cur.execute("DELETE FROM readings WHERE source LIKE '%robinsoncrusoeinlevels.com%'")
-    conn.commit()
+    # Update SQLite database
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
     
-    print(f"Inserting {len(records)} chapters into SQLite database...")
-    for i, r in enumerate(records, 1):
+    # Check audio_url column exists
+    cur.execute("PRAGMA table_info(readings)")
+    cols = [col[1] for col in cur.fetchall()]
+    if 'audio_url' not in cols:
+        cur.execute("ALTER TABLE readings ADD COLUMN audio_url TEXT")
+        
+    cur.execute("DELETE FROM readings")
+    conn.commit()
+
+    print(f"Inserting {len(records)} verified Robinson Crusoe chapters into SQLite...")
+    for r in records:
         cur.execute("""
         INSERT INTO readings (day_number, title, level, topic, estimated_minutes, content, source, key_vocabulary, audio_url)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -171,7 +167,7 @@ def main():
             r['title'],
             r['level'],
             r['topic'],
-            max(10, round(r['words'] / 60)), # reading time based on 60 wpm for learners
+            max(10, round(r['words'] / 65)),
             r['content'],
             r['source'],
             json.dumps([]),
@@ -179,36 +175,32 @@ def main():
         ))
     conn.commit()
     conn.close()
-    print("Database update successful!")
-    
+    print("Database readings reloaded successfully!")
+
     # Generate docs/LECTURAS_TRAZABILIDAD.md
     md_path = os.path.join(DOCS_PATH, "LECTURAS_TRAZABILIDAD.md")
-    print(f"Writing traceability document to {md_path}...")
-    
     l1_count = sum(1 for r in records if r['level_num'] == 1)
     l2_count = sum(1 for r in records if r['level_num'] == 2)
     l3_count = sum(1 for r in records if r['level_num'] == 3)
-    
-    md_content = f"""# 📚 Matriz de Trazabilidad: Lecturas (Readings DuoHub)
-**Fecha de Generación:** 2026-10-06  
+
+    md_content = f"""# 📚 Matriz de Trazabilidad: Lecturas (Robinson Crusoe in Levels)
+**Fecha de Verificación:** 2026-10-06  
 **Fuente Principal:** [Robinson Crusoe in Levels](https://www.robinsoncrusoeinlevels.com/)  
-**Total de Lecturas Disponibles:** {len(records)} capítulos  
+**Total de Lecturas Disponibles:** {len(records)} capítulos verificados  
 
 ---
 
 ## 🎯 Distribución por Marco Común Europeo (MCER / CEFR)
 
-| Nivel CEFR | Nivel Original | Perfil Recomendado | Capítulos | Palabras Promedio | Audio Disponible |
+| Nivel CEFR | Nivel Web | Capítulos Disponibles | Rango de Capítulos | Vocabulario & Estilo | Audio |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **A1 / A2** | Level 1 | Principiante / Básico (**Javier**) | {l1_count} (Cap. 1 al {l1_count}) | ~500 - 800 palabras | ✅ Narración Lenta (MP3 CDN) |
-| **B1** | Level 2 | Intermedio (**Compañero**) | {l2_count} (Cap. 1 al {l2_count}) | ~600 - 900 palabras | ✅ Narración Normal (MP3 CDN) |
-| **B2** | Level 3 | Intermedio Alto / Avanzado | {l3_count} (Cap. 1 al {l3_count}) | ~700 - 1100 palabras | ✅ Narración Nativa (MP3 CDN) |
+| **A1 / A2** | Level 1 | {l1_count} capítulos | Cap. 2 al 31 | Oraciones simples en presente/pasado, ritmo pausado | ✅ Narración Lenta (MP3) |
+| **B1** | Level 2 | {l2_count} capítulos | Cap. 1 al 31 | Tiempo pasado continuo, oraciones compuestas | ✅ Narración Normal (MP3) |
+| **B2** | Level 3 | {l3_count} capítulos | Cap. 1 al 31 | Vocabulario literario ampliado, tiempos perfectos | ✅ Narración Nativa (MP3) |
 
-> [!TIP]
-> **Pauta de Aprendizaje en Pareja:**  
-> - **Javier** puede iniciar directamente con el bloque **A1 (Level 1)**, donde el vocabulario está graduado y las oraciones son directas, con narración de ritmo pausado.  
-> - El **compañero** puede seleccionar **B1 (Level 2)** o **B2 (Level 3)** de forma totalmente independiente.  
-> - La app permite filtrar por nivel con un solo clic.
+> [!NOTE]
+> **Accesibilidad Universal:**  
+> Ambos compañeros tienen acceso a todos los niveles y todos los capítulos en el selector. No hay restricciones artificiales de usuario. Cada uno puede elegir el nivel y capítulo que desee estudiar en cualquier momento.
 
 ---
 
@@ -219,12 +211,11 @@ def main():
 """
     for idx, r in enumerate(records, 1):
         has_audio = f"[Escuchar MP3]({r['audio_url']})" if r['audio_url'] else "N/A"
-        md_content += f"| {idx} | **{r['level']}** | {r['chapter']} | {r['title']} | {r['words']} | {max(10, round(r['words'] / 60))} min | {has_audio} | [Ver Web]({r['source']}) |\n"
+        md_content += f"| {idx} | **{r['level']}** | {r['chapter']} | {r['title']} | {r['words']} | {max(10, round(r['words'] / 65))} min | {has_audio} | [Ver Web]({r['source']}) |\n"
 
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(md_content)
-        
-    print(f"Traceability documentation created successfully at {md_path}!")
+    print(f"Documentation saved at {md_path}!")
 
 if __name__ == "__main__":
     main()

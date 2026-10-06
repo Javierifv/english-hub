@@ -23,14 +23,19 @@
         </div>
       </div>
 
-      <!-- Day Selector -->
-      <div class="day-picker-control">
-        <button id="btn-prev-day" class="btn-icon" title="Día anterior">◀</button>
-        <div class="current-day-badge">
-          <span class="day-label">DÍA</span>
-          <span id="current-day-number" class="day-num">1</span>
+      <!-- Calendar Date Navigator -->
+      <div class="calendar-nav-control">
+        <button id="btn-prev-day" class="btn-icon btn-nav-date" title="Día anterior">◀</button>
+        <div class="calendar-date-badge" id="calendar-date-display" onclick="openDatePicker()" title="Clic para seleccionar fecha en el calendario">
+          <span class="calendar-icon">📅</span>
+          <div class="calendar-text">
+            <span id="calendar-day-name" class="date-weekday">Cargando...</span>
+            <span id="calendar-full-date" class="date-formatted">Fecha</span>
+          </div>
+          <input type="date" id="calendar-date-input" class="calendar-hidden-input" onchange="onDateInputChange(this.value)">
         </div>
-        <button id="btn-next-day" class="btn-icon" title="Día siguiente">▶</button>
+        <button id="btn-next-day" class="btn-icon btn-nav-date" title="Día siguiente">▶</button>
+        <button id="btn-today" class="btn-today-pill" onclick="goToTodayDate()" title="Volver al día de hoy">Hoy</button>
       </div>
 
       <!-- Duo Accountability & User Toggle -->
@@ -246,16 +251,16 @@
         <div class="level-pills-group">
           <span class="toolbar-label">Nivel de Lectura:</span>
           <button type="button" class="level-pill-btn active pill-a1" id="reading-level-btn-a1" onclick="selectReadingLevel('A1')">
-            📗 A1 / A2 (L1 - Javier)
+            📗 Nivel 1 (A1/A2)
           </button>
           <button type="button" class="level-pill-btn" id="reading-level-btn-b1" onclick="selectReadingLevel('B1')">
-            📘 B1 (L2 - Compañero)
+            📘 Nivel 2 (B1)
           </button>
           <button type="button" class="level-pill-btn" id="reading-level-btn-b2" onclick="selectReadingLevel('B2')">
-            📙 B2 (L3)
+            📙 Nivel 3 (B2)
           </button>
           <button type="button" class="level-pill-btn" id="reading-level-btn-all" onclick="selectReadingLevel('all')">
-            🌐 Todos
+            🌐 Todos (92 Capítulos)
           </button>
         </div>
         <div class="chapter-nav-group">
@@ -348,13 +353,13 @@
         <div class="level-pills-group">
           <span class="toolbar-label">Nivel de Listening:</span>
           <button type="button" class="level-pill-btn active pill-a1" id="listening-level-btn-a1" onclick="selectListeningLevel('A1')">
-            🟢 A1 - Principiante (Javier)
+            🟢 A1 Principiante
           </button>
           <button type="button" class="level-pill-btn" id="listening-level-btn-a2" onclick="selectListeningLevel('A2')">
-            🔵 A2 - Pre-intermedio (Compañero)
+            🔵 A2 Pre-intermedio
           </button>
           <button type="button" class="level-pill-btn" id="listening-level-btn-all" onclick="selectListeningLevel('all')">
-            🌐 Todos
+            🌐 Todos (10 Pistas)
           </button>
         </div>
         <div class="track-nav-group">
@@ -443,44 +448,115 @@
         <div>
           <h2>Paso 4: Shadowing Studio (5 Minutos)</h2>
           <p class="section-desc">
-            Escucha la frase de un hablante nativo y repítela al mismo tiempo (como un eco). Grábate directamente desde el navegador para comparar tu entonación.
+            Técnica del Prof. Argüelles: Escucha el mismo audio de tu lección de Listening y habla al unísono como un eco, imitando ritmo, entonación y acento nativo.
           </p>
+        </div>
+        <div class="shadowing-active-track-tag">
+          <span class="pulse-indicator">●</span> Audio Activo: <strong id="shadowing-active-track-name">Cargando pista...</strong>
         </div>
       </div>
 
-      <div class="card shadowing-card">
-        <div class="shadowing-instructions-banner">
-          <div class="info-icon">🗣️</div>
-          <div>
-            <strong>Instrucciones de la técnica de Shadowing (Prof. Arguelles):</strong>
-            <p>1. Escucha la frase nativa. 2. Repítela en voz alta sincronizada con el audio. 3. Graba tu voz con el micrófono para verificar si pronunciaste claramente las consonantes finales y el ritmo.</p>
-          </div>
-        </div>
-
-        <!-- Chunks Playlist -->
-        <div class="chunks-section">
-          <h4>Frases de Práctica para Hoy:</h4>
-          <div id="shadowing-chunks-list" class="chunks-list">
-            <!-- Injected by JS -->
-          </div>
-        </div>
-
-        <!-- Voice Recorder Module -->
-        <div class="recorder-dock">
-          <div class="recorder-controls">
-            <button id="btn-record-mic" class="btn btn-record" onclick="toggleRecording()">
-              <span class="rec-dot"></span> Iniciar Grabación
-            </button>
-            <span id="recording-timer" class="rec-timer">00:00</span>
-          </div>
-
-          <!-- Playback Row -->
-          <div id="recording-playback-row" class="playback-row" style="display: none;">
-            <div class="playback-item">
-              <label>Tu Grabación:</label>
-              <audio id="user-audio-player" controls></audio>
+      <div class="shadowing-dual-layout">
+        <!-- Left: Audio Player & Complete Synchronized Transcript -->
+        <div class="card shadowing-audio-card">
+          <div class="shadowing-card-header">
+            <div class="track-meta">
+              <span id="shadowing-level-badge" class="badge badge-accent">A1 Level</span>
+              <h3 id="shadowing-track-title">Pista de Listening</h3>
             </div>
-            <button class="btn btn-success" onclick="markShadowingDone()">
+            <button class="btn btn-sm btn-outline" onclick="showPillar('listening')" title="Ir a Listening para cambiar de pista">
+              🎧 Cambiar Pista
+            </button>
+          </div>
+
+          <!-- Master Model Audio Player -->
+          <div class="shadowing-player-bar">
+            <audio id="shadowing-master-audio" preload="auto"></audio>
+            <div class="audio-controls-row">
+              <button class="btn btn-secondary btn-icon" onclick="shadowingRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
+              <button id="btn-play-shadowing-model" class="btn btn-primary btn-icon-lg" onclick="togglePlayShadowingModel()">▶ Escuchar Audio Modelo</button>
+              <button class="btn btn-secondary btn-icon" onclick="shadowingForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
+
+              <div class="speed-selector">
+                <label>Velocidad:</label>
+                <select id="shadowing-speed-select" onchange="changeShadowingSpeed(this.value)">
+                  <option value="0.75">0.75x (Lento)</option>
+                  <option value="0.9">0.9x</option>
+                  <option value="1.0" selected>1.0x (Normal)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Complete Transcript Read-Along Container -->
+          <div class="shadowing-transcript-wrap">
+            <div class="transcript-header-row">
+              <span class="transcript-subtitle">📖 Transcripción Completa del Audio:</span>
+              <span class="transcript-hint">Lee en voz alta mientras escuchas la voz del audio</span>
+            </div>
+            <div id="shadowing-full-transcript" class="shadowing-transcript-text">
+              <!-- Transcript populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Recording & Vocal Comparison Console -->
+        <div class="card shadowing-recorder-card">
+          <div class="recorder-card-header">
+            <h3>🎙️ Consola de Grabación y Práctica</h3>
+            <span class="recorder-sub">Habla sobre la voz del audio al mismo tiempo</span>
+          </div>
+
+          <div class="shadowing-instructions-box">
+            <div class="info-row">
+              <span class="info-badge">1</span>
+              <p>Presiona <strong>Iniciar Shadowing</strong>. El audio nativo comenzará a reproducirse y tu micrófono grabará tu voz simultáneamente.</p>
+            </div>
+            <div class="info-row">
+              <span class="info-badge">2</span>
+              <p>Pronuncia el texto imitando la entonación y velocidad del hablante nativo.</p>
+            </div>
+            <div class="info-row">
+              <span class="info-badge">3</span>
+              <p>Al terminar, reproduce tu grabación para detectar diferencias de ritmo y consonantes.</p>
+            </div>
+          </div>
+
+          <!-- Simultaneous Sync Option -->
+          <div class="simul-toggle-box">
+            <label class="checkbox-container">
+              <input type="checkbox" id="chk-auto-play-audio" checked>
+              <span class="checkmark"></span>
+              <span class="label-text">Reproducir audio automáticamente al iniciar grabación</span>
+            </label>
+          </div>
+
+          <!-- Main Recording Action & Timer -->
+          <div class="recorder-action-dock">
+            <button id="btn-record-mic" class="btn btn-record btn-lg btn-block" onclick="toggleRecording()">
+              <span class="rec-dot"></span> Iniciar Shadowing & Grabación
+            </button>
+            <div class="rec-timer-display">
+              <span class="rec-status-dot" id="rec-status-dot"></span>
+              <span id="recording-timer" class="rec-timer">00:00</span>
+            </div>
+          </div>
+
+          <!-- Playback and Comparison Station -->
+          <div id="recording-playback-row" class="playback-station" style="display: none;">
+            <div class="playback-header">
+              <h4>🎧 Tu Grabación Lista</h4>
+              <span class="playback-tag">✓ Captura lista</span>
+            </div>
+
+            <div class="playback-controls-grid">
+              <div class="playback-column">
+                <label>Reproducir Tu Voz:</label>
+                <audio id="user-audio-player" controls></audio>
+              </div>
+            </div>
+
+            <button class="btn btn-success btn-lg btn-block" onclick="markShadowingDone()">
               ✓ Guardar y Marcar Shadowing Completado
             </button>
           </div>

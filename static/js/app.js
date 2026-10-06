@@ -4,6 +4,7 @@
 
 const state = {
   currentUser: 1, // 1: Javier, 2: Compañero
+  currentDate: getTodayDateString(),
   currentDay: 1,
   maxDays: 107,
   activeTab: 'vocab',
@@ -23,6 +24,14 @@ const state = {
   listeningLevelSetByUser: false,
   listeningTrack: 1
 };
+
+function getTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Speech synthesis voice helper
 let cachedEnglishVoice = null;
@@ -58,24 +67,102 @@ function speakEnglish(text, rate = 1.0) {
 
 // Initialize App
 document.addEventListener("DOMContentLoaded", () => {
-  initDayControls();
+  initDateControls();
   fetchUsersAndStatus();
 });
 
-function initDayControls() {
-  document.getElementById("btn-prev-day").addEventListener("click", () => {
-    if (state.currentDay > 1) {
-      state.currentDay--;
-      document.getElementById("current-day-number").textContent = state.currentDay;
-      fetchStatusAndRefresh();
-    }
-  });
+function initDateControls() {
+  const prevBtn = document.getElementById("btn-prev-day");
+  if (prevBtn) {
+    prevBtn.addEventListener("click", () => shiftDate(-1));
+  }
 
-  document.getElementById("btn-next-day").addEventListener("click", () => {
-    state.currentDay++;
-    document.getElementById("current-day-number").textContent = state.currentDay;
+  const nextBtn = document.getElementById("btn-next-day");
+  if (nextBtn) {
+    nextBtn.addEventListener("click", () => shiftDate(1));
+  }
+
+  const dateInput = document.getElementById("calendar-date-input");
+  if (dateInput) {
+    dateInput.value = state.currentDate;
+  }
+
+  // Calculate day index initially
+  setDate(state.currentDate, false);
+}
+
+function openDatePicker() {
+  const dateInput = document.getElementById("calendar-date-input");
+  if (dateInput) {
+    if (typeof dateInput.showPicker === 'function') {
+      dateInput.showPicker();
+    } else {
+      dateInput.click();
+    }
+  }
+}
+
+function onDateInputChange(val) {
+  if (val) {
+    setDate(val);
+  }
+}
+
+function shiftDate(deltaDays) {
+  const parts = state.currentDate.split("-").map(Number);
+  const cur = new Date(parts[0], parts[1] - 1, parts[2]);
+  cur.setDate(cur.getDate() + deltaDays);
+  const year = cur.getFullYear();
+  const month = String(cur.getMonth() + 1).padStart(2, '0');
+  const day = String(cur.getDate()).padStart(2, '0');
+  setDate(`${year}-${month}-${day}`);
+}
+
+function setDate(dateStr, triggerRefresh = true) {
+  state.currentDate = dateStr;
+  const anchor = new Date(2026, 9, 1); // Baseline: Oct 1, 2026
+  const parts = dateStr.split("-").map(Number);
+  const cur = new Date(parts[0], parts[1] - 1, parts[2]);
+  const diffDays = Math.round((cur - anchor) / (1000 * 60 * 60 * 24));
+  state.currentDay = Math.max(1, diffDays + 1);
+
+  const dateInput = document.getElementById("calendar-date-input");
+  if (dateInput) dateInput.value = dateStr;
+
+  renderDateDisplay();
+
+  if (triggerRefresh) {
     fetchStatusAndRefresh();
-  });
+  }
+}
+
+function goToTodayDate() {
+  setDate(getTodayDateString());
+}
+
+function renderDateDisplay() {
+  const parts = state.currentDate.split("-").map(Number);
+  const cur = new Date(parts[0], parts[1] - 1, parts[2]);
+  const todayStr = getTodayDateString();
+  const isToday = state.currentDate === todayStr;
+
+  const dayNameElem = document.getElementById("calendar-day-name");
+  const fullDateElem = document.getElementById("calendar-full-date");
+
+  const weekdayNames = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+  if (dayNameElem) {
+    dayNameElem.textContent = isToday ? `Hoy (${weekdayNames[cur.getDay()]})` : weekdayNames[cur.getDay()];
+  }
+  if (fullDateElem) {
+    fullDateElem.textContent = `${cur.getDate()} de ${monthNames[cur.getMonth()]}`;
+  }
+
+  const todayBtn = document.getElementById("btn-today");
+  if (todayBtn) {
+    todayBtn.classList.toggle("active-today", isToday);
+  }
 }
 
 async function fetchUsersAndStatus() {
@@ -104,7 +191,8 @@ function switchUser(userId) {
 
 async function fetchStatusAndRefresh() {
   try {
-    const res = await fetch(`/api/status?user_id=${state.currentUser}&day=${state.currentDay}`);
+    renderDateDisplay();
+    const res = await fetch(`/api/status?user_id=${state.currentUser}&date=${state.currentDate}&day=${state.currentDay}`);
     const data = await res.json();
     
     state.todayLog = data.log;
@@ -148,8 +236,10 @@ function updateHeaderUI() {
 
   // Partner status
   if (state.partnerStatus) {
+    const isToday = state.currentDate === getTodayDateString();
+    const timeRef = isToday ? "hoy" : "en esta fecha";
     document.getElementById("partner-status-text").textContent = 
-      `${state.partnerStatus.name} lleva ${state.partnerStatus.completed_count} de 5 tareas completadas hoy.`;
+      `${state.partnerStatus.name} lleva ${state.partnerStatus.completed_count} de 5 tareas completadas ${timeRef}.`;
     
     if (state.currentUser === 1) {
       document.getElementById("user-1-stat").textContent = `${state.todayLog.completed_count}/5`;

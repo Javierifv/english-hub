@@ -12,13 +12,14 @@ let readingChaptersList = [];
 let currentChapterIndex = 0;
 
 async function loadReadingData(day) {
-  const level = state.readingLevel || (state.currentUser === 1 ? 'A1' : 'B1');
-  await selectReadingLevel(level, false);
+  const savedLevel = localStorage.getItem('duohub_reading_lvl_u' + state.currentUser) || state.readingLevel || 'A1';
+  await selectReadingLevel(savedLevel, false);
 }
 
 async function selectReadingLevel(lvl, loadFirst = true) {
   state.readingLevel = lvl;
   state.readingLevelSetByUser = true;
+  localStorage.setItem('duohub_reading_lvl_u' + state.currentUser, lvl);
 
   // Update active pill button
   document.querySelectorAll(".reading-toolbar .level-pill-btn").forEach(btn => {
@@ -42,18 +43,28 @@ async function selectReadingLevel(lvl, loadFirst = true) {
 
     const select = document.getElementById("reading-chapter-select");
     if (select && readingChaptersList.length > 0) {
-      select.innerHTML = readingChaptersList.map((r, idx) => `
-        <option value="${r.id}">Cap. ${r.chapter}: ${r.title.replace('Robinson Crusoe (L1): ', '').replace('Robinson Crusoe (L2): ', '').replace('Robinson Crusoe (L3): ', '').slice(0, 32)}</option>
-      `).join("");
+      select.innerHTML = readingChaptersList.map((r) => {
+        // Clean title
+        const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
+        if (lvl === 'all') {
+          return `<option value="${r.id}">[${r.level}] Cap. ${r.chapter}: ${cleanName}</option>`;
+        }
+        return `<option value="${r.id}">Capítulo ${r.chapter}: ${cleanName}</option>`;
+      }).join("");
 
-      currentChapterIndex = 0;
-      select.value = readingChaptersList[0].id;
-
-      if (loadFirst) {
-        await loadReadingById(readingChaptersList[0].id);
+      // Check if user had a saved chapter
+      const savedReadingId = parseInt(localStorage.getItem('duohub_reading_id_u' + state.currentUser));
+      const foundIdx = readingChaptersList.findIndex(r => r.id === savedReadingId);
+      
+      if (foundIdx !== -1) {
+        currentChapterIndex = foundIdx;
+        select.value = savedReadingId;
       } else {
-        await loadReadingById(readingChaptersList[0].id);
+        currentChapterIndex = 0;
+        select.value = readingChaptersList[0].id;
       }
+
+      await loadReadingById(select.value);
     }
   } catch (err) {
     console.error("Error loading reading chapter list:", err);
@@ -67,6 +78,7 @@ async function navReadingChapter(delta) {
     currentChapterIndex = newIdx;
     const select = document.getElementById("reading-chapter-select");
     if (select) select.value = readingChaptersList[currentChapterIndex].id;
+    localStorage.setItem('duohub_reading_id_u' + state.currentUser, readingChaptersList[currentChapterIndex].id);
     await loadReadingById(readingChaptersList[currentChapterIndex].id);
   }
 }
@@ -75,6 +87,7 @@ async function onReadingChapterDropdownChange(readingId) {
   const idx = readingChaptersList.findIndex(r => r.id === parseInt(readingId));
   if (idx !== -1) {
     currentChapterIndex = idx;
+    localStorage.setItem('duohub_reading_id_u' + state.currentUser, readingId);
     await loadReadingById(readingId);
   }
 }
@@ -237,6 +250,7 @@ async function submitSummaryForEvaluation() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: state.currentUser,
+        date: state.currentDate,
         day: state.currentDay,
         summary_text: summaryText
       })

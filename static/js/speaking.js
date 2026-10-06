@@ -96,6 +96,7 @@ async function markSpeakingDone() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: state.currentUser,
+        date: state.currentDate,
         day: state.currentDay,
         notes: `Used words: ${checkedWords.join(", ")}`
       })
