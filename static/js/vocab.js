@@ -189,6 +189,8 @@ async function startVocabQuiz() {
   }
 }
 
+let currentScramble = null;
+
 function renderQuizQuestion(idx) {
   if (idx >= quizQuestions.length) {
     finishQuiz();
@@ -203,7 +205,11 @@ function renderQuizQuestion(idx) {
   document.getElementById("quiz-progress-bar").style.width = `${pct}%`;
 
   const promptBox = document.getElementById("quiz-prompt-box");
+  const grid = document.getElementById("quiz-options-grid");
+  document.getElementById("btn-next-quiz").style.display = "none";
+
   if (q.type === "listening") {
+    grid.style.display = "grid";
     promptBox.innerHTML = `
       <div style="margin-bottom: 0.5rem;">🎧 ${q.prompt}</div>
       <button class="btn btn-secondary btn-sm" onclick="speakEnglish('${escapeQuotes(q.correct)}', 0.9)" style="margin: 0.5rem auto;">
@@ -211,22 +217,139 @@ function renderQuizQuestion(idx) {
       </button>
     `;
     speakEnglish(q.correct, 0.9);
+
+    grid.innerHTML = q.options.map(opt => `
+      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')">
+        ${escapeHtml(opt)}
+      </button>
+    `).join("");
+
+  } else if (q.type === "scramble") {
+    grid.style.display = "none"; // Hide default 2-col button grid
+    initScramblePuzzle(q);
+
   } else {
+    // Standard multiple choice
+    grid.style.display = "grid";
     promptBox.innerHTML = `<div>${q.prompt}</div>`;
+
+    grid.innerHTML = q.options.map(opt => `
+      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')">
+        ${escapeHtml(opt)}
+      </button>
+    `).join("");
   }
+}
 
-  const grid = document.getElementById("quiz-options-grid");
-  grid.innerHTML = q.options.map(opt => `
-    <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')">
-      ${escapeHtml(opt)}
-    </button>
-  `).join("");
+/* --- SCRAMBLE PUZZLE CONTROLLER --- */
+function initScramblePuzzle(q) {
+  const promptBox = document.getElementById("quiz-prompt-box");
+  currentScramble = {
+    target: q.target,
+    displayWord: q.display_word,
+    slots: Array(q.target.length).fill(null), // will store { char, tileIdx }
+    tiles: q.letters.map((char, idx) => ({ char, idx, used: false }))
+  };
 
-  document.getElementById("btn-next-quiz").style.display = "none";
+  promptBox.innerHTML = `
+    <div class="scramble-puzzle-wrap">
+      <div class="scramble-translation-prompt">🇪🇸 Traduce y Ordena: <strong>"${escapeHtml(q.translation)}"</strong></div>
+      
+      <!-- Slots where letters will land -->
+      <div class="scramble-slots-row" id="scramble-slots-row"></div>
+
+      <!-- Letter Tiles to tap -->
+      <div class="scramble-tiles-row" id="scramble-tiles-row"></div>
+
+      <div class="scramble-actions">
+        <button class="btn btn-secondary btn-sm" onclick="resetScramble()">🔄 Deshacer</button>
+        <button class="btn btn-ghost btn-sm" onclick="speakEnglish('${escapeQuotes(q.display_word)}', 0.9)">🔊 Escuchar Pista</button>
+      </div>
+    </div>
+  `;
+
+  renderScrambleBoard();
+}
+
+function renderScrambleBoard() {
+  const slotsRow = document.getElementById("scramble-slots-row");
+  const tilesRow = document.getElementById("scramble-tiles-row");
+  if (!slotsRow || !tilesRow || !currentScramble) return;
+
+  // Render Slots
+  slotsRow.innerHTML = currentScramble.slots.map((s, slotIdx) => {
+    if (s) {
+      return `<div class="scramble-slot filled" onclick="removeScrambleSlot(${slotIdx})" title="Clic para quitar letra">${s.char}</div>`;
+    }
+    return `<div class="scramble-slot"></div>`;
+  }).join("");
+
+  // Render Tiles
+  tilesRow.innerHTML = currentScramble.tiles.map((t, tileIdx) => {
+    const usedClass = t.used ? "used" : "";
+    return `<button class="scramble-tile ${usedClass}" onclick="tapScrambleTile(${tileIdx})">${t.char}</button>`;
+  }).join("");
+}
+
+function tapScrambleTile(tileIdx) {
+  if (!currentScramble) return;
+  const tile = currentScramble.tiles[tileIdx];
+  if (tile.used) return;
+
+  // Find first empty slot
+  const emptyIdx = currentScramble.slots.findIndex(s => s === null);
+  if (emptyIdx === -1) return;
+
+  tile.used = true;
+  currentScramble.slots[emptyIdx] = { char: tile.char, tileIdx: tile.idx };
+  renderScrambleBoard();
+
+  // Check if all slots filled
+  if (!currentScramble.slots.includes(null)) {
+    checkScrambleAnswer();
+  }
+}
+
+function removeScrambleSlot(slotIdx) {
+  if (!currentScramble) return;
+  const item = currentScramble.slots[slotIdx];
+  if (!item) return;
+
+  // Restore tile
+  const tile = currentScramble.tiles[item.tileIdx];
+  if (tile) tile.used = false;
+
+  currentScramble.slots[slotIdx] = null;
+  renderScrambleBoard();
+}
+
+function resetScramble() {
+  if (!currentScramble) return;
+  currentScramble.slots = Array(currentScramble.target.length).fill(null);
+  currentScramble.tiles.forEach(t => t.used = false);
+  renderScrambleBoard();
+}
+
+function checkScrambleAnswer() {
+  const assembled = currentScramble.slots.map(s => s.char).join("");
+  const slotsRow = document.getElementById("scramble-slots-row");
+  const slotElements = slotsRow.querySelectorAll(".scramble-slot");
+
+  if (assembled.toUpperCase() === currentScramble.target.toUpperCase()) {
+    slotElements.forEach(el => el.classList.add("correct-all"));
+    quizScore++;
+    document.getElementById("quiz-score-indicator").textContent = `Aciertos: ${quizScore}`;
+    speakEnglish(currentScramble.displayWord, 1.0);
+    document.getElementById("btn-next-quiz").style.display = "inline-flex";
+  } else {
+    slotElements.forEach(el => el.classList.add("wrong-all"));
+    setTimeout(() => {
+      resetScramble();
+    }, 800);
+  }
 }
 
 function handleQuizAnswer(btn, chosen, correct) {
-  // Disable all option buttons
   const allBtns = document.querySelectorAll(".quiz-option-btn");
   allBtns.forEach(b => b.disabled = true);
 
@@ -237,7 +360,6 @@ function handleQuizAnswer(btn, chosen, correct) {
     speakEnglish("Correct!", 1.1);
   } else {
     btn.classList.add("wrong");
-    // Highlight correct button
     allBtns.forEach(b => {
       if (b.textContent.trim().toLowerCase() === correct.toLowerCase()) {
         b.classList.add("correct");

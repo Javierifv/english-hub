@@ -425,9 +425,29 @@ def get_vocab_quiz():
             "options": options_words
         })
 
+        # 3. Letter Puzzle / Word Scramble
+        clean_word = re.sub(r"[^a-zA-Z]", "", w["word"]).upper()
+        if 3 <= len(clean_word) <= 12:
+            letters = list(clean_word)
+            scrambled = letters.copy()
+            attempts = 0
+            while scrambled == letters and attempts < 6:
+                random.shuffle(scrambled)
+                attempts += 1
+            questions.append({
+                "type": "scramble",
+                "word_id": w["id"],
+                "target": clean_word,
+                "display_word": w["word"],
+                "prompt": f"Ordena las letras en inglés para: '{w['translation']}'",
+                "translation": w["translation"],
+                "correct": clean_word,
+                "letters": scrambled
+            })
+
     random.shuffle(questions)
     conn.close()
-    return jsonify(questions[:6])
+    return jsonify(questions[:8])
 
 @app.route("/api/vocab/srs", methods=["GET"])
 def get_srs_stats():
