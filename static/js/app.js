@@ -167,26 +167,251 @@ function renderDateDisplay() {
 
 async function fetchUsersAndStatus() {
   try {
-    const res = await fetch("/api/users");
+    const res = await fetch(`/api/users?date=${state.currentDate}`);
     const users = await res.json();
     state.usersList = users;
     
-    if (users.length >= 2) {
-      document.getElementById("user-1-name").textContent = users[0].display_name;
-      document.getElementById("user-2-name").textContent = users[1].display_name;
+    // Ensure current user is valid
+    const savedUserId = parseInt(localStorage.getItem('duohub_active_user_id'));
+    if (savedUserId && users.some(u => u.id === savedUserId)) {
+      state.currentUser = savedUserId;
+    } else if (users.length > 0 && !users.some(u => u.id === state.currentUser)) {
+      state.currentUser = users[0].id;
+      localStorage.setItem('duohub_active_user_id', state.currentUser);
     }
 
+    renderUserDropdownUI();
     await fetchStatusAndRefresh();
   } catch (err) {
     console.error("Error fetching users:", err);
   }
 }
 
-function switchUser(userId) {
+function renderUserDropdownUI() {
+  if (!state.usersList || state.usersList.length === 0) return;
+
+  const activeUser = state.usersList.find(u => u.id === state.currentUser) || state.usersList[0];
+  
+  // Update navbar trigger
+  const nameEl = document.getElementById("header-user-name");
+  const statsEl = document.getElementById("header-user-stats");
+  const badgeEl = document.getElementById("header-avatar-badge");
+
+  if (nameEl) nameEl.textContent = activeUser.display_name;
+  const compCount = (state.todayLog && state.todayLog.completed_count !== undefined) 
+    ? state.todayLog.completed_count 
+    : (activeUser.today_completed || 0);
+  if (statsEl) statsEl.textContent = `${compCount}/5`;
+  if (badgeEl) {
+    badgeEl.textContent = activeUser.display_name ? activeUser.display_name.charAt(0).toUpperCase() : '👤';
+    badgeEl.style.backgroundColor = activeUser.avatar_color || 'var(--busuu-blue)';
+  }
+
+  // Inside dropdown
+  const dropName = document.getElementById("dropdown-current-name");
+  const dropLevel = document.getElementById("dropdown-current-level");
+  if (dropName) dropName.textContent = activeUser.display_name;
+  if (dropLevel) dropLevel.textContent = `Nivel ${activeUser.preferred_level || 'A1'} · Meta: ${activeUser.words_per_day || 5} palabras/día`;
+
+  // Render other group members list
+  const usersListEl = document.getElementById("dropdown-users-list");
+  if (usersListEl) {
+    const otherUsers = state.usersList.filter(u => u.id !== state.currentUser);
+    if (otherUsers.length === 0) {
+      usersListEl.innerHTML = `
+        <div style="font-size: 0.78rem; color: var(--text-muted); padding: 0.45rem 0.65rem; background: #F8FAFC; border-radius: var(--radius-sm);">
+          No hay otros compañeros en este grupo aún. ¡Usa el botón de abajo para registrar uno!
+        </div>
+      `;
+    } else {
+      usersListEl.innerHTML = otherUsers.map(u => `
+        <div class="dropdown-user-item" onclick="selectUserFromDropdown(${u.id})">
+          <div class="dropdown-user-item-left">
+            <span class="dropdown-user-dot" style="background-color: ${u.avatar_color || '#0B72E7'};"></span>
+            <span class="dropdown-user-item-name">${escapeHtml(u.display_name)}</span>
+          </div>
+          <span class="dropdown-user-item-stat">${u.today_completed || 0}/5</span>
+        </div>
+      `).join("");
+    }
+  }
+}
+
+function toggleUserDropdown() {
+  const menu = document.getElementById("user-dropdown-menu");
+  if (!menu) return;
+  const isHidden = (menu.style.display === "none" || !menu.style.display);
+  menu.style.display = isHidden ? "block" : "none";
+}
+
+// Close dropdown on outside click
+document.addEventListener("click", (e) => {
+  const wrap = document.getElementById("user-profile-menu-wrap");
+  const menu = document.getElementById("user-dropdown-menu");
+  if (wrap && menu && !wrap.contains(e.target)) {
+    menu.style.display = "none";
+  }
+});
+
+function selectUserFromDropdown(userId) {
   state.currentUser = userId;
-  document.getElementById("user-pill-1").classList.toggle("active", userId === 1);
-  document.getElementById("user-pill-2").classList.toggle("active", userId === 2);
+  localStorage.setItem('duohub_active_user_id', userId);
+  
+  const menu = document.getElementById("user-dropdown-menu");
+  if (menu) menu.style.display = "none";
+
+  renderUserDropdownUI();
   fetchStatusAndRefresh();
+}
+
+function switchUser(userId) {
+  selectUserFromDropdown(userId);
+}
+
+/* --- AUTH MODAL CONTROLLER (LOGIN & REGISTER) --- */
+function openAuthModal(tab = 'login') {
+  const menu = document.getElementById("user-dropdown-menu");
+  if (menu) menu.style.display = "none";
+
+  const modal = document.getElementById("auth-modal");
+  if (modal) {
+    modal.style.display = "flex";
+    switchAuthTab(tab);
+  }
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById("auth-modal");
+  if (modal) modal.style.display = "none";
+  
+  const errLogin = document.getElementById("login-error-msg");
+  const errReg = document.getElementById("register-error-msg");
+  if (errLogin) errLogin.style.display = "none";
+  if (errReg) errReg.style.display = "none";
+}
+
+function switchAuthTab(tab) {
+  const btnLogin = document.getElementById("auth-tab-btn-login");
+  const btnReg = document.getElementById("auth-tab-btn-register");
+  const viewLogin = document.getElementById("auth-view-login");
+  const viewReg = document.getElementById("auth-view-register");
+
+  if (tab === 'login') {
+    if (btnLogin) btnLogin.classList.add("active");
+    if (btnReg) btnReg.classList.remove("active");
+    if (viewLogin) viewLogin.style.display = "block";
+    if (viewReg) viewReg.style.display = "none";
+    setTimeout(() => document.getElementById("login-username")?.focus(), 100);
+  } else {
+    if (btnLogin) btnLogin.classList.remove("active");
+    if (btnReg) btnReg.classList.add("active");
+    if (viewLogin) viewLogin.style.display = "none";
+    if (viewReg) viewReg.style.display = "block";
+    setTimeout(() => document.getElementById("reg-fullname")?.focus(), 100);
+  }
+}
+
+async function submitLogin() {
+  const usernameInput = document.getElementById("login-username");
+  const pinInput = document.getElementById("login-pin");
+  const errBox = document.getElementById("login-error-msg");
+
+  const username = (usernameInput?.value || "").trim();
+  const pin = (pinInput?.value || "").trim();
+
+  if (!username) {
+    if (errBox) {
+      errBox.textContent = "Por favor ingresa tu nombre de usuario.";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, pin })
+    });
+    const data = await res.json();
+
+    if (data.success && data.user) {
+      state.currentUser = data.user.id;
+      localStorage.setItem('duohub_active_user_id', data.user.id);
+      closeAuthModal();
+      speakEnglish(`Welcome back, ${data.user.display_name}!`, 1.0);
+      await fetchUsersAndStatus();
+    } else {
+      if (errBox) {
+        errBox.textContent = data.error || "Error al iniciar sesión.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    console.error("Error logging in:", err);
+    if (errBox) {
+      errBox.textContent = "Error de conexión con el servidor.";
+      errBox.style.display = "block";
+    }
+  }
+}
+
+async function submitRegister() {
+  const nameInput = document.getElementById("reg-fullname");
+  const userInput = document.getElementById("reg-username");
+  const pinInput = document.getElementById("reg-pin");
+  const lvlInput = document.getElementById("reg-level");
+  const wordsInput = document.getElementById("reg-words-count");
+  const errBox = document.getElementById("register-error-msg");
+
+  const displayName = (nameInput?.value || "").trim();
+  const username = (userInput?.value || "").trim();
+  const pin = (pinInput?.value || "1234").trim();
+  const preferredLevel = lvlInput?.value || "A1";
+  const wordsPerDay = parseInt(wordsInput?.value || "5");
+
+  if (!displayName || !username) {
+    if (errBox) {
+      errBox.textContent = "Por favor completa el nombre completo y el nombre de usuario.";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        display_name: displayName,
+        username: username,
+        pin: pin,
+        preferred_level: preferredLevel,
+        words_per_day: wordsPerDay
+      })
+    });
+    const data = await res.json();
+
+    if (data.success && data.user) {
+      state.currentUser = data.user.id;
+      localStorage.setItem('duohub_active_user_id', data.user.id);
+      closeAuthModal();
+      speakEnglish(`Welcome to DuoHub, ${data.user.display_name}!`, 1.0);
+      alert(`🎉 ¡Cuenta creada con éxito! Bienvenido al grupo de estudio, ${data.user.display_name}.`);
+      await fetchUsersAndStatus();
+    } else {
+      if (errBox) {
+        errBox.textContent = data.error || "Error al registrar usuario.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    console.error("Error registering user:", err);
+    if (errBox) {
+      errBox.textContent = "Error de conexión con el servidor.";
+      errBox.style.display = "block";
+    }
+  }
 }
 
 async function fetchStatusAndRefresh() {
@@ -224,8 +449,8 @@ function updateHeaderUI() {
   document.getElementById("streak-count").textContent = state.streak;
 
   // Active user greeting
-  const activeName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : (state.currentUser === 1 ? 'Javier' : 'Compañero');
-  const userLvl = state.preferredLevel || (state.currentUser === 1 ? 'A1' : 'A2');
+  const activeName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : 'Estudiante';
+  const userLvl = state.preferredLevel || 'A1';
   document.getElementById("active-user-greeting").textContent = `Entrenando como ${activeName} (${userLvl})`;
 
   // Update tabs label
@@ -235,20 +460,19 @@ function updateHeaderUI() {
   if (countBadge) countBadge.textContent = wCount;
 
   // Partner status
-  if (state.partnerStatus) {
-    const isToday = state.currentDate === getTodayDateString();
-    const timeRef = isToday ? "hoy" : "en esta fecha";
-    document.getElementById("partner-status-text").textContent = 
-      `${state.partnerStatus.name} lleva ${state.partnerStatus.completed_count} de 5 tareas completadas ${timeRef}.`;
-    
-    if (state.currentUser === 1) {
-      document.getElementById("user-1-stat").textContent = `${state.todayLog.completed_count}/5`;
-      document.getElementById("user-2-stat").textContent = `${state.partnerStatus.completed_count}/5`;
+  const partnerElem = document.getElementById("partner-status-text");
+  if (partnerElem) {
+    if (state.partnerStatus && state.partnerStatus.name) {
+      const isToday = state.currentDate === getTodayDateString();
+      const timeRef = isToday ? "hoy" : "en esta fecha";
+      partnerElem.textContent = `${state.partnerStatus.name} lleva ${state.partnerStatus.completed_count} de 5 tareas completadas ${timeRef}.`;
     } else {
-      document.getElementById("user-2-stat").textContent = `${state.todayLog.completed_count}/5`;
-      document.getElementById("user-1-stat").textContent = `${state.partnerStatus.completed_count}/5`;
+      partnerElem.textContent = "Estudiando en grupo. Puedes invitar a otros compañeros registrándolos arriba.";
     }
   }
+
+  // Render User Dropdown Pill
+  renderUserDropdownUI();
 
   // Update Daily Progress Bar
   const count = state.todayLog.completed_count || 0;

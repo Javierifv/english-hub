@@ -47,17 +47,43 @@
           <span class="streak-label">días de racha</span>
         </div>
 
-        <!-- User Switcher -->
-        <div class="duo-switcher">
-          <div class="user-pill active" id="user-pill-1" onclick="switchUser(1)">
-            <span class="user-dot"></span>
-            <span class="user-name" id="user-1-name">Javier</span>
-            <span class="user-progress" id="user-1-stat">0/5</span>
-          </div>
-          <div class="user-pill" id="user-pill-2" onclick="switchUser(2)">
-            <span class="user-dot"></span>
-            <span class="user-name" id="user-2-name">Compañero</span>
-            <span class="user-progress" id="user-2-stat">0/5</span>
+        <!-- Active User Profile Dropdown Trigger (Only current user visible) -->
+        <div class="user-profile-menu-wrap" id="user-profile-menu-wrap">
+          <button type="button" class="active-user-trigger" id="active-user-trigger" onclick="toggleUserDropdown()" title="Clic para cambiar de estudiante o gestionar cuenta">
+            <span class="user-avatar-badge" id="header-avatar-badge">👤</span>
+            <div class="active-user-info">
+              <span class="active-user-name" id="header-user-name">Javier Flores</span>
+              <span class="active-user-stats-pill" id="header-user-stats">0/5</span>
+            </div>
+            <span class="dropdown-chevron">▾</span>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div class="user-dropdown-menu" id="user-dropdown-menu" style="display: none;">
+            <div class="dropdown-header">
+              <div class="dropdown-user-title">👤 Estudiando como:</div>
+              <div class="dropdown-current-name" id="dropdown-current-name">Javier Flores</div>
+              <div class="dropdown-current-level" id="dropdown-current-level">Nivel A1 · Meta: 5 palabras/día</div>
+            </div>
+
+            <div class="dropdown-section-title">👥 Cambiar de Estudiante en este Grupo:</div>
+            <div class="dropdown-users-list" id="dropdown-users-list">
+              <!-- Dynamically populated by JS -->
+            </div>
+
+            <div class="dropdown-divider"></div>
+
+            <div class="dropdown-actions-list">
+              <button type="button" class="dropdown-action-btn" onclick="openAuthModal('register')">
+                ➕ Registrar Nuevo Estudiante
+              </button>
+              <button type="button" class="dropdown-action-btn" onclick="openAuthModal('login')">
+                🔐 Iniciar Sesión con otra Cuenta
+              </button>
+              <button type="button" class="dropdown-action-btn" onclick="openSettingsModal()">
+                ⚙️ Ajustar Preferencias de Estudio
+              </button>
+            </div>
           </div>
         </div>
 
@@ -690,6 +716,97 @@
     </section>
 
   </main>
+
+  <!-- Auth Modal: Login & Registration -->
+  <div id="auth-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-auth-card">
+      <div class="modal-header-row">
+        <div class="auth-modal-tabs">
+          <button type="button" class="auth-tab-btn active" id="auth-tab-btn-login" onclick="switchAuthTab('login')">
+            🔐 Iniciar Sesión
+          </button>
+          <button type="button" class="auth-tab-btn" id="auth-tab-btn-register" onclick="switchAuthTab('register')">
+            ➕ Registrar Nuevo Estudiante
+          </button>
+        </div>
+        <button class="btn-close-modal" onclick="closeAuthModal()">✕</button>
+      </div>
+
+      <div class="auth-modal-body">
+        <!-- LOGIN VIEW -->
+        <div id="auth-view-login" class="auth-subview">
+          <p class="auth-subtitle">Ingresa con tu nombre de usuario para cargar tu progreso individual, palabras y racha.</p>
+
+          <div class="form-group">
+            <label>Nombre de Usuario o Nombre Completo:</label>
+            <input type="text" id="login-username" class="form-control" placeholder="ej. javier, carlos, maria..." onkeydown="if(event.key==='Enter') submitLogin()">
+          </div>
+
+          <div class="form-group">
+            <label>PIN de Acceso / Contraseña (por defecto 1234):</label>
+            <input type="password" id="login-pin" class="form-control" placeholder="1234" value="1234" onkeydown="if(event.key==='Enter') submitLogin()">
+          </div>
+
+          <div id="login-error-msg" class="auth-error-alert" style="display: none;"></div>
+
+          <div style="margin-top: 1.25rem;">
+            <button type="button" class="btn btn-primary btn-block" onclick="submitLogin()">
+              🚀 Ingresar a Mi Panel
+            </button>
+          </div>
+        </div>
+
+        <!-- REGISTER VIEW -->
+        <div id="auth-view-register" class="auth-subview" style="display: none;">
+          <p class="auth-subtitle">Crea tu cuenta individual para unirte al grupo de estudio con tus propias metas.</p>
+
+          <div class="form-group">
+            <label>Nombre Completo:</label>
+            <input type="text" id="reg-fullname" class="form-control" placeholder="ej. Carlos Gómez, María Valenzuela...">
+          </div>
+
+          <div class="form-group">
+            <label>Nombre de Usuario (sin espacios):</label>
+            <input type="text" id="reg-username" class="form-control" placeholder="ej. carlos, maria_v...">
+          </div>
+
+          <div class="form-group">
+            <label>PIN de 4 dígitos o Contraseña:</label>
+            <input type="password" id="reg-pin" class="form-control" placeholder="1234" value="1234">
+          </div>
+
+          <div class="form-row" style="display: flex; gap: 0.75rem;">
+            <div class="form-group" style="flex: 1;">
+              <label>Nivel MCER Inicial:</label>
+              <select id="reg-level" class="form-control">
+                <option value="A1" selected>🟢 A1 (Principiante)</option>
+                <option value="A2">🔵 A2 (Pre-intermedio)</option>
+                <option value="B1">📘 B1 (Intermedio)</option>
+                <option value="B2">📙 B2 (Intermedio Alto)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1;">
+              <label>Palabras / Día:</label>
+              <select id="reg-words-count" class="form-control">
+                <option value="3">3 palabras / día</option>
+                <option value="5" selected>5 palabras / día</option>
+                <option value="7">7 palabras / día</option>
+                <option value="10">10 palabras / día</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="register-error-msg" class="auth-error-alert" style="display: none;"></div>
+
+          <div style="margin-top: 1.25rem;">
+            <button type="button" class="btn btn-success btn-block" onclick="submitRegister()">
+              🎉 Crear Cuenta y Empezar a Estudiar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Settings Modal (Configurable Words & Mode) -->
   <div id="settings-modal" class="modal-overlay" style="display: none;">

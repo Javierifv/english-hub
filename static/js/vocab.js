@@ -602,29 +602,85 @@ async function loadSrsView() {
     const queueList = document.getElementById("srs-queue-list");
     if (!data.review_queue || data.review_queue.length === 0) {
       queueList.innerHTML = `
-        <div class="empty-state" style="text-align: center; padding: 1.5rem; color: var(--busuu-emerald);">
-          ✓ ¡No tienes palabras pendientes de repaso urgente! Todas están en nivel 4 o 5.
+        <div class="empty-state" style="text-align: center; padding: 1.75rem; color: var(--busuu-emerald); background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm);">
+          <div style="font-size: 1.8rem; margin-bottom: 0.35rem;">🎉</div>
+          <strong>¡Excelente retención! No tienes palabras pendientes de repaso.</strong>
+          <div style="font-size: 0.84rem; color: #065F46; margin-top: 0.25rem;">
+            Todas tus palabras estudiadas están en <strong>Nivel 5 (Dominadas al 100%)</strong>.
+          </div>
         </div>
       `;
       return;
     }
 
-    queueList.innerHTML = data.review_queue.map(item => `
-      <div class="srs-queue-item">
-        <div>
-          <div class="srs-queue-word">${escapeHtml(item.word)}</div>
-          <div class="srs-queue-trans">${escapeHtml(item.translation)}</div>
-          <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem;">"${escapeHtml(item.example_en || '')}"</div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
-          <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar">🔊</button>
-        </div>
+    const pendingIds = data.review_queue.map(q => q.id).join(",");
+
+    queueList.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">
+          Tienes <strong>${data.review_queue.length}</strong> palabra${data.review_queue.length === 1 ? '' : 's'} en refuerzo activo (Nivel 1 a 4):
+        </span>
+        <button class="btn btn-primary btn-sm" onclick="startSrsQueueQuiz('${pendingIds}')" title="Evaluar solo estas palabras en el test">
+          ⚡ Practicar estas ${data.review_queue.length} palabras en Test
+        </button>
       </div>
-    `).join("");
+
+      <div class="srs-queue-items-wrap">
+        ${data.review_queue.map(item => `
+          <div class="srs-queue-item">
+            <div>
+              <div class="srs-queue-word">${escapeHtml(item.word)} <span style="font-size: 0.76rem; color: var(--busuu-blue); font-weight: 600;">${item.ipa || ''}</span></div>
+              <div class="srs-queue-trans">${escapeHtml(item.translation)}</div>
+              <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem;">"${escapeHtml(item.example_en || '')}"</div>
+              ${item.personal_sentence ? `
+                <div style="font-size: 0.75rem; color: var(--busuu-emerald); margin-top: 0.2rem;">
+                  ✍️ Tu frase: <em>"${escapeHtml(item.personal_sentence)}"</em>
+                </div>
+              ` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
+              <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar pronunciación">🔊</button>
+              <button class="btn btn-secondary btn-sm" onclick="startSrsQueueQuiz('${item.id}')" title="Test de esta palabra">🎯 Test</button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
 
   } catch (err) {
     console.error("Error loading SRS stats:", err);
+  }
+}
+
+async function startSrsQueueQuiz(wordIdsStr) {
+  if (!wordIdsStr) return;
+  switchVocabView('quiz');
+  
+  quizScore = 0;
+  currentQuizIdx = 0;
+  quizWordResults = {};
+
+  const badge = document.getElementById("quiz-round-badge");
+  if (badge) badge.textContent = "⚡ TEST DE REPASO ESPACIADO (SRS REFEST)";
+
+  document.getElementById("quiz-score-indicator").textContent = "Aciertos: 0";
+  document.getElementById("btn-next-quiz").style.display = "none";
+  document.getElementById("quiz-progress-bar").style.width = "0%";
+
+  try {
+    const res = await fetch(`/api/vocab/quiz?word_ids=${wordIdsStr}&round=2&user_id=${state.currentUser}&day=${state.currentDay}`);
+    const questions = await res.json();
+    quizQuestions = questions;
+
+    if (!questions || questions.length === 0) {
+      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para el repaso.";
+      return;
+    }
+
+    renderQuizQuestion(0);
+  } catch (err) {
+    console.error("Error launching SRS quiz:", err);
   }
 }
 

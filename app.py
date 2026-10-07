@@ -167,13 +167,92 @@ def index():
 
 @app.route("/api/users", methods=["GET"])
 def get_users():
+    today_str = request.args.get("date", date.today().isoformat())
     conn = get_db()
-    users = conn.execute("""
-        SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, preferred_level 
-        FROM users ORDER BY id ASC
-    """).fetchall()
+    cursor = conn.cursor()
+    users = cursor.execute("""
+        SELECT u.id, u.username, u.display_name, u.avatar_color, u.words_per_day, u.selection_mode, u.preferred_level,
+               COALESCE(d.completed_count, 0) as today_completed
+        FROM users u
+        LEFT JOIN daily_logs d ON u.id = d.user_id AND d.date = ?
+        ORDER BY u.id ASC
+    """, (today_str,)).fetchall()
     conn.close()
     return jsonify([dict(u) for u in users])
+
+@app.route("/api/auth/register", methods=["POST"])
+def auth_register():
+    data = request.json or {}
+    display_name = (data.get("display_name") or "").strip()
+    raw_username = (data.get("username") or "").strip().lower()
+    username = re.sub(r"[^a-z0-9_-]", "", raw_username)
+    pin = (str(data.get("pin") or "1234")).strip()
+    preferred_level = (data.get("preferred_level") or "A1").strip().upper()
+    words_per_day = max(3, min(20, int(data.get("words_per_day", 5))))
+
+    if not display_name:
+        return jsonify({"error": "Por favor ingresa tu nombre completo o de estudio."}), 400
+    if not username or len(username) < 2:
+        return jsonify({"error": "El nombre de usuario debe tener al menos 2 caracteres (letras, números o guiones)."}), 400
+
+    palette = ["#0B72E7", "#00C48C", "#8B5CF6", "#F59E0B", "#EC4899", "#06B6D4", "#10B981"]
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Check if username exists
+    cursor.execute("SELECT id FROM users WHERE LOWER(username) = ?", (username,))
+    if cursor.fetchone():
+        conn.close()
+        return jsonify({"error": f"El usuario '{username}' ya está registrado. Por favor elige otro o inicia sesión."}), 400
+
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count = cursor.fetchone()[0]
+    color = palette[count % len(palette)]
+
+    cursor.execute("""
+        INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level)
+        VALUES (?, ?, ?, ?, 'progressive', ?, ?)
+    """, (username, display_name, color, words_per_day, pin, preferred_level))
+    new_user_id = cursor.lastrowid
+    conn.commit()
+
+    cursor.execute("SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, preferred_level FROM users WHERE id = ?", (new_user_id,))
+    new_user = dict(cursor.fetchone() or {})
+    conn.close()
+
+    return jsonify({"success": True, "user": new_user})
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    data = request.json or {}
+    identifier = (data.get("username") or "").strip().lower()
+    pin = (str(data.get("pin") or "")).strip()
+
+    if not identifier:
+        return jsonify({"error": "Ingresa tu nombre de usuario para iniciar sesión."}), 400
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level 
+        FROM users 
+        WHERE LOWER(username) = ? OR LOWER(display_name) = ?
+    """, (identifier, identifier))
+    user_row = cursor.fetchone()
+
+    if not user_row:
+        conn.close()
+        return jsonify({"error": f"No se encontró ninguna cuenta con el usuario '{identifier}'."}), 404
+
+    user = dict(user_row)
+    if pin and user.get("pin") and user["pin"] != pin:
+        conn.close()
+        return jsonify({"error": "PIN o contraseña incorrecta."}), 401
+
+    conn.close()
+    return jsonify({"success": True, "user": user})
 
 @app.route("/api/users/profile", methods=["POST"])
 def update_profile():
@@ -622,22 +701,24 @@ def get_srs_stats():
     cursor.execute("""
         SELECT 
             COUNT(*) as total_studied,
-            SUM(CASE WHEN mastery_level = 5 THEN 1 ELSE 0 END) as mastered,
-            SUM(CASE WHEN mastery_level IN (3, 4) THEN 1 ELSE 0 END) as in_progress,
-            SUM(CASE WHEN mastery_level IN (1, 2) THEN 1 ELSE 0 END) as needs_review
-        FROM user_word_progress
-        WHERE user_id = ?
+            SUM(CASE WHEN p.mastery_level = 5 THEN 1 ELSE 0 END) as mastered,
+            SUM(CASE WHEN p.mastery_level IN (3, 4) THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN p.mastery_level IN (1, 2) THEN 1 ELSE 0 END) as needs_review
+        FROM user_word_progress p
+        JOIN vocabulary v ON p.word_id = v.id
+        WHERE p.user_id = ?
     """, (user_id,))
     stats = dict(cursor.fetchone() or {})
 
-    # Words due for review (mastery <= 3)
+    # Words due for review (mastery < 5: levels 1, 2, 3 and 4)
     cursor.execute("""
-        SELECT v.id, v.word, v.translation, v.example_en, p.mastery_level, p.personal_sentence
+        SELECT v.id, v.word, v.translation, v.example_en, v.ipa, v.category,
+               p.mastery_level, p.personal_sentence, p.review_count, p.last_reviewed_at
         FROM user_word_progress p
         JOIN vocabulary v ON p.word_id = v.id
-        WHERE p.user_id = ? AND p.mastery_level <= 3
-        ORDER BY p.last_reviewed_at ASC
-        LIMIT 10
+        WHERE p.user_id = ? AND p.mastery_level < 5
+        ORDER BY p.mastery_level ASC, p.last_reviewed_at ASC
+        LIMIT 25
     """, (user_id,))
     review_queue = [dict(r) for r in cursor.fetchall()]
 
