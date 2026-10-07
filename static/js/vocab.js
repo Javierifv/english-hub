@@ -196,6 +196,8 @@ let currentQuizContext = {
   round: 1
 };
 let srsReviewQueueItems = [];
+let srsAllStudiedWords = [];
+let srsCurrentFilter = 'all';
 
 async function startDailyVocabQuiz(round = 1) {
   // Ensure currentDayWords is populated
@@ -685,62 +687,150 @@ async function loadSrsView() {
     const data = await res.json();
 
     srsReviewQueueItems = data.review_queue || [];
+    srsAllStudiedWords = data.all_studied || [];
 
     document.getElementById("srs-total-val").textContent = data.stats.total_studied || 0;
     document.getElementById("srs-mastered-val").textContent = data.stats.mastered || 0;
     document.getElementById("srs-progress-val").textContent = data.stats.in_progress || 0;
     document.getElementById("srs-review-val").textContent = data.stats.needs_review || 0;
 
-    const queueList = document.getElementById("srs-queue-list");
-    if (!data.review_queue || data.review_queue.length === 0) {
-      queueList.innerHTML = `
-        <div class="empty-state" style="text-align: center; padding: 1.75rem; color: var(--busuu-emerald); background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm);">
-          <div style="font-size: 1.8rem; margin-bottom: 0.35rem;">🎉</div>
-          <strong>¡Excelente retención! No tienes palabras pendientes de repaso.</strong>
-          <div style="font-size: 0.84rem; color: #065F46; margin-top: 0.25rem;">
-            Todas tus palabras estudiadas están en <strong>Nivel 5 (Dominadas al 100%)</strong>.
-          </div>
-        </div>
-      `;
-      return;
-    }
-
-    queueList.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-        <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">
-          Tienes <strong>${data.review_queue.length}</strong> palabra${data.review_queue.length === 1 ? '' : 's'} en refuerzo activo (Nivel 1 a 4):
-        </span>
-        <button class="btn btn-primary btn-sm" onclick="startSrsQueueQuiz()" title="Evaluar todas las palabras pendientes en test">
-          ⚡ Practicar estas ${data.review_queue.length} palabras en Test
-        </button>
-      </div>
-
-      <div class="srs-queue-items-wrap">
-        ${data.review_queue.map(item => `
-          <div class="srs-queue-item">
-            <div>
-              <div class="srs-queue-word">${escapeHtml(item.word)} <span style="font-size: 0.76rem; color: var(--busuu-blue); font-weight: 600;">${item.ipa || ''}</span></div>
-              <div class="srs-queue-trans">${escapeHtml(item.translation)}</div>
-              <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem;">"${escapeHtml(item.example_en || '')}"</div>
-              ${item.personal_sentence ? `
-                <div style="font-size: 0.75rem; color: var(--busuu-emerald); margin-top: 0.2rem;">
-                  ✍️ Tu frase: <em>"${escapeHtml(item.personal_sentence)}"</em>
-                </div>
-              ` : ''}
-            </div>
-            <div style="display: flex; align-items: center; gap: 0.65rem;">
-              <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
-              <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar pronunciación">🔊</button>
-              <button class="btn btn-secondary btn-sm" onclick="startSingleWordSrsQuiz(${item.id}, '${escapeQuotes(item.word)}')" title="Test específico de esta palabra">🎯 Test</button>
-            </div>
-          </div>
-        `).join("")}
-      </div>
-    `;
-
+    // Apply currently selected filter (defaults to 'all')
+    filterSrsWords(srsCurrentFilter);
   } catch (err) {
     console.error("Error loading SRS stats:", err);
   }
+}
+
+function filterSrsWords(filterType) {
+  srsCurrentFilter = filterType || 'all';
+
+  // Highlight active filter card
+  const cards = {
+    'all': 'srs-card-all',
+    'mastered': 'srs-card-mastered',
+    'progress': 'srs-card-progress',
+    'review': 'srs-card-review'
+  };
+
+  Object.entries(cards).forEach(([key, elemId]) => {
+    const elem = document.getElementById(elemId);
+    if (elem) {
+      if (key === srsCurrentFilter) {
+        elem.classList.add("active-filter");
+      } else {
+        elem.classList.remove("active-filter");
+      }
+    }
+  });
+
+  // Filter words
+  let filtered = [];
+  let title = "";
+  let subtitle = "";
+
+  if (srsCurrentFilter === 'mastered') {
+    filtered = srsAllStudiedWords.filter(w => (w.mastery_level || 1) === 5);
+    title = `🏆 Palabras Dominadas - Nivel 5 (${filtered.length})`;
+    subtitle = "Palabras aprendidas al 100% que dominas tanto en deletreo como en traducción.";
+  } else if (srsCurrentFilter === 'progress') {
+    filtered = srsAllStudiedWords.filter(w => (w.mastery_level || 1) === 3 || (w.mastery_level || 1) === 4);
+    title = `⚡ Palabras en Proceso - Nivel 3 y 4 (${filtered.length})`;
+    subtitle = "Palabras que reconoces pero aún necesitan consolidar la Ronda 2 (escritura/deletreo).";
+  } else if (srsCurrentFilter === 'review') {
+    filtered = srsAllStudiedWords.filter(w => (w.mastery_level || 1) <= 2);
+    title = `🔄 Palabras por Repasar - Nivel 1 y 2 (${filtered.length})`;
+    subtitle = "Palabras con dificultad o recién introducidas que requieren refuerzo prioritario.";
+  } else {
+    // 'all'
+    filtered = srsAllStudiedWords;
+    title = `📚 Todas las Palabras Estudiadas (${filtered.length})`;
+    subtitle = "Historial acumulado de todas las palabras aprendidas a lo largo de tus sesiones.";
+  }
+
+  // Update header text
+  const titleEl = document.getElementById("srs-section-title");
+  const subEl = document.getElementById("srs-section-subtitle");
+  if (titleEl) titleEl.textContent = title;
+  if (subEl) subEl.textContent = subtitle;
+
+  // Action button container: show batch test button if there are words in review queue
+  const actionContainer = document.getElementById("srs-queue-action-container");
+  if (actionContainer) {
+    if (srsReviewQueueItems && srsReviewQueueItems.length > 0) {
+      actionContainer.innerHTML = `
+        <button class="btn btn-primary btn-sm" onclick="startSrsQueueQuiz()" title="Evaluar todas las palabras pendientes en test">
+          ⚡ Practicar ${srsReviewQueueItems.length} pendientes en Test
+        </button>
+      `;
+    } else {
+      actionContainer.innerHTML = "";
+    }
+  }
+
+  renderSrsWordList(filtered, srsCurrentFilter);
+}
+
+function renderSrsWordList(words, filterType) {
+  const container = document.getElementById("srs-queue-list");
+  if (!container) return;
+
+  if (!words || words.length === 0) {
+    let emptyMsg = "No hay palabras registradas en esta categoría.";
+    if (filterType === 'review') {
+      emptyMsg = "🎉 ¡Excelente! No tienes palabras pendientes de repasar (Nivel 1-2).";
+    } else if (filterType === 'progress') {
+      emptyMsg = "No tienes palabras en proceso intermedio (Nivel 3-4).";
+    } else if (filterType === 'mastered') {
+      emptyMsg = "Aún no tienes palabras dominadas al Nivel 5. ¡Rinde la Ronda 2 en el Test de Dominio para desbloquearlas!";
+    }
+
+    container.innerHTML = `
+      <div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); background: #F8FAFC; border: 1.5px dashed var(--border-subtle); border-radius: var(--radius-sm);">
+        <div style="font-size: 1.8rem; margin-bottom: 0.35rem;">✨</div>
+        <strong>${emptyMsg}</strong>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="srs-queue-items-wrap">
+      ${words.map(item => `
+        <div class="srs-queue-item">
+          <div class="srs-item-left">
+            <div class="srs-item-header">
+              <span class="srs-queue-word">${escapeHtml(item.word)}</span>
+              ${item.ipa ? `<span class="srs-queue-ipa">${escapeHtml(item.ipa)}</span>` : ''}
+              <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar pronunciación de la palabra">🔊</button>
+            </div>
+            <div class="srs-queue-trans">${escapeHtml(item.translation)}</div>
+            ${item.example_en ? `
+              <div class="srs-queue-example-box">
+                <span class="srs-queue-ex-en">"${escapeHtml(item.example_en)}"</span>
+                <button class="btn-speak-sentence-mini" onclick="speakEnglish('${escapeQuotes(item.example_en)}', 0.9)" title="Escuchar frase de ejemplo">🎧</button>
+                ${item.example_es ? `
+                  <span class="srs-queue-ex-es">${escapeHtml(item.example_es)}</span>
+                ` : ''}
+              </div>
+            ` : ''}
+            ${item.personal_sentence ? `
+              <div class="srs-queue-personal" style="font-size: 0.78rem; color: var(--busuu-emerald); margin-top: 0.35rem;">
+                ✍️ Tu frase personal: <em>"${escapeHtml(item.personal_sentence)}"</em>
+              </div>
+            ` : ''}
+          </div>
+          <div class="srs-item-right">
+            <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
+            ${(item.mastery_level || 1) < 5 ? `
+              <button class="btn btn-secondary btn-sm" onclick="startSingleWordSrsQuiz(${item.id}, '${escapeQuotes(item.word)}')" title="Evaluar solo esta palabra en test">🎯 Test</button>
+            ` : `
+              <span class="srs-mastered-check" title="Dominio total al 100%">🏆 Dominada</span>
+            `}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 /* --- QUICK ACTIVATION MINI PRACTICE --- */

@@ -228,28 +228,37 @@
       <!-- VIEW C: Spaced Repetition (Active Recall) Stats & Queue -->
       <div id="vocab-view-srs" class="vocab-subview" style="display: none;">
         <div class="srs-metrics-row">
-          <div class="card srs-metric-card">
+          <div class="card srs-metric-card active-filter" id="srs-card-all" onclick="filterSrsWords('all')" title="Ver todas las palabras estudiadas">
             <div class="srs-metric-val" id="srs-total-val">0</div>
-            <div class="srs-metric-label">Palabras Estudiadas</div>
+            <div class="srs-metric-label">📚 Palabras Estudiadas</div>
+            <div class="srs-metric-hint">Ver todas</div>
           </div>
-          <div class="card srs-metric-card metric-mastered">
+          <div class="card srs-metric-card metric-mastered" id="srs-card-mastered" onclick="filterSrsWords('mastered')" title="Ver palabras dominadas al 100%">
             <div class="srs-metric-val" id="srs-mastered-val">0</div>
-            <div class="srs-metric-label">⭐ Nivel 5 (Dominadas)</div>
+            <div class="srs-metric-label">🏆 Nivel 5 (Dominadas)</div>
+            <div class="srs-metric-hint">Ver dominadas</div>
           </div>
-          <div class="card srs-metric-card metric-progress">
+          <div class="card srs-metric-card metric-progress" id="srs-card-progress" onclick="filterSrsWords('progress')" title="Ver palabras en proceso">
             <div class="srs-metric-val" id="srs-progress-val">0</div>
-            <div class="srs-metric-label">⭐ Nivel 3-4 (En Proceso)</div>
+            <div class="srs-metric-label">⚡ Nivel 3-4 (En Proceso)</div>
+            <div class="srs-metric-hint">Ver en proceso</div>
           </div>
-          <div class="card srs-metric-card metric-review">
+          <div class="card srs-metric-card metric-review" id="srs-card-review" onclick="filterSrsWords('review')" title="Ver palabras por repasar">
             <div class="srs-metric-val" id="srs-review-val">0</div>
-            <div class="srs-metric-label">⭐ Nivel 1-2 (Por Repasar)</div>
+            <div class="srs-metric-label">🔄 Nivel 1-2 (Por Repasar)</div>
+            <div class="srs-metric-hint">Ver por repasar</div>
           </div>
         </div>
 
         <div class="card srs-queue-card">
-          <div class="queue-header">
-            <h3>🔄 Cola de Repaso Espaciado</h3>
-            <span class="queue-desc">Palabras que necesitan refuerzo según tu autoevaluación</span>
+          <div class="queue-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+              <h3 id="srs-section-title">📚 Todas las Palabras Estudiadas</h3>
+              <span id="srs-section-subtitle" class="queue-desc">Explora el desglose de palabras con significado, pronunciación y oraciones reales</span>
+            </div>
+            <div id="srs-queue-action-container">
+              <!-- Botón Practicar en Test inyectado por JS -->
+            </div>
           </div>
           <div id="srs-queue-list" class="srs-queue-list">
             <!-- Queue items injected by JS -->

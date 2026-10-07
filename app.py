@@ -710,17 +710,16 @@ def get_srs_stats():
     """, (user_id,))
     stats = dict(cursor.fetchone() or {})
 
-    # Words due for review (mastery < 5: levels 1, 2, 3 and 4)
     cursor.execute("""
-        SELECT v.id, v.word, v.translation, v.example_en, v.ipa, v.category,
+        SELECT v.id, v.word, v.translation, v.example_en, v.example_es, v.ipa, v.category,
                p.mastery_level, p.personal_sentence, p.review_count, p.last_reviewed_at
         FROM user_word_progress p
         JOIN vocabulary v ON p.word_id = v.id
-        WHERE p.user_id = ? AND p.mastery_level < 5
-        ORDER BY p.mastery_level ASC, p.last_reviewed_at ASC
-        LIMIT 25
+        WHERE p.user_id = ?
+        ORDER BY p.mastery_level ASC, p.last_reviewed_at DESC, v.word ASC
     """, (user_id,))
-    review_queue = [dict(r) for r in cursor.fetchall()]
+    all_studied = [dict(r) for r in cursor.fetchall()]
+    review_queue = [w for w in all_studied if (w.get("mastery_level") or 1) < 5]
 
     conn.close()
     return jsonify({
@@ -730,6 +729,7 @@ def get_srs_stats():
             "in_progress": stats.get("in_progress") or 0,
             "needs_review": stats.get("needs_review") or 0
         },
+        "all_studied": all_studied,
         "review_queue": review_queue
     })
 
