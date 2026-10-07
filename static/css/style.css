@@ -852,48 +852,84 @@ body {
   margin-top: 0.2rem;
 }
 
-/* Personal Sentence Input & Partner Quote */
+/* Personal Sentence Input & Centered Save Button */
 .personal-sentence-box {
   margin-top: auto;
   border-top: 1px solid var(--border-subtle);
   padding-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
   box-sizing: border-box;
+  width: 100%;
 }
 
-.sentence-input-row {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
+.sentence-input-label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sentence-input-wrap {
   width: 100%;
   box-sizing: border-box;
 }
 
-.sentence-input-row input {
-  flex: 1 1 0;
-  min-width: 0; /* CRITICAL: prevents text input from pushing button outside */
+.sentence-textarea {
+  width: 100%;
+  box-sizing: border-box;
   background: #FFFFFF;
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 0.45rem 0.65rem;
+  padding: 0.6rem 0.75rem;
   color: var(--text-main);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   font-family: var(--font-body);
-  box-sizing: border-box;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 56px;
+  transition: var(--transition-fast);
 }
 
-.sentence-input-row input:focus {
+.sentence-textarea:focus {
   outline: none;
   border-color: var(--busuu-blue);
-  box-shadow: 0 0 0 2px rgba(11, 114, 231, 0.15);
+  box-shadow: 0 0 0 3px rgba(11, 114, 231, 0.12);
 }
 
-.sentence-input-row .btn,
-.sentence-input-row button {
-  flex-shrink: 0;
-  white-space: nowrap;
-  padding: 0.42rem 0.75rem;
-  font-size: 0.8rem;
-  box-sizing: border-box;
+.sentence-btn-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.1rem;
+}
+
+.btn-save-sentence {
+  width: 100%;
+  max-width: 200px;
+  padding: 0.55rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: var(--radius-sm);
+  background: var(--busuu-blue);
+  color: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(11, 114, 231, 0.18);
+  transition: var(--transition-fast);
+}
+
+.btn-save-sentence:hover {
+  background: #0959B7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(11, 114, 231, 0.28);
 }
 
 .partner-sentence-quote {
@@ -1067,6 +1103,212 @@ body {
   font-weight: 800;
   font-size: 0.95rem;
   color: #D97706;
+}
+
+/* Scramble Puzzle (Round 2: Horizontal Layout & Inventory Badges) */
+.scramble-puzzle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0.5rem 0;
+}
+
+.scramble-translation-prompt {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 1.25rem;
+  text-align: center;
+}
+
+.scramble-translation-prompt strong {
+  color: var(--busuu-blue);
+  background: #EFF6FF;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #BFDBFE;
+}
+
+/* Horizontal Slots Row (Letters land here side-by-side) */
+.scramble-slots-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 58px;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: #F8FAFC;
+  border: 2px dashed #CBD5E1;
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  box-sizing: border-box;
+}
+
+.scramble-slot {
+  width: 42px;
+  height: 50px;
+  background: #FFFFFF;
+  border: 2px solid #CBD5E1;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0F172A;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.scramble-slot.filled {
+  background: #FFFFFF;
+  border-color: var(--busuu-blue);
+  box-shadow: 0 4px 10px rgba(11, 114, 231, 0.15);
+  cursor: pointer;
+  transform: translateY(-2px);
+}
+
+.scramble-slot.filled:hover {
+  background: #EFF6FF;
+  border-color: #2563EB;
+  transform: translateY(-4px) scale(1.05);
+}
+
+.scramble-slot.filled.space-slot {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+  color: #64748B;
+  min-width: 36px;
+  font-size: 1rem;
+}
+
+.scramble-slot.correct-all {
+  background: #ECFDF5 !important;
+  border-color: var(--busuu-emerald) !important;
+  color: #047857 !important;
+  box-shadow: 0 0 12px rgba(0, 196, 140, 0.4) !important;
+}
+
+.scramble-slot.wrong-all {
+  background: #FEF2F2 !important;
+  border-color: #EF4444 !important;
+  color: #DC2626 !important;
+  animation: shakeWrong 0.4s ease-in-out;
+}
+
+/* Horizontal Tiles Row (Unique letters with count badges) */
+.scramble-tiles-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.scramble-tile {
+  position: relative;
+  min-width: 46px;
+  height: 50px;
+  padding: 0 0.85rem;
+  background: #FFFFFF;
+  border: 2px solid var(--border-subtle);
+  border-bottom: 3.5px solid #CBD5E1;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0F172A;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.scramble-tile:hover:not(:disabled):not(.depleted) {
+  border-color: var(--busuu-blue);
+  border-bottom-color: #1D4ED8;
+  color: var(--busuu-blue);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(11, 114, 231, 0.16);
+}
+
+.scramble-tile:active:not(:disabled):not(.depleted) {
+  transform: translateY(2px);
+  border-bottom-width: 2px;
+}
+
+.scramble-tile.tile-space {
+  min-width: 96px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #334155;
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.scramble-tile.depleted,
+.scramble-tile:disabled {
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+  border-bottom-color: #CBD5E1;
+  color: #94A3B8;
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Badge showing count of remaining letters */
+.tile-count-badge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  background: var(--busuu-blue);
+  color: #FFFFFF;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  font-weight: 800;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+  line-height: 1;
+}
+
+.tile-count-badge.zero {
+  background: #94A3B8;
+  opacity: 0.6;
+}
+
+.scramble-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
 }
 
 /* =========================================================

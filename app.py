@@ -486,8 +486,9 @@ def get_vocab_quiz():
     else:
         # --- RONDA 2: Mayor Dificultad (Word Scramble & Traducción Inversa ES -> EN) -> Nivel 5/5 ---
         for w in words:
-            # 1. Letter Puzzle / Word Scramble
-            clean_word = re.sub(r"[^a-zA-Z]", "", w["word"]).upper()
+            # 1. Letter Puzzle / Word Scramble (preserving spaces for compound words/phrases)
+            clean_word = re.sub(r"[^a-zA-Z\s]", "", w["word"]).strip().upper()
+            clean_word = " ".join(clean_word.split())
             if len(clean_word) >= 2:
                 letters = list(clean_word)
                 scrambled = letters.copy()

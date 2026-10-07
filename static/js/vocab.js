@@ -112,13 +112,17 @@ function renderVocabCard(w) {
 
       <!-- Personal Sentence & Partner Quote -->
       <div class="personal-sentence-box">
-        <div class="sentence-input-row">
-          <input type="text" id="sentence-input-${w.id}" 
-                 placeholder="Tu frase con '${escapeHtml(w.word)}'..." 
-                 value="${escapeHtml(w.user_sentence || '')}"
-                 onkeydown="if(event.key === 'Enter') savePersonalSentence(${w.id})">
-          <button class="btn btn-secondary btn-sm" onclick="savePersonalSentence(${w.id})" title="Guardar frase (visible para tu compañero)">
-            Guardar
+        <div class="sentence-input-label">✍️ Tu frase personal de práctica:</div>
+        <div class="sentence-input-wrap">
+          <textarea id="sentence-input-${w.id}" 
+                    class="sentence-textarea"
+                    rows="2"
+                    placeholder="Escribe aquí tu propia frase con '${escapeHtml(w.word)}'..."
+                    onkeydown="if(event.key === 'Enter' && !event.shiftKey){ event.preventDefault(); savePersonalSentence(${w.id}); }">${escapeHtml(w.user_sentence || '')}</textarea>
+        </div>
+        <div class="sentence-btn-row">
+          <button class="btn btn-save-sentence" onclick="savePersonalSentence(${w.id})" title="Guardar frase (visible para tu compañero)">
+            💾 Guardar Frase
           </button>
         </div>
         ${partnerQuote}
@@ -288,35 +292,59 @@ function renderQuizQuestion(idx) {
   }
 }
 
-/* --- SCRAMBLE PUZZLE CONTROLLER --- */
+/* --- SCRAMBLE PUZZLE CONTROLLER (Round 2: Horizontal & Badge Inventory) --- */
 function initScramblePuzzle(q) {
   const promptBox = document.getElementById("quiz-prompt-box");
+
+  // Count occurrences of each character in target (including spaces)
+  const charCounts = {};
+  for (const char of q.target) {
+    charCounts[char] = (charCounts[char] || 0) + 1;
+  }
+
+  // Generate unique character tiles
+  const uniqueChars = Object.keys(charCounts);
+  
+  // Shuffle unique tiles so they are not in sequential word order
+  for (let i = uniqueChars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [uniqueChars[i], uniqueChars[j]] = [uniqueChars[j], uniqueChars[i]];
+  }
+
+  const tiles = uniqueChars.map(char => ({
+    char: char,
+    total: charCounts[char],
+    available: charCounts[char]
+  }));
+
   currentScramble = {
     wordId: q.word_id,
     target: q.target,
     displayWord: q.display_word,
-    slots: Array(q.target.length).fill(null), // will store { char, tileIdx }
-    tiles: q.letters.map((char, idx) => ({ char, idx, used: false }))
+    translation: q.translation,
+    slots: Array(q.target.length).fill(null), // stores char placed at each slot index
+    tiles: tiles
   };
 
   promptBox.innerHTML = `
     <div class="scramble-puzzle-wrap">
       <div class="scramble-translation-prompt">🇪🇸 Traduce y Ordena en inglés: <strong>"${escapeHtml(q.translation)}"</strong></div>
       
-      <!-- Slots where letters will land -->
+      <!-- Horizontal slots where letters land side-by-side -->
       <div class="scramble-slots-row" id="scramble-slots-row"></div>
 
-      <!-- Letter Tiles to tap -->
+      <!-- Horizontal unique character tiles with count badges -->
       <div class="scramble-tiles-row" id="scramble-tiles-row"></div>
 
       <div class="scramble-actions">
-        <button class="btn btn-secondary btn-sm" onclick="resetScramble()">🔄 Deshacer</button>
-        <button class="btn btn-ghost btn-sm" onclick="speakEnglish('${escapeQuotes(q.display_word)}', 0.9)">🔊 Escuchar Pista</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="resetScramble()">🔄 Deshacer Todo</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="speakEnglish('${escapeQuotes(q.display_word)}', 0.9)">🔊 Escuchar Pista</button>
       </div>
     </div>
   `;
 
   renderScrambleBoard();
+  attachScrambleKeyboardListener();
 }
 
 function renderScrambleBoard() {
@@ -324,32 +352,53 @@ function renderScrambleBoard() {
   const tilesRow = document.getElementById("scramble-tiles-row");
   if (!slotsRow || !tilesRow || !currentScramble) return;
 
-  // Render Slots
-  slotsRow.innerHTML = currentScramble.slots.map((s, slotIdx) => {
-    if (s) {
-      return `<div class="scramble-slot filled" onclick="removeScrambleSlot(${slotIdx})" title="Clic para quitar letra">${s.char}</div>`;
+  // Render Horizontal Slots
+  slotsRow.innerHTML = currentScramble.slots.map((char, slotIdx) => {
+    if (char !== null) {
+      const isSpace = (char === " ");
+      const displayContent = isSpace ? "␣" : escapeHtml(char);
+      const spaceClass = isSpace ? "space-slot" : "";
+      return `<div class="scramble-slot filled ${spaceClass}" onclick="removeScrambleSlot(${slotIdx})" title="Clic para quitar letra">${displayContent}</div>`;
     }
-    return `<div class="scramble-slot"></div>`;
+    return `<div class="scramble-slot" title="Casilla vacía"></div>`;
   }).join("");
 
-  // Render Tiles
-  tilesRow.innerHTML = currentScramble.tiles.map((t, tileIdx) => {
-    const usedClass = t.used ? "used" : "";
-    return `<button class="scramble-tile ${usedClass}" onclick="tapScrambleTile(${tileIdx})">${t.char}</button>`;
+  // Render Horizontal Unique Tiles with inventory count badge
+  tilesRow.innerHTML = currentScramble.tiles.map(tile => {
+    const isSpace = (tile.char === " ");
+    const isDepleted = tile.available <= 0;
+    const spaceClass = isSpace ? "tile-space" : "";
+    const depletedClass = isDepleted ? "depleted" : "";
+    const displayLabel = isSpace ? "␣ Espacio" : escapeHtml(tile.char);
+
+    // Show badge on top if this letter repeats (total > 1)
+    const badgeHtml = (tile.total > 1) 
+      ? `<span class="tile-count-badge ${isDepleted ? 'zero' : ''}">${tile.available}</span>` 
+      : "";
+
+    return `
+      <button type="button" class="scramble-tile ${spaceClass} ${depletedClass}" 
+              onclick="tapScrambleTile('${isSpace ? ' ' : escapeQuotes(tile.char)}')"
+              ${isDepleted ? 'disabled' : ''}
+              title="${isSpace ? 'Espacio (Disponibles: ' + tile.available + ')' : 'Letra ' + tile.char + ' (Disponibles: ' + tile.available + ')'}">
+        <span>${displayLabel}</span>
+        ${badgeHtml}
+      </button>
+    `;
   }).join("");
 }
 
-function tapScrambleTile(tileIdx) {
+function tapScrambleTile(char) {
   if (!currentScramble) return;
-  const tile = currentScramble.tiles[tileIdx];
-  if (tile.used) return;
+  const tile = currentScramble.tiles.find(t => t.char === char);
+  if (!tile || tile.available <= 0) return;
 
   // Find first empty slot
   const emptyIdx = currentScramble.slots.findIndex(s => s === null);
   if (emptyIdx === -1) return;
 
-  tile.used = true;
-  currentScramble.slots[emptyIdx] = { char: tile.char, tileIdx: tile.idx };
+  tile.available--;
+  currentScramble.slots[emptyIdx] = char;
   renderScrambleBoard();
 
   // Check if all slots filled
@@ -360,12 +409,14 @@ function tapScrambleTile(tileIdx) {
 
 function removeScrambleSlot(slotIdx) {
   if (!currentScramble) return;
-  const item = currentScramble.slots[slotIdx];
-  if (!item) return;
+  const char = currentScramble.slots[slotIdx];
+  if (char === null) return;
 
-  // Restore tile
-  const tile = currentScramble.tiles[item.tileIdx];
-  if (tile) tile.used = false;
+  // Restore inventory count
+  const tile = currentScramble.tiles.find(t => t.char === char);
+  if (tile) {
+    tile.available = Math.min(tile.total, tile.available + 1);
+  }
 
   currentScramble.slots[slotIdx] = null;
   renderScrambleBoard();
@@ -374,14 +425,16 @@ function removeScrambleSlot(slotIdx) {
 function resetScramble() {
   if (!currentScramble) return;
   currentScramble.slots = Array(currentScramble.target.length).fill(null);
-  currentScramble.tiles.forEach(t => t.used = false);
+  currentScramble.tiles.forEach(t => {
+    t.available = t.total;
+  });
   renderScrambleBoard();
 }
 
 function checkScrambleAnswer() {
-  const assembled = currentScramble.slots.map(s => s.char).join("");
+  const assembled = currentScramble.slots.map(s => s || "").join("");
   const slotsRow = document.getElementById("scramble-slots-row");
-  const slotElements = slotsRow.querySelectorAll(".scramble-slot");
+  const slotElements = slotsRow ? slotsRow.querySelectorAll(".scramble-slot") : [];
 
   if (assembled.toUpperCase() === currentScramble.target.toUpperCase()) {
     slotElements.forEach(el => el.classList.add("correct-all"));
@@ -396,7 +449,36 @@ function checkScrambleAnswer() {
     }
     setTimeout(() => {
       resetScramble();
-    }, 800);
+    }, 750);
+  }
+}
+
+function attachScrambleKeyboardListener() {
+  window.removeEventListener("keydown", handleScrambleKeydown);
+  window.addEventListener("keydown", handleScrambleKeydown);
+}
+
+function handleScrambleKeydown(e) {
+  const slotsRow = document.getElementById("scramble-slots-row");
+  if (!slotsRow || !currentScramble) return;
+
+  // Do not intercept if user is typing into any input or textarea
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+
+  if (e.key === "Backspace") {
+    e.preventDefault();
+    for (let i = currentScramble.slots.length - 1; i >= 0; i--) {
+      if (currentScramble.slots[i] !== null) {
+        removeScrambleSlot(i);
+        break;
+      }
+    }
+  } else if (e.key === " ") {
+    e.preventDefault();
+    tapScrambleTile(" ");
+  } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+    const upper = e.key.toUpperCase();
+    tapScrambleTile(upper);
   }
 }
 
