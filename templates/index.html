@@ -298,9 +298,34 @@
             <audio id="reading-audio-player" controls preload="none"></audio>
           </div>
 
+          <!-- Interactive Highlighting Toolbar -->
+          <div class="reading-highlight-toolbar">
+            <div class="hl-tools-group">
+              <span class="toolbar-label">🖍️ Resaltador:</span>
+              <button type="button" class="btn-hl btn-hl-word active" id="btn-hl-word" onclick="setHighlightMode('word')" title="Modo Palabra: selecciona texto para marcar palabras que no conozcas">
+                🟡 Palabra desconocida
+              </button>
+              <button type="button" class="btn-hl btn-hl-phrase" id="btn-hl-phrase" onclick="setHighlightMode('phrase')" title="Modo Frase: selecciona texto para marcar modismos o frases difíciles">
+                🟣 Frase o modismo difícil
+              </button>
+              <button type="button" class="btn-hl btn-hl-clear" onclick="clearReadingHighlights()" title="Limpiar todas las marcas de este capítulo">
+                🧼 Limpiar marcas
+              </button>
+            </div>
+            <div class="highlight-stats-badge" id="highlight-stats-display">
+              <span id="stat-words-count">0 palabras</span> · <span id="stat-phrases-count">0 frases</span>
+            </div>
+          </div>
+
           <h3 id="reading-title" class="reading-title">Cargando lectura...</h3>
           <div id="reading-content" class="reading-content-body">
             <!-- Reading text injected by JS -->
+          </div>
+
+          <!-- Marked Items Summary List -->
+          <div id="reading-marked-items-panel" class="marked-items-panel" style="display: none;">
+            <div class="marked-items-title">📌 Palabras y frases que marcaste para auditoría:</div>
+            <div id="reading-marked-items-list" class="marked-items-pills"></div>
           </div>
 
           <div class="reading-footer-tags">
@@ -309,27 +334,68 @@
           </div>
         </div>
 
-        <!-- Right: Summary & AI / Grammar Evaluator -->
+        <!-- Right: Dual Studio (Paso 2.1: Traducción al Español & Paso 2.2: Resumen en Inglés) -->
         <div class="card summary-studio-card">
-          <div class="studio-header">
-            <h3>📝 Tu Resumen en Inglés</h3>
-            <span id="summary-word-count" class="word-counter">0 palabras (Mínimo: 50)</span>
-          </div>
-          <p class="studio-instruction">
-            Resume las ideas clave con tus propias palabras. Gemini Flash auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
-          </p>
-
-          <textarea id="summary-textarea" class="summary-input" rows="10" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
-
-          <div class="studio-actions">
-            <button id="btn-evaluate-summary" class="btn btn-primary btn-block" onclick="submitSummaryForEvaluation()">
-              ✨ Auditar y Evaluar con Gemini Flash
+          <!-- Reading Phase Navigation Tabs -->
+          <div class="reading-phase-tabs">
+            <button type="button" class="phase-tab-btn active" id="tab-phase-translation" onclick="switchReadingPhase('translation')">
+              🇪🇸 1. Tu Traducción al Español
+            </button>
+            <button type="button" class="phase-tab-btn" id="tab-phase-summary" onclick="switchReadingPhase('summary')">
+              🇬🇧 2. Tu Resumen en Inglés
             </button>
           </div>
 
-          <!-- Evaluation Results Container -->
-          <div id="summary-evaluation-results" class="evaluation-results-box" style="display: none;">
-            <!-- Injected via JavaScript -->
+          <!-- SUBVIEW 1: Spanish Translation Workspace -->
+          <div id="phase-view-translation" class="phase-subview active">
+            <div class="studio-header">
+              <div>
+                <h3>✍️ Paso 2.1: Tu Traducción al Español</h3>
+                <p class="studio-instruction">
+                  Traduce el capítulo completo a español con tus palabras. La IA revisará tu fidelidad semántica y te explicará las palabras 🟡 y frases 🟣 que marcaste.
+                </p>
+              </div>
+              <span id="translation-word-count" class="word-counter">0 palabras</span>
+            </div>
+
+            <textarea id="translation-textarea" class="summary-input" rows="11" placeholder="Escribe aquí tu traducción al español del capítulo completo...&#10;&#10;Ejemplo:&#10;Mi nombre es Robinson Crusoe. Nací en Inglaterra en 1632..."></textarea>
+
+            <div class="studio-actions">
+              <button id="btn-evaluate-translation" class="btn btn-primary btn-block" onclick="submitTranslationForEvaluation()">
+                ✨ Auditar Mi Traducción con Gemini Flash
+              </button>
+            </div>
+
+            <!-- Translation Evaluation Results Container -->
+            <div id="translation-evaluation-results" class="evaluation-results-box" style="display: none;">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+          <!-- SUBVIEW 2: English Summary Workspace -->
+          <div id="phase-view-summary" class="phase-subview" style="display: none;">
+            <div class="studio-header">
+              <div>
+                <h3>📝 Paso 2.2: Tu Resumen en Inglés</h3>
+                <p class="studio-instruction">
+                  Resume las ideas clave con tus propias palabras en inglés. Gemini Flash auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
+                </p>
+              </div>
+              <span id="summary-word-count" class="word-counter">0 palabras (Mínimo: 50)</span>
+            </div>
+
+            <textarea id="summary-textarea" class="summary-input" rows="10" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
+
+            <div class="studio-actions">
+              <button id="btn-evaluate-summary" class="btn btn-primary btn-block" onclick="submitSummaryForEvaluation()">
+                ✨ Auditar y Evaluar con Gemini Flash
+              </button>
+            </div>
+
+            <!-- Evaluation Results Container -->
+            <div id="summary-evaluation-results" class="evaluation-results-box" style="display: none;">
+              <!-- Injected via JavaScript -->
+            </div>
           </div>
         </div>
       </div>

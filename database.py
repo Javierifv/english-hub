@@ -111,6 +111,8 @@ def init_db():
         vocab_done INTEGER DEFAULT 0,
         vocab_notes TEXT,
         reading_done INTEGER DEFAULT 0,
+        reading_translation TEXT,
+        reading_translation_feedback TEXT,
         reading_summary TEXT,
         reading_feedback TEXT,
         listening_done INTEGER DEFAULT 0,
@@ -126,6 +128,14 @@ def init_db():
         UNIQUE(user_id, date)
     );
     """)
+
+    # Safe migration: ensure translation columns exist in daily_logs
+    cursor.execute("PRAGMA table_info(daily_logs)")
+    existing_dl_cols = {col[1] for col in cursor.fetchall()}
+    if "reading_translation" not in existing_dl_cols:
+        cursor.execute("ALTER TABLE daily_logs ADD COLUMN reading_translation TEXT")
+    if "reading_translation_feedback" not in existing_dl_cols:
+        cursor.execute("ALTER TABLE daily_logs ADD COLUMN reading_translation_feedback TEXT")
 
     # Safe migration: ensure new columns exist in users table
     cursor.execute("PRAGMA table_info(users)")
