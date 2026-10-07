@@ -167,7 +167,7 @@ async function savePersonalSentence(wordId) {
 }
 
 /* --- SUB-VIEWS TOGGLE (CARDS vs QUIZ vs SRS) --- */
-function switchVocabView(viewName) {
+function setVocabSubView(viewName) {
   document.querySelectorAll(".subnav-btn").forEach(b => b.classList.remove("active"));
   const btn = document.getElementById(`subnav-${viewName}`);
   if (btn) btn.classList.add("active");
@@ -175,32 +175,29 @@ function switchVocabView(viewName) {
   document.getElementById("vocab-view-cards").style.display = (viewName === 'cards') ? 'block' : 'none';
   document.getElementById("vocab-view-quiz").style.display = (viewName === 'quiz') ? 'block' : 'none';
   document.getElementById("vocab-view-srs").style.display = (viewName === 'srs') ? 'block' : 'none';
+}
 
+function switchVocabView(viewName) {
+  setVocabSubView(viewName);
   if (viewName === 'quiz') {
-    startVocabQuiz(1);
+    startDailyVocabQuiz(1);
   } else if (viewName === 'srs') {
     loadSrsView();
+  } else if (viewName === 'cards') {
+    loadVocabData(state.currentDay);
   }
 }
 
-/* --- INTERACTIVE TOBO TWO-ROUND QUIZ ENGINE --- */
-async function startVocabQuiz(round = 1) {
-  currentQuizRound = round;
-  quizScore = 0;
-  currentQuizIdx = 0;
-  quizWordResults = {};
+/* --- UNIFIED QUIZ ENGINE & CONTEXT CONTROLLER --- */
+let currentQuizContext = {
+  mode: 'daily',          // 'daily' | 'srs_queue' | 'srs_single'
+  targetWordIds: [],
+  wordLabels: [],
+  round: 1
+};
+let srsReviewQueueItems = [];
 
-  const badge = document.getElementById("quiz-round-badge");
-  if (badge) {
-    badge.textContent = (round === 1) 
-      ? "RONDA 1: RECONOCIMIENTO (NIVEL 3/5)" 
-      : "RONDA 2: MAYOR DIFICULTAD (NIVEL 5/5)";
-  }
-
-  document.getElementById("quiz-score-indicator").textContent = "Aciertos: 0";
-  document.getElementById("btn-next-quiz").style.display = "none";
-  document.getElementById("quiz-progress-bar").style.width = "0%";
-
+async function startDailyVocabQuiz(round = 1) {
   // Ensure currentDayWords is populated
   if (!currentDayWords || currentDayWords.length === 0) {
     try {
@@ -211,25 +208,96 @@ async function startVocabQuiz(round = 1) {
     }
   }
 
-  if (!currentDayWords || currentDayWords.length === 0) {
-    document.getElementById("quiz-prompt-box").textContent = "No hay palabras disponibles para evaluar en esta fecha.";
+  const ids = (currentDayWords || []).map(w => w.id);
+  const labels = (currentDayWords || []).map(w => w.word);
+
+  currentQuizContext = {
+    mode: 'daily',
+    targetWordIds: ids,
+    wordLabels: labels,
+    round: round
+  };
+
+  await startQuizWithContext(round);
+}
+
+function startVocabQuiz(round = 1) {
+  return startDailyVocabQuiz(round);
+}
+
+function startSrsQueueQuiz() {
+  if (!srsReviewQueueItems || srsReviewQueueItems.length === 0) return;
+  setVocabSubView('quiz');
+
+  currentQuizContext = {
+    mode: 'srs_queue',
+    targetWordIds: srsReviewQueueItems.map(w => w.id),
+    wordLabels: srsReviewQueueItems.map(w => w.word),
+    round: 1
+  };
+
+  startQuizWithContext(1);
+}
+
+function startSingleWordSrsQuiz(wordId, wordName) {
+  if (!wordId) return;
+  setVocabSubView('quiz');
+
+  currentQuizContext = {
+    mode: 'srs_single',
+    targetWordIds: [parseInt(wordId)],
+    wordLabels: [wordName || 'Palabra'],
+    round: 1
+  };
+
+  startQuizWithContext(1);
+}
+
+async function startQuizWithContext(round = 1) {
+  currentQuizRound = round;
+  currentQuizContext.round = round;
+  quizScore = 0;
+  currentQuizIdx = 0;
+  quizWordResults = {};
+
+  const badge = document.getElementById("quiz-round-badge");
+  if (badge) {
+    if (currentQuizContext.mode === 'srs_single') {
+      const wName = currentQuizContext.wordLabels[0] || 'Palabra';
+      badge.textContent = `🎯 REPASO INDIVIDUAL: "${wName.toUpperCase()}" (RONDA ${round} DE 2)`;
+    } else if (currentQuizContext.mode === 'srs_queue') {
+      const count = currentQuizContext.targetWordIds.length;
+      badge.textContent = `⚡ REPASO ESPACIADO: ${count} PALABRAS (RONDA ${round} DE 2)`;
+    } else {
+      badge.textContent = (round === 1) 
+        ? "RONDA 1: RECONOCIMIENTO (NIVEL 3/5)" 
+        : "RONDA 2: MAYOR DIFICULTAD (NIVEL 5/5)";
+    }
+  }
+
+  document.getElementById("quiz-score-indicator").textContent = "Aciertos: 0";
+  document.getElementById("btn-next-quiz").style.display = "none";
+  document.getElementById("quiz-progress-bar").style.width = "0%";
+
+  if (!currentQuizContext.targetWordIds || currentQuizContext.targetWordIds.length === 0) {
+    document.getElementById("quiz-prompt-box").textContent = "No hay palabras seleccionadas para evaluar.";
     return;
   }
 
   // Initialize per-word success tracker to true
-  currentDayWords.forEach(w => {
-    quizWordResults[w.id] = true;
+  currentQuizContext.targetWordIds.forEach(id => {
+    quizWordResults[id] = true;
   });
 
-  const wordIds = currentDayWords.map(w => w.id).join(",");
+  const wordIdsParam = currentQuizContext.targetWordIds.join(",");
 
   try {
-    const res = await fetch(`/api/vocab/quiz?word_ids=${wordIds}&round=${round}&user_id=${state.currentUser}&day=${state.currentDay}`);
+    const res = await fetch(`/api/vocab/quiz?word_ids=${wordIdsParam}&round=${round}&user_id=${state.currentUser}&day=${state.currentDay}`);
     const questions = await res.json();
     quizQuestions = questions;
 
     if (!questions || questions.length === 0) {
-      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para el test de hoy.";
+      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para esta evaluación.";
       return;
     }
 
@@ -542,11 +610,16 @@ async function finishQuiz() {
   }
 
   if (currentQuizRound === 1) {
+    const isSrs = currentQuizContext.mode && currentQuizContext.mode.startsWith('srs');
+    const wordLabelText = currentQuizContext.mode === 'srs_single' 
+      ? `la palabra "${currentQuizContext.wordLabels[0]}"`
+      : (isSrs ? `las palabras de repaso (${currentQuizContext.targetWordIds.length})` : 'las palabras de hoy');
+
     promptBox.innerHTML = `
       <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">⭐</div>
       <div style="color: var(--busuu-emerald); font-size: 1.55rem; font-weight: 800;">¡Ronda 1 Completada con Éxito!</div>
       <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
-        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Tus palabras han alcanzado <strong>Nivel 3/5</strong>.
+        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado <strong>Nivel 3/5</strong> en ${wordLabelText}.
       </div>
       <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #1E40AF; font-size: 0.88rem; text-align: left; line-height: 1.45;">
         💡 <strong>Sistema Tobo SRS:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong>, rinde la <strong>Ronda 2</strong> con mayor dificultad (deletreo activo y traducción).
@@ -556,21 +629,32 @@ async function finishQuiz() {
     grid.style.display = "grid";
     grid.innerHTML = `
       <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
-        <button class="btn btn-primary btn-lg" onclick="startVocabQuiz(2)">
+        <button class="btn btn-primary btn-lg" onclick="startQuizWithContext(2)">
           🚀 Iniciar Ronda 2 (Mayor Dificultad - Desbloquear Nivel 5/5)
         </button>
-        <button class="btn btn-secondary btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
-          🗂️ Ver Tarjetas Actualizadas (Nivel 3/5)
-        </button>
+        ${isSrs ? `
+          <button class="btn btn-secondary btn-lg" onclick="switchVocabView('srs');">
+            📊 Volver al Banco de Repaso
+          </button>
+        ` : `
+          <button class="btn btn-secondary btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
+            🗂️ Ver Tarjetas Actualizadas (Nivel 3/5)
+          </button>
+        `}
       </div>
     `;
   } else {
     // Round 2 completed!
+    const isSrs = currentQuizContext.mode && currentQuizContext.mode.startsWith('srs');
+    const wordLabelText = currentQuizContext.mode === 'srs_single' 
+      ? `la palabra "${currentQuizContext.wordLabels[0]}"`
+      : (isSrs ? `las palabras evaluadas` : 'las palabras de hoy');
+
     promptBox.innerHTML = `
       <div style="font-size: 2.4rem; margin-bottom: 0.35rem;">🏆</div>
       <div style="color: var(--busuu-emerald); font-size: 1.6rem; font-weight: 800;">¡Dominio Total Desbloqueado!</div>
       <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
-        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado el <strong>Nivel 5/5 (⭐⭐⭐⭐⭐)</strong> en las palabras de hoy.
+        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado el <strong>Nivel 5/5 (⭐⭐⭐⭐⭐)</strong> en ${wordLabelText}.
       </div>
       <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #065F46; font-size: 0.88rem; text-align: left; line-height: 1.45;">
         🎉 <strong>¡Excelente trabajo!</strong> Has demostrado retención activa en deletreo y traducción. Las palabras han sido registradas como dominadas al 100% en tu banco de repaso espaciado.
@@ -580,9 +664,15 @@ async function finishQuiz() {
     grid.style.display = "grid";
     grid.innerHTML = `
       <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.5rem;">
-        <button class="btn btn-success btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
-          🗂️ Volver a Tarjetas (Ver Nivel 5/5)
-        </button>
+        ${isSrs ? `
+          <button class="btn btn-success btn-lg" onclick="switchVocabView('srs');">
+            📊 Volver al Banco de Repaso (Ver Nivel 5/5)
+          </button>
+        ` : `
+          <button class="btn btn-success btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
+            🗂️ Volver a Tarjetas (Ver Nivel 5/5)
+          </button>
+        `}
       </div>
     `;
   }
@@ -593,6 +683,8 @@ async function loadSrsView() {
   try {
     const res = await fetch(`/api/vocab/srs?user_id=${state.currentUser}`);
     const data = await res.json();
+
+    srsReviewQueueItems = data.review_queue || [];
 
     document.getElementById("srs-total-val").textContent = data.stats.total_studied || 0;
     document.getElementById("srs-mastered-val").textContent = data.stats.mastered || 0;
@@ -613,14 +705,12 @@ async function loadSrsView() {
       return;
     }
 
-    const pendingIds = data.review_queue.map(q => q.id).join(",");
-
     queueList.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
         <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);">
           Tienes <strong>${data.review_queue.length}</strong> palabra${data.review_queue.length === 1 ? '' : 's'} en refuerzo activo (Nivel 1 a 4):
         </span>
-        <button class="btn btn-primary btn-sm" onclick="startSrsQueueQuiz('${pendingIds}')" title="Evaluar solo estas palabras en el test">
+        <button class="btn btn-primary btn-sm" onclick="startSrsQueueQuiz()" title="Evaluar todas las palabras pendientes en test">
           ⚡ Practicar estas ${data.review_queue.length} palabras en Test
         </button>
       </div>
@@ -641,7 +731,7 @@ async function loadSrsView() {
             <div style="display: flex; align-items: center; gap: 0.65rem;">
               <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
               <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar pronunciación">🔊</button>
-              <button class="btn btn-secondary btn-sm" onclick="startSrsQueueQuiz('${item.id}')" title="Test de esta palabra">🎯 Test</button>
+              <button class="btn btn-secondary btn-sm" onclick="startSingleWordSrsQuiz(${item.id}, '${escapeQuotes(item.word)}')" title="Test específico de esta palabra">🎯 Test</button>
             </div>
           </div>
         `).join("")}
@@ -650,37 +740,6 @@ async function loadSrsView() {
 
   } catch (err) {
     console.error("Error loading SRS stats:", err);
-  }
-}
-
-async function startSrsQueueQuiz(wordIdsStr) {
-  if (!wordIdsStr) return;
-  switchVocabView('quiz');
-  
-  quizScore = 0;
-  currentQuizIdx = 0;
-  quizWordResults = {};
-
-  const badge = document.getElementById("quiz-round-badge");
-  if (badge) badge.textContent = "⚡ TEST DE REPASO ESPACIADO (SRS REFEST)";
-
-  document.getElementById("quiz-score-indicator").textContent = "Aciertos: 0";
-  document.getElementById("btn-next-quiz").style.display = "none";
-  document.getElementById("quiz-progress-bar").style.width = "0%";
-
-  try {
-    const res = await fetch(`/api/vocab/quiz?word_ids=${wordIdsStr}&round=2&user_id=${state.currentUser}&day=${state.currentDay}`);
-    const questions = await res.json();
-    quizQuestions = questions;
-
-    if (!questions || questions.length === 0) {
-      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para el repaso.";
-      return;
-    }
-
-    renderQuizQuestion(0);
-  } catch (err) {
-    console.error("Error launching SRS quiz:", err);
   }
 }
 

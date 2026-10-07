@@ -168,8 +168,7 @@ def init_db():
     # Seed Default Users
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('javier', 'Javier', '#0B72E7', 5, 'progressive', '1234', 'A1')")
-        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('partner', 'Compañero', '#00C48C', 5, 'progressive', '1234', 'A2')")
+        cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('javier', 'Javier Flores', '#0B72E7', 5, 'progressive', '1234', 'A1')")
 
     conn.commit()
     seed_initial_curriculum(conn)
