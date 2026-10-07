@@ -274,7 +274,7 @@
       <div class="panel-header">
         <div>
           <h2>Paso 2: Lectura Inmersiva & Resumen con IA (Gemini Flash)</h2>
-          <p class="section-desc">Lee con atención durante 15 minutos. Graduado por nivel MCER con narración en audio y evaluación profunda.</p>
+          <p class="section-desc">Lee con atención durante 15 minutos. Graduado por nivel MCER con resaltador interactivo y evaluación profunda con IA.</p>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-view-partner-summary" onclick="openPartnerSummaryModal()">
           👥 Ver Resumen de Mi Compañero
@@ -295,7 +295,7 @@
             📙 Nivel 3 (B2)
           </button>
           <button type="button" class="level-pill-btn" id="reading-level-btn-all" onclick="selectReadingLevel('all')">
-            🌐 Todos (92 Capítulos)
+            🌐 Todos (93 Capítulos)
           </button>
         </div>
         <div class="chapter-nav-group">
@@ -310,10 +310,20 @@
       <div class="reading-split-layout">
         <!-- Left: Reading Reader -->
         <div class="card reading-article-card">
+          <!-- Persistent Completion Banner -->
+          <div id="reading-status-banner" style="display: none; background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; color: #065F46; font-size: 0.88rem; font-weight: 700;">
+              <span>✅</span>
+              <span id="reading-status-banner-text">¡Ya completaste esta lectura!</span>
+            </div>
+            <span class="badge badge-success" style="font-size: 0.76rem;">Capítulo Finalizado</span>
+          </div>
+
           <div class="article-meta">
             <div class="meta-tags">
               <span id="reading-level" class="badge badge-accent">A1 Elementary</span>
               <span id="reading-topic" class="badge badge-neutral">Robinson Crusoe</span>
+              <span id="reading-completion-pill" class="badge badge-success" style="display: none;">✅ Completado</span>
             </div>
             <!-- 15-Minute Countdown Timer Widget -->
             <div class="timer-widget">
@@ -322,15 +332,6 @@
               <button id="btn-timer-toggle" class="btn btn-sm btn-outline" onclick="toggleReadingTimer()">Iniciar</button>
               <button id="btn-timer-reset" class="btn btn-sm btn-ghost" onclick="resetReadingTimer()">Reiniciar</button>
             </div>
-          </div>
-
-          <!-- Embedded Audio Player Bar if chapter has audio -->
-          <div id="reading-audio-container" class="reading-audio-bar" style="display: none;">
-            <div class="audio-bar-info">
-              <span class="audio-bar-icon">🎧</span>
-              <span class="audio-bar-title">Narración Lenta de Estudio:</span>
-            </div>
-            <audio id="reading-audio-player" controls preload="none"></audio>
           </div>
 
           <!-- Interactive Highlighting Toolbar -->

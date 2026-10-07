@@ -762,6 +762,7 @@ def get_reading():
     level = request.args.get("level")
     day_number = request.args.get("day", type=int)
     chapter_num = request.args.get("chapter", type=int)
+    user_id = request.args.get("user_id", default=1, type=int)
 
     conn = get_db()
     cursor = conn.cursor()
@@ -797,6 +798,36 @@ def get_reading():
     level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM readings GROUP BY level ORDER BY level ASC").fetchall()
     levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
 
+    # Check user reading progress
+    user_prog = None
+    if reading and user_id:
+        prog_row = cursor.execute("""
+            SELECT id, completed_at, date as completed_date, day_number,
+                   translation_text, translation_feedback,
+                   summary_text, summary_feedback, highlights_json
+            FROM user_reading_progress
+            WHERE user_id = ? AND reading_id = ?
+        """, (user_id, reading["id"])).fetchone()
+        if prog_row:
+            p_dict = dict(prog_row)
+            try:
+                if p_dict.get("translation_feedback"):
+                    p_dict["translation_feedback"] = json.loads(p_dict["translation_feedback"])
+            except Exception:
+                pass
+            try:
+                if p_dict.get("summary_feedback"):
+                    p_dict["summary_feedback"] = json.loads(p_dict["summary_feedback"])
+            except Exception:
+                pass
+            try:
+                if p_dict.get("highlights_json"):
+                    p_dict["highlights_json"] = json.loads(p_dict["highlights_json"])
+            except Exception:
+                pass
+            p_dict["is_completed"] = bool(p_dict.get("summary_text") or p_dict.get("translation_text"))
+            user_prog = p_dict
+
     conn.close()
     if reading:
         r_dict = dict(reading)
@@ -806,18 +837,31 @@ def get_reading():
             except Exception:
                 pass
         r_dict["available_levels"] = levels_summary
+        r_dict["user_progress"] = user_prog
         return jsonify(r_dict)
     return jsonify({"error": "Reading not found"}), 404
 
 @app.route("/api/reading/list", methods=["GET"])
 def get_reading_list():
     level = request.args.get("level")
+    user_id = request.args.get("user_id", default=1, type=int)
     conn = get_db()
     cursor = conn.cursor()
+
+    query = """
+        SELECT r.id, r.day_number as chapter, r.title, r.level, r.estimated_minutes,
+               p.completed_at, p.date as completed_date,
+               CASE WHEN p.id IS NOT NULL AND (p.summary_text IS NOT NULL OR p.translation_text IS NOT NULL) THEN 1 ELSE 0 END as is_completed
+        FROM readings r
+        LEFT JOIN user_reading_progress p ON r.id = p.reading_id AND p.user_id = ?
+    """
+    params = [user_id]
     if level and level != "all":
-        rows = cursor.execute("SELECT id, day_number as chapter, title, level, estimated_minutes, audio_url FROM readings WHERE level = ? ORDER BY day_number ASC", (level,)).fetchall()
-    else:
-        rows = cursor.execute("SELECT id, day_number as chapter, title, level, estimated_minutes, audio_url FROM readings ORDER BY level ASC, day_number ASC").fetchall()
+        query += " WHERE r.level = ?"
+        params.append(level)
+    query += " ORDER BY r.level ASC, r.day_number ASC"
+
+    rows = cursor.execute(query, params).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -835,9 +879,16 @@ def evaluate_reading():
     words = re.findall(r"\b\w+\b", summary_text.lower())
     word_count = len(words)
 
+    reading_id = data.get("reading_id")
+
     # Fetch reading text & day's words for context
     conn = get_db()
-    r_row = conn.execute("SELECT title, content FROM readings WHERE day_number = ?", (day_number,)).fetchone()
+    if reading_id:
+        r_row = conn.execute("SELECT id, title, content, day_number FROM readings WHERE id = ?", (reading_id,)).fetchone()
+    else:
+        r_row = conn.execute("SELECT id, title, content, day_number FROM readings WHERE day_number = ?", (day_number,)).fetchone()
+
+    actual_reading_id = r_row["id"] if r_row else (reading_id or 1)
     reading_text = r_row["content"] if r_row else ""
     reading_title = r_row["title"] if r_row else ""
 
@@ -932,6 +983,18 @@ Analyze the student's text carefully and return a JSON object with this EXACT st
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ? AND date = ?
     """, (summary_text, json.dumps(feedback), day_number, user_id, today_str))
+
+    cursor.execute("""
+        INSERT INTO user_reading_progress (user_id, reading_id, date, day_number, summary_text, summary_feedback, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, reading_id) DO UPDATE SET
+            summary_text = excluded.summary_text,
+            summary_feedback = excluded.summary_feedback,
+            date = excluded.date,
+            day_number = excluded.day_number,
+            completed_at = CURRENT_TIMESTAMP
+    """, (user_id, actual_reading_id, today_str, day_number, summary_text, json.dumps(feedback, ensure_ascii=False)))
+
     conn.commit()
     conn.close()
 
@@ -955,9 +1018,9 @@ def evaluate_reading_translation():
     cursor = conn.cursor()
 
     if reading_id:
-        r_row = cursor.execute("SELECT title, content FROM readings WHERE id = ?", (reading_id,)).fetchone()
+        r_row = cursor.execute("SELECT id, title, content FROM readings WHERE id = ?", (reading_id,)).fetchone()
     else:
-        r_row = cursor.execute("SELECT title, content FROM readings WHERE day_number = ?", (day_number,)).fetchone()
+        r_row = cursor.execute("SELECT id, title, content FROM readings WHERE day_number = ?", (day_number,)).fetchone()
 
     source_text = r_row["content"] if r_row else ""
     source_title = r_row["title"] if r_row else ""
@@ -1042,6 +1105,20 @@ Return a valid JSON object with this EXACT structure:
             reading_translation_feedback = excluded.reading_translation_feedback,
             updated_at = CURRENT_TIMESTAMP
     """, (user_id, today_str, day_number, translation_text, json.dumps(feedback, ensure_ascii=False)))
+
+    actual_reading_id = r_row["id"] if r_row else (reading_id or 1)
+    cursor.execute("""
+        INSERT INTO user_reading_progress (user_id, reading_id, date, day_number, translation_text, translation_feedback, highlights_json, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, reading_id) DO UPDATE SET
+            translation_text = excluded.translation_text,
+            translation_feedback = excluded.translation_feedback,
+            highlights_json = excluded.highlights_json,
+            date = excluded.date,
+            day_number = excluded.day_number,
+            completed_at = CURRENT_TIMESTAMP
+    """, (user_id, actual_reading_id, today_str, day_number, translation_text, json.dumps(feedback, ensure_ascii=False), json.dumps({"words": highlighted_words, "phrases": highlighted_phrases}, ensure_ascii=False)))
+
     conn.commit()
     conn.close()
 

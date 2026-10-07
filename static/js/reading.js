@@ -43,7 +43,7 @@ async function selectReadingLevel(lvl, loadFirst = true) {
 
   // Fetch list of chapters for this level
   try {
-    const listRes = await fetch(`/api/reading/list?level=${lvl}`);
+    const listRes = await fetch(`/api/reading/list?level=${lvl}&user_id=${state.currentUser}`);
     readingChaptersList = await listRes.json();
 
     const select = document.getElementById("reading-chapter-select");
@@ -51,10 +51,13 @@ async function selectReadingLevel(lvl, loadFirst = true) {
       select.innerHTML = readingChaptersList.map((r) => {
         // Clean title
         const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
+        const checkPrefix = r.is_completed ? '✅ ' : '📖 ';
+        const completedDateSuffix = (r.is_completed && r.completed_date) ? ` (${r.completed_date})` : '';
+
         if (lvl === 'all') {
-          return `<option value="${r.id}">[${r.level}] Cap. ${r.chapter}: ${cleanName}</option>`;
+          return `<option value="${r.id}">${checkPrefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${completedDateSuffix}</option>`;
         }
-        return `<option value="${r.id}">Capítulo ${r.chapter}: ${cleanName}</option>`;
+        return `<option value="${r.id}">${checkPrefix}Capítulo ${r.chapter}: ${cleanName}${completedDateSuffix}</option>`;
       }).join("");
 
       // Check if user had a saved chapter
@@ -99,7 +102,7 @@ async function onReadingChapterDropdownChange(readingId) {
 
 async function loadReadingById(readingId) {
   try {
-    const res = await fetch(`/api/reading?id=${readingId}`);
+    const res = await fetch(`/api/reading?id=${readingId}&user_id=${state.currentUser}`);
     const reading = await res.json();
     currentReadingData = reading;
 
@@ -112,18 +115,26 @@ async function loadReadingById(readingId) {
     document.getElementById("reading-level").textContent = `${reading.level} Level`;
     document.getElementById("reading-topic").textContent = reading.topic;
 
-    // Audio Player setup
-    const audioContainer = document.getElementById("reading-audio-container");
-    const audioPlayer = document.getElementById("reading-audio-player");
-    if (reading.audio_url && reading.audio_url.trim().length > 0) {
-      audioPlayer.src = reading.audio_url;
-      audioContainer.style.display = "flex";
-    } else {
-      audioContainer.style.display = "none";
-      if (audioPlayer) {
-        audioPlayer.pause();
-        audioPlayer.src = "";
+    // Reading completion status banner and meta pill
+    const banner = document.getElementById("reading-status-banner");
+    const bannerText = document.getElementById("reading-status-banner-text");
+    const pill = document.getElementById("reading-completion-pill");
+
+    if (reading.user_progress && reading.user_progress.is_completed) {
+      const compDate = reading.user_progress.completed_date || 'Fecha registrada';
+      if (banner) {
+        banner.style.display = "flex";
+        if (bannerText) {
+          bannerText.textContent = `¡Completaste esta lectura el ${compDate}! Tu traducción y resumen han sido archivados abajo para tu consulta.`;
+        }
       }
+      if (pill) {
+        pill.style.display = "inline-flex";
+        pill.textContent = `✅ Completado (${compDate})`;
+      }
+    } else {
+      if (banner) banner.style.display = "none";
+      if (pill) pill.style.display = "none";
     }
 
     // Load saved highlights for this chapter
@@ -373,7 +384,9 @@ function loadSavedTranslation() {
   const chapterId = currentReadingData ? currentReadingData.id : 'default';
   const savedLocal = localStorage.getItem(`duohub_trans_ch_${chapterId}_u${state.currentUser}`);
   
-  if (savedLocal) {
+  if (currentReadingData && currentReadingData.user_progress && currentReadingData.user_progress.translation_text) {
+    textarea.value = currentReadingData.user_progress.translation_text;
+  } else if (savedLocal) {
     textarea.value = savedLocal;
   } else if (state.todayLog && state.todayLog.reading_translation) {
     textarea.value = state.todayLog.reading_translation;
@@ -385,7 +398,9 @@ function loadSavedTranslation() {
 
   // Load saved evaluation feedback if any
   const savedFbLocal = localStorage.getItem(`duohub_trans_fb_ch_${chapterId}_u${state.currentUser}`);
-  if (savedFbLocal) {
+  if (currentReadingData && currentReadingData.user_progress && currentReadingData.user_progress.translation_feedback) {
+    renderTranslationFeedback(currentReadingData.user_progress.translation_feedback);
+  } else if (savedFbLocal) {
     try {
       renderTranslationFeedback(JSON.parse(savedFbLocal));
     } catch (e) {}
@@ -449,6 +464,8 @@ async function submitTranslationForEvaluation() {
         localStorage.setItem(`duohub_trans_fb_ch_${currentReadingData.id}_u${state.currentUser}`, JSON.stringify(data.feedback));
       }
       fetchStatusAndRefresh();
+      // Reload chapters dropdown to show completion checkmark
+      selectReadingLevel(currentSelectedLevel);
     } else {
       alert(data.error || "Ocurrió un error al auditar la traducción.");
     }
@@ -564,7 +581,15 @@ function loadSavedSummary() {
   const resultsBox = document.getElementById("summary-evaluation-results");
   if (!summaryTextarea) return;
 
-  if (state.todayLog && state.todayLog.reading_summary) {
+  if (currentReadingData && currentReadingData.user_progress && currentReadingData.user_progress.summary_text) {
+    summaryTextarea.value = currentReadingData.user_progress.summary_text;
+    updateWordCount();
+    if (currentReadingData.user_progress.summary_feedback) {
+      renderSummaryFeedback(currentReadingData.user_progress.summary_feedback);
+    } else if (resultsBox) {
+      resultsBox.style.display = "none";
+    }
+  } else if (state.todayLog && state.todayLog.reading_summary) {
     summaryTextarea.value = state.todayLog.reading_summary;
     updateWordCount();
     if (state.todayLog.reading_feedback) {
@@ -617,6 +642,7 @@ async function submitSummaryForEvaluation() {
         user_id: state.currentUser,
         date: state.currentDate,
         day: state.currentDay,
+        reading_id: currentReadingData ? currentReadingData.id : null,
         summary_text: summaryText
       })
     });
@@ -626,6 +652,8 @@ async function submitSummaryForEvaluation() {
       renderSummaryFeedback(data.feedback);
       speakEnglish("Summary evaluated successfully!", 1.0);
       fetchStatusAndRefresh();
+      // Reload chapters dropdown to show completion checkmark
+      selectReadingLevel(currentSelectedLevel);
     } else {
       alert(data.error || "Ocurrió un error al evaluar el resumen.");
     }

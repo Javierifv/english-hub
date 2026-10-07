@@ -76,6 +76,26 @@ def init_db():
     );
     """)
 
+    # 3b. User Reading Progress (Per-Chapter Tracking & Audit History)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_reading_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        reading_id INTEGER NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date TEXT NOT NULL,
+        day_number INTEGER DEFAULT 1,
+        translation_text TEXT,
+        translation_feedback TEXT,
+        summary_text TEXT,
+        summary_feedback TEXT,
+        highlights_json TEXT,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (reading_id) REFERENCES readings (id),
+        UNIQUE(user_id, reading_id)
+    );
+    """)
+
     # 4. Listening & Shadowing table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS listening_shadowing (
