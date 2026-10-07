@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
 </head>
 <body>
 
@@ -125,7 +125,7 @@
       <div class="panel-header">
         <div>
           <h2>Paso 1: Vocabulario Esencial (English Path)</h2>
-          <p class="section-desc">Aprende, califica tu nivel de retención (1 a 5) y pon a prueba tu memoria con el quiz interactivo.</p>
+          <p class="section-desc">Aprende el vocabulario diario, redacta tu oración de contexto y supera los Tests de Dominio (Ronda 1 y 2) para subir automáticamente tu nivel de retención Tobo (1 a 5).</p>
         </div>
         <div class="panel-header-actions">
           <button class="btn btn-secondary btn-sm" onclick="openSettingsModal()">
@@ -143,7 +143,7 @@
           🗂️ Tarjetas del Día (<span id="vocab-count-badge">5</span>)
         </button>
         <button class="subnav-btn" id="subnav-quiz" onclick="switchVocabView('quiz')">
-          🎮 Test de Dominio (Estilo Tobo / Busuu)
+          🎮 Test de Dominio (Rondas 1 &amp; 2)
         </button>
         <button class="subnav-btn" id="subnav-srs" onclick="switchVocabView('srs')">
           🧠 Banco de Repaso Espaciado (SRS)
@@ -173,8 +173,8 @@
         <div class="card quiz-arena-card">
           <div class="quiz-header">
             <div>
-              <span class="quiz-badge">TEST DE RETENCIÓN</span>
-              <h3 id="quiz-question-title">Pregunta 1 de 5</h3>
+              <span class="quiz-badge" id="quiz-round-badge">RONDA 1: RECONOCIMIENTO (NIVEL 3/5)</span>
+              <h3 id="quiz-question-title">Pregunta 1 de 10</h3>
             </div>
             <div class="quiz-progress-wrap">
               <div id="quiz-progress-bar" class="quiz-progress-fill" style="width: 20%"></div>
@@ -712,11 +712,11 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/js/app.js"></script>
-  <script src="/static/js/vocab.js"></script>
-  <script src="/static/js/reading.js"></script>
-  <script src="/static/js/listening.js"></script>
-  <script src="/static/js/shadowing.js"></script>
-  <script src="/static/js/speaking.js"></script>
+  <script src="/static/js/app.js?v=2.2"></script>
+  <script src="/static/js/vocab.js?v=2.2"></script>
+  <script src="/static/js/reading.js?v=2.2"></script>
+  <script src="/static/js/listening.js?v=2.2"></script>
+  <script src="/static/js/shadowing.js?v=2.2"></script>
+  <script src="/static/js/speaking.js?v=2.2"></script>
 </body>
 </html>

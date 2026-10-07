@@ -383,77 +383,234 @@ def save_sentence():
 def get_vocab_quiz():
     day_number = request.args.get("day", default=1, type=int)
     user_id = request.args.get("user_id", default=1, type=int)
+    word_ids_param = request.args.get("word_ids", "").strip()
+    round_num = request.args.get("round", default=1, type=int)
 
     conn = get_db()
     cursor = conn.cursor()
 
-    # Get today's words
-    cursor.execute("SELECT words_per_day FROM users WHERE id = ?", (user_id,))
-    u_row = cursor.fetchone()
-    count = u_row["words_per_day"] if u_row else 5
+    words = []
+    if word_ids_param:
+        try:
+            ids = [int(x.strip()) for x in word_ids_param.split(",") if x.strip().isdigit()]
+            if ids:
+                placeholders = ",".join("?" for _ in ids)
+                rows = cursor.execute(f"SELECT id, word, translation, definition, example_en FROM vocabulary WHERE id IN ({placeholders})", ids).fetchall()
+                id_map = {r["id"]: dict(r) for r in rows}
+                # Preserve exact order of passed IDs
+                words = [id_map[i] for i in ids if i in id_map]
+        except Exception:
+            words = []
 
-    offset = max(0, (day_number - 1) * count)
-    words = cursor.execute("SELECT id, word, translation, example_en FROM vocabulary ORDER BY id ASC LIMIT ? OFFSET ?", (count, offset)).fetchall()
+    if not words:
+        # Fallback to user day calculation
+        cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
+        u_row = cursor.fetchone()
+        count = u_row["words_per_day"] if u_row else 5
+        mode = u_row["selection_mode"] if u_row else "progressive"
+        if mode == "random":
+            offset_seed = (day_number * 37) % 500
+            words = [dict(r) for r in cursor.execute("""
+                SELECT id, word, translation, definition, example_en
+                FROM vocabulary
+                ORDER BY ((id * 31 + ?) % 534) ASC
+                LIMIT ?
+            """, (offset_seed, count)).fetchall()]
+        else:
+            offset = max(0, (day_number - 1) * count)
+            words = [dict(r) for r in cursor.execute("""
+                SELECT id, word, translation, definition, example_en
+                FROM vocabulary
+                ORDER BY id ASC
+                LIMIT ? OFFSET ?
+            """, (count, offset)).fetchall()]
 
-    # Get random distractors
-    all_translations = [r["translation"] for r in cursor.execute("SELECT translation FROM vocabulary ORDER BY RANDOM() LIMIT 40").fetchall()]
-    all_words = [r["word"] for r in cursor.execute("SELECT word FROM vocabulary ORDER BY RANDOM() LIMIT 40").fetchall()]
+    if not words:
+        conn.close()
+        return jsonify([])
+
+    # Get random distractors from other words in vocabulary (excluding the current words)
+    current_ids = [w["id"] for w in words]
+    exclude_placeholders = ",".join("?" for _ in current_ids)
+    all_translations = [r["translation"] for r in cursor.execute(
+        f"SELECT translation FROM vocabulary WHERE id NOT IN ({exclude_placeholders}) ORDER BY RANDOM() LIMIT 50",
+        current_ids
+    ).fetchall()]
+    all_words = [r["word"] for r in cursor.execute(
+        f"SELECT word FROM vocabulary WHERE id NOT IN ({exclude_placeholders}) ORDER BY RANDOM() LIMIT 50",
+        current_ids
+    ).fetchall()]
+
+    if len(all_translations) < 4:
+        all_translations = ["lograr", "éxito", "habilidad", "desafío", "aprender", "camino", "esfuerzo"]
+    if len(all_words) < 4:
+        all_words = ["achieve", "success", "skill", "challenge", "learn", "path", "effort"]
 
     questions = []
-    for w in words:
-        # 1. Multiple Choice: Word -> Meaning
-        distractors_trans = [t for t in all_translations if t != w["translation"]]
-        sample_dist = random.sample(distractors_trans, min(3, len(distractors_trans)))
-        options_trans = sample_dist + [w["translation"]]
-        random.shuffle(options_trans)
 
-        questions.append({
-            "type": "meaning",
-            "word_id": w["id"],
-            "target": w["word"],
-            "prompt": f"¿Cuál es el significado correcto de '{w['word']}'?",
-            "correct": w["translation"],
-            "options": options_trans
-        })
+    if round_num == 1:
+        # --- RONDA 1: Reconocimiento (Significado & Audio listening) -> Nivel 3/5 ---
+        for w in words:
+            # 1. Multiple Choice: Word -> Meaning
+            distractors_trans = [t for t in all_translations if t != w["translation"]]
+            sample_dist = random.sample(distractors_trans, min(3, len(distractors_trans)))
+            options_trans = sample_dist + [w["translation"]]
+            random.shuffle(options_trans)
 
-        # 2. Ear check: Audio listening
-        distractors_words = [dw for dw in all_words if dw.lower() != w["word"].lower()]
-        sample_dw = random.sample(distractors_words, min(3, len(distractors_words)))
-        options_words = sample_dw + [w["word"]]
-        random.shuffle(options_words)
-
-        questions.append({
-            "type": "listening",
-            "word_id": w["id"],
-            "target": w["word"],
-            "prompt": "Escucha atentamente y selecciona la palabra correcta:",
-            "correct": w["word"],
-            "options": options_words
-        })
-
-        # 3. Letter Puzzle / Word Scramble
-        clean_word = re.sub(r"[^a-zA-Z]", "", w["word"]).upper()
-        if 3 <= len(clean_word) <= 12:
-            letters = list(clean_word)
-            scrambled = letters.copy()
-            attempts = 0
-            while scrambled == letters and attempts < 6:
-                random.shuffle(scrambled)
-                attempts += 1
             questions.append({
-                "type": "scramble",
+                "round": 1,
+                "type": "meaning",
                 "word_id": w["id"],
-                "target": clean_word,
-                "display_word": w["word"],
-                "prompt": f"Ordena las letras en inglés para: '{w['translation']}'",
-                "translation": w["translation"],
-                "correct": clean_word,
-                "letters": scrambled
+                "target": w["word"],
+                "prompt": f"¿Cuál es el significado correcto de '{w['word']}'?",
+                "correct": w["translation"],
+                "options": options_trans
             })
 
+            # 2. Ear check: Audio listening
+            distractors_words = [dw for dw in all_words if dw.lower() != w["word"].lower()]
+            sample_dw = random.sample(distractors_words, min(3, len(distractors_words)))
+            options_words = sample_dw + [w["word"]]
+            random.shuffle(options_words)
+
+            questions.append({
+                "round": 1,
+                "type": "listening",
+                "word_id": w["id"],
+                "target": w["word"],
+                "prompt": "Escucha atentamente y selecciona la palabra correcta:",
+                "correct": w["word"],
+                "options": options_words
+            })
+
+    else:
+        # --- RONDA 2: Mayor Dificultad (Word Scramble & Traducción Inversa ES -> EN) -> Nivel 5/5 ---
+        for w in words:
+            # 1. Letter Puzzle / Word Scramble
+            clean_word = re.sub(r"[^a-zA-Z]", "", w["word"]).upper()
+            if len(clean_word) >= 2:
+                letters = list(clean_word)
+                scrambled = letters.copy()
+                attempts = 0
+                while scrambled == letters and attempts < 10:
+                    random.shuffle(scrambled)
+                    attempts += 1
+                questions.append({
+                    "round": 2,
+                    "type": "scramble",
+                    "word_id": w["id"],
+                    "target": clean_word,
+                    "display_word": w["word"],
+                    "prompt": f"Ordena las letras en inglés para: '{w['translation']}'",
+                    "translation": w["translation"],
+                    "correct": clean_word,
+                    "letters": scrambled
+                })
+
+            # 2. Reverse Meaning (ES -> EN)
+            distractors_words = [dw for dw in all_words if dw.lower() != w["word"].lower()]
+            sample_dw = random.sample(distractors_words, min(3, len(distractors_words)))
+            options_words = sample_dw + [w["word"]]
+            random.shuffle(options_words)
+
+            questions.append({
+                "round": 2,
+                "type": "reverse_meaning",
+                "word_id": w["id"],
+                "target": w["translation"],
+                "prompt": f"¿Cómo se traduce al inglés '{w['translation']}'?",
+                "correct": w["word"],
+                "options": options_words
+            })
+
+    # Shuffle so question types alternate smoothly, testing all current day words
     random.shuffle(questions)
     conn.close()
-    return jsonify(questions[:8])
+    return jsonify(questions)
+
+@app.route("/api/vocab/quiz/submit-results", methods=["POST"])
+def submit_quiz_results():
+    data = request.json or {}
+    user_id = data.get("user_id", 1)
+    round_num = int(data.get("round", 1))
+    word_results = data.get("word_results", {})  # { "word_id": true/false }
+    date_str = data.get("date") or date.today().isoformat()
+    day_number = int(data.get("day", 1))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    updated = {}
+    for w_id_str, is_correct in word_results.items():
+        try:
+            w_id = int(w_id_str)
+        except (ValueError, TypeError):
+            continue
+
+        cursor.execute("SELECT mastery_level, review_count FROM user_word_progress WHERE user_id = ? AND word_id = ?", (user_id, w_id))
+        row = cursor.fetchone()
+        cur_level = row["mastery_level"] if row else 1
+        cur_reviews = row["review_count"] if row else 0
+
+        # Tobo automated mastery calculation:
+        if round_num == 1:
+            if is_correct:
+                # Round 1 passed: assign Level 3 / 5 (~60% score / recognition)
+                new_level = max(cur_level, 3)
+            else:
+                new_level = 1 if cur_level <= 2 else cur_level
+        elif round_num == 2:
+            if is_correct:
+                # Round 2 passed (higher difficulty): unlock maximum score Level 5 / 5 (100% Mastered)
+                new_level = 5
+            else:
+                new_level = max(cur_level, 3)
+        else:
+            new_level = cur_level
+
+        new_reviews = cur_reviews + 1
+
+        cursor.execute("""
+            INSERT INTO user_word_progress (user_id, word_id, mastery_level, review_count, last_reviewed_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, word_id) DO UPDATE SET
+                mastery_level = excluded.mastery_level,
+                review_count = excluded.review_count,
+                last_reviewed_at = CURRENT_TIMESTAMP
+        """, (user_id, w_id, new_level, new_reviews))
+
+        updated[w_id] = {
+            "mastery_level": new_level,
+            "review_count": new_reviews
+        }
+
+    # Automatically mark vocab_done in daily_logs
+    cursor.execute("""
+        INSERT INTO daily_logs (user_id, date, day_number, vocab_done)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(user_id, date) DO UPDATE SET
+            vocab_done = 1
+    """, (user_id, date_str, day_number))
+
+    # Recalculate completed_count in daily_logs
+    cursor.execute("""
+        SELECT vocab_done, reading_done, listening_done, shadowing_done, speaking_done 
+        FROM daily_logs WHERE user_id = ? AND date = ?
+    """, (user_id, date_str))
+    log_row = cursor.fetchone()
+    if log_row:
+        c_count = sum([log_row["vocab_done"] or 0, log_row["reading_done"] or 0, 
+                       log_row["listening_done"] or 0, log_row["shadowing_done"] or 0, 
+                       log_row["speaking_done"] or 0])
+        cursor.execute("UPDATE daily_logs SET completed_count = ? WHERE user_id = ? AND date = ?", (c_count, user_id, date_str))
+
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "success": True,
+        "round": round_num,
+        "updated": updated
+    })
 
 @app.route("/api/vocab/srs", methods=["GET"])
 def get_srs_stats():

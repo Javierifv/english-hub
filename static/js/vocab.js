@@ -3,9 +3,40 @@
  */
 
 let currentDayWords = [];
+let currentQuizRound = 1;
 let quizQuestions = [];
 let currentQuizIdx = 0;
 let quizScore = 0;
+let quizWordResults = {}; // { [wordId]: boolean }
+
+function getMasteryBadge(lvl) {
+  switch (lvl) {
+    case 5: return '🏆 Nivel 5/5';
+    case 4: return '🔥 Nivel 4/5';
+    case 3: return '⭐ Nivel 3/5';
+    case 2: return '📖 Nivel 2/5';
+    default: return '🌱 Nivel 1/5';
+  }
+}
+
+function getMasteryHint(lvl) {
+  switch (lvl) {
+    case 5: return '¡Dominada al 100%! Superó Ronda 2 (Deletreo activo).';
+    case 4: return 'Alta retención en repasos espaciados.';
+    case 3: return 'Ronda 1 superada (Significado y Reconocimiento).';
+    case 2: return 'En progreso de aprendizaje.';
+    default: return 'Pendiente de evaluar en el Test de Dominio.';
+  }
+}
+
+function renderMasteryStars(lvl) {
+  const currentLvl = Math.max(1, Math.min(5, lvl || 1));
+  return [1, 2, 3, 4, 5].map(starNum => {
+    const isFilled = starNum <= currentLvl;
+    const cls = isFilled ? "mastery-star-filled" : "mastery-star-empty";
+    return `<span class="${cls}">★</span>`;
+  }).join("");
+}
 
 async function loadVocabData(day) {
   const container = document.getElementById("vocab-cards-grid");
@@ -19,6 +50,10 @@ async function loadVocabData(day) {
       return;
     }
 
+    // Update count badge
+    const badge = document.getElementById("vocab-count-badge");
+    if (badge) badge.textContent = words.length;
+
     container.innerHTML = words.map(w => renderVocabCard(w)).join("");
 
   } catch (err) {
@@ -28,14 +63,11 @@ async function loadVocabData(day) {
 }
 
 function renderVocabCard(w) {
-  const starsHtml = [1, 2, 3, 4, 5].map(starNum => {
-    const isActive = (w.user_mastery || 1) >= starNum ? "active" : "";
-    return `<button class="star-btn ${isActive}" onclick="rateWordMastery(${w.id}, ${starNum}, this)" title="Calificar nivel ${starNum} de 5">★</button>`;
-  }).join("");
+  const lvl = w.user_mastery || 1;
 
   const partnerQuote = w.partner_sentence ? `
     <div class="partner-sentence-quote">
-      <span class="partner-quote-label">💡 Frase de ${w.partner_name || 'Compañero'}:</span>
+      <span class="partner-quote-label">💡 Frase de ${escapeHtml(w.partner_name || 'Compañero')}:</span>
       "${escapeHtml(w.partner_sentence)}"
     </div>
   ` : "";
@@ -60,21 +92,31 @@ function renderVocabCard(w) {
         <div class="vocab-example-es">${escapeHtml(w.example_es || '')}</div>
       </div>
 
-      <!-- Mastery Rating (Scale 1 to 5) -->
-      <div class="mastery-rating-box">
+      <!-- Automated Tobo Mastery (System Calibrated 1 to 5) -->
+      <div class="mastery-system-box" title="Calificación calculada automáticamente por el sistema tras rendir los Tests de Dominio">
         <div class="mastery-title-row">
-          <span>Nivel de Retención:</span>
-          <span class="rating-label-text" id="rating-text-${w.id}">Nivel ${w.user_mastery || 1}/5</span>
+          <span class="mastery-system-label">
+            <span class="tobo-tag">TOBO SRS</span> Retención:
+          </span>
+          <span class="mastery-badge badge-lvl-${lvl}">
+            ${getMasteryBadge(lvl)}
+          </span>
         </div>
-        <div class="stars-selector" id="stars-row-${w.id}">
-          ${starsHtml}
+        <div class="mastery-stars-bar">
+          ${renderMasteryStars(lvl)}
+        </div>
+        <div class="mastery-system-hint">
+          ${getMasteryHint(lvl)}
         </div>
       </div>
 
       <!-- Personal Sentence & Partner Quote -->
       <div class="personal-sentence-box">
         <div class="sentence-input-row">
-          <input type="text" id="sentence-input-${w.id}" placeholder="Tu frase con '${escapeHtml(w.word)}'..." value="${escapeHtml(w.user_sentence || '')}">
+          <input type="text" id="sentence-input-${w.id}" 
+                 placeholder="Tu frase con '${escapeHtml(w.word)}'..." 
+                 value="${escapeHtml(w.user_sentence || '')}"
+                 onkeydown="if(event.key === 'Enter') savePersonalSentence(${w.id})">
           <button class="btn btn-secondary btn-sm" onclick="savePersonalSentence(${w.id})" title="Guardar frase (visible para tu compañero)">
             Guardar
           </button>
@@ -91,36 +133,6 @@ function escapeQuotes(str) {
 
 function escapeHtml(str) {
   return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-/* --- RATE MASTERY (1 TO 5 STARS) --- */
-async function rateWordMastery(wordId, rating, btn) {
-  try {
-    const res = await fetch("/api/vocab/rate-mastery", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: state.currentUser,
-        word_id: wordId,
-        rating: rating
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      // Update stars visually
-      const row = document.getElementById(`stars-row-${wordId}`);
-      if (row) {
-        const starButtons = row.querySelectorAll(".star-btn");
-        starButtons.forEach((sBtn, idx) => {
-          sBtn.classList.toggle("active", idx < rating);
-        });
-      }
-      const label = document.getElementById(`rating-text-${wordId}`);
-      if (label) label.textContent = `Nivel ${rating}/5`;
-    }
-  } catch (err) {
-    console.error("Error rating word:", err);
-  }
 }
 
 /* --- SAVE PERSONAL EXAMPLE SENTENCE --- */
@@ -153,39 +165,74 @@ async function savePersonalSentence(wordId) {
 /* --- SUB-VIEWS TOGGLE (CARDS vs QUIZ vs SRS) --- */
 function switchVocabView(viewName) {
   document.querySelectorAll(".subnav-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById(`subnav-${viewName}`).classList.add("active");
+  const btn = document.getElementById(`subnav-${viewName}`);
+  if (btn) btn.classList.add("active");
 
   document.getElementById("vocab-view-cards").style.display = (viewName === 'cards') ? 'block' : 'none';
   document.getElementById("vocab-view-quiz").style.display = (viewName === 'quiz') ? 'block' : 'none';
   document.getElementById("vocab-view-srs").style.display = (viewName === 'srs') ? 'block' : 'none';
 
   if (viewName === 'quiz') {
-    startVocabQuiz();
+    startVocabQuiz(1);
   } else if (viewName === 'srs') {
     loadSrsView();
   }
 }
 
-/* --- INTERACTIVE QUIZ ENGINE (TOBO / BUSUU STYLE) --- */
-async function startVocabQuiz() {
+/* --- INTERACTIVE TOBO TWO-ROUND QUIZ ENGINE --- */
+async function startVocabQuiz(round = 1) {
+  currentQuizRound = round;
   quizScore = 0;
   currentQuizIdx = 0;
+  quizWordResults = {};
+
+  const badge = document.getElementById("quiz-round-badge");
+  if (badge) {
+    badge.textContent = (round === 1) 
+      ? "RONDA 1: RECONOCIMIENTO (NIVEL 3/5)" 
+      : "RONDA 2: MAYOR DIFICULTAD (NIVEL 5/5)";
+  }
+
   document.getElementById("quiz-score-indicator").textContent = "Aciertos: 0";
   document.getElementById("btn-next-quiz").style.display = "none";
+  document.getElementById("quiz-progress-bar").style.width = "0%";
+
+  // Ensure currentDayWords is populated
+  if (!currentDayWords || currentDayWords.length === 0) {
+    try {
+      const res = await fetch(`/api/vocab?day=${state.currentDay}&user_id=${state.currentUser}`);
+      currentDayWords = await res.json();
+    } catch (e) {
+      console.error("Error prefetching words for quiz:", e);
+    }
+  }
+
+  if (!currentDayWords || currentDayWords.length === 0) {
+    document.getElementById("quiz-prompt-box").textContent = "No hay palabras disponibles para evaluar en esta fecha.";
+    return;
+  }
+
+  // Initialize per-word success tracker to true
+  currentDayWords.forEach(w => {
+    quizWordResults[w.id] = true;
+  });
+
+  const wordIds = currentDayWords.map(w => w.id).join(",");
 
   try {
-    const res = await fetch(`/api/vocab/quiz?day=${state.currentDay}&user_id=${state.currentUser}`);
+    const res = await fetch(`/api/vocab/quiz?word_ids=${wordIds}&round=${round}&user_id=${state.currentUser}&day=${state.currentDay}`);
     const questions = await res.json();
     quizQuestions = questions;
 
     if (!questions || questions.length === 0) {
-      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para el quiz de hoy.";
+      document.getElementById("quiz-prompt-box").textContent = "No hay preguntas disponibles para el test de hoy.";
       return;
     }
 
     renderQuizQuestion(0);
   } catch (err) {
     console.error("Error loading quiz:", err);
+    document.getElementById("quiz-prompt-box").textContent = "Error de conexión al cargar las preguntas del test.";
   }
 }
 
@@ -219,7 +266,7 @@ function renderQuizQuestion(idx) {
     speakEnglish(q.correct, 0.9);
 
     grid.innerHTML = q.options.map(opt => `
-      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')">
+      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}', ${q.word_id})">
         ${escapeHtml(opt)}
       </button>
     `).join("");
@@ -229,12 +276,12 @@ function renderQuizQuestion(idx) {
     initScramblePuzzle(q);
 
   } else {
-    // Standard multiple choice
+    // Standard multiple choice (meaning or reverse_meaning)
     grid.style.display = "grid";
     promptBox.innerHTML = `<div>${q.prompt}</div>`;
 
     grid.innerHTML = q.options.map(opt => `
-      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}')">
+      <button class="quiz-option-btn" onclick="handleQuizAnswer(this, '${escapeQuotes(opt)}', '${escapeQuotes(q.correct)}', ${q.word_id})">
         ${escapeHtml(opt)}
       </button>
     `).join("");
@@ -245,6 +292,7 @@ function renderQuizQuestion(idx) {
 function initScramblePuzzle(q) {
   const promptBox = document.getElementById("quiz-prompt-box");
   currentScramble = {
+    wordId: q.word_id,
     target: q.target,
     displayWord: q.display_word,
     slots: Array(q.target.length).fill(null), // will store { char, tileIdx }
@@ -253,7 +301,7 @@ function initScramblePuzzle(q) {
 
   promptBox.innerHTML = `
     <div class="scramble-puzzle-wrap">
-      <div class="scramble-translation-prompt">🇪🇸 Traduce y Ordena: <strong>"${escapeHtml(q.translation)}"</strong></div>
+      <div class="scramble-translation-prompt">🇪🇸 Traduce y Ordena en inglés: <strong>"${escapeHtml(q.translation)}"</strong></div>
       
       <!-- Slots where letters will land -->
       <div class="scramble-slots-row" id="scramble-slots-row"></div>
@@ -343,13 +391,16 @@ function checkScrambleAnswer() {
     document.getElementById("btn-next-quiz").style.display = "inline-flex";
   } else {
     slotElements.forEach(el => el.classList.add("wrong-all"));
+    if (currentScramble.wordId) {
+      quizWordResults[currentScramble.wordId] = false;
+    }
     setTimeout(() => {
       resetScramble();
     }, 800);
   }
 }
 
-function handleQuizAnswer(btn, chosen, correct) {
+function handleQuizAnswer(btn, chosen, correct, wordId) {
   const allBtns = document.querySelectorAll(".quiz-option-btn");
   allBtns.forEach(b => b.disabled = true);
 
@@ -360,6 +411,9 @@ function handleQuizAnswer(btn, chosen, correct) {
     speakEnglish("Correct!", 1.1);
   } else {
     btn.classList.add("wrong");
+    if (wordId) {
+      quizWordResults[wordId] = false;
+    }
     allBtns.forEach(b => {
       if (b.textContent.trim().toLowerCase() === correct.toLowerCase()) {
         b.classList.add("correct");
@@ -382,24 +436,74 @@ async function finishQuiz() {
   nextBtn.style.display = "none";
 
   const total = quizQuestions.length;
-  promptBox.innerHTML = `
-    <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎉</div>
-    <div style="color: var(--busuu-emerald); font-size: 1.6rem; font-weight: 800;">¡Quiz Completado!</div>
-    <div style="color: var(--text-muted); font-size: 1rem; margin-top: 0.25rem;">
-      Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos.
-    </div>
-  `;
 
-  grid.innerHTML = `
-    <div style="grid-column: span 2; text-align: center;">
-      <button class="btn btn-success btn-lg" onclick="markVocabDone(); switchVocabView('cards');">
-        ✓ Confirmar Vocabulario de Hoy
-      </button>
-    </div>
-  `;
+  // Submit results to backend for automated Tobo mastery calculation
+  try {
+    await fetch("/api/vocab/quiz/submit-results", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: state.currentUser,
+        round: currentQuizRound,
+        word_results: quizWordResults,
+        date: state.currentDateStr,
+        day: state.currentDay
+      })
+    });
+  } catch (e) {
+    console.error("Error submitting quiz results:", e);
+  }
 
-  // Auto-mark vocab as completed
-  await markVocabDone();
+  // Update header progress in real-time
+  if (typeof updateStatusHeader === "function") {
+    updateStatusHeader();
+  }
+
+  if (currentQuizRound === 1) {
+    promptBox.innerHTML = `
+      <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">⭐</div>
+      <div style="color: var(--busuu-emerald); font-size: 1.55rem; font-weight: 800;">¡Ronda 1 Completada con Éxito!</div>
+      <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
+        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Tus palabras han alcanzado <strong>Nivel 3/5</strong>.
+      </div>
+      <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #1E40AF; font-size: 0.88rem; text-align: left; line-height: 1.45;">
+        💡 <strong>Sistema Tobo SRS:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong>, rinde la <strong>Ronda 2</strong> con mayor dificultad (deletreo activo y traducción).
+      </div>
+    `;
+
+    grid.style.display = "grid";
+    grid.innerHTML = `
+      <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
+        <button class="btn btn-primary btn-lg" onclick="startVocabQuiz(2)">
+          🚀 Iniciar Ronda 2 (Mayor Dificultad - Desbloquear Nivel 5/5)
+        </button>
+        <button class="btn btn-secondary btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
+          🗂️ Ver Tarjetas Actualizadas (Nivel 3/5)
+        </button>
+      </div>
+    `;
+  } else {
+    // Round 2 completed!
+    promptBox.innerHTML = `
+      <div style="font-size: 2.4rem; margin-bottom: 0.35rem;">🏆</div>
+      <div style="color: var(--busuu-emerald); font-size: 1.6rem; font-weight: 800;">¡Dominio Total Desbloqueado!</div>
+      <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
+        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado el <strong>Nivel 5/5 (⭐⭐⭐⭐⭐)</strong> en las palabras de hoy.
+      </div>
+      <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #065F46; font-size: 0.88rem; text-align: left; line-height: 1.45;">
+        🎉 <strong>¡Excelente trabajo!</strong> Has demostrado retención activa en deletreo y traducción. Las palabras han sido registradas como dominadas al 100% en tu banco de repaso espaciado.
+      </div>
+    `;
+
+    grid.style.display = "grid";
+    grid.innerHTML = `
+      <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.5rem;">
+        <button class="btn btn-success btn-lg" onclick="loadVocabData(state.currentDay); switchVocabView('cards');">
+          🗂️ Volver a Tarjetas (Ver Nivel 5/5)
+        </button>
+      </div>
+    `;
+  }
 }
 
 /* --- SPACED REPETITION (SRS) VIEW --- */
@@ -431,10 +535,8 @@ async function loadSrsView() {
           <div style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.2rem;">"${escapeHtml(item.example_en || '')}"</div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span class="mastery-badge badge-lvl-${item.mastery_level || 1}">${getMasteryBadge(item.mastery_level || 1)}</span>
           <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(item.word)}', 0.9)" title="Escuchar">🔊</button>
-          <button class="btn btn-sm btn-outline" onclick="rateWordMastery(${item.id}, ${Math.min(5, (item.mastery_level || 1) + 1)}, this); loadSrsView();">
-            ⭐ Subir Nivel (+1)
-          </button>
         </div>
       </div>
     `).join("");

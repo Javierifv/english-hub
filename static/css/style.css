@@ -682,6 +682,9 @@ body {
   flex-direction: column;
   transition: var(--transition-fast);
   box-shadow: var(--shadow-card);
+  box-sizing: border-box;
+  overflow: hidden;
+  word-break: break-word;
 }
 
 .vocab-card:hover {
@@ -723,6 +726,7 @@ body {
   cursor: pointer;
   font-size: 1rem;
   transition: var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .btn-speak-word:hover {
@@ -753,7 +757,8 @@ body {
   padding: 0.65rem 0.85rem;
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 0.85rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
+  box-sizing: border-box;
 }
 
 .vocab-example-en {
@@ -767,47 +772,84 @@ body {
   color: var(--text-muted);
 }
 
-/* Mastery Rating Widget (1 to 5 Stars) */
-.mastery-rating-box {
+/* Automated Tobo Mastery Display (Read-Only) */
+.mastery-system-box {
   background: #F8FAFC;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 0.65rem 0.75rem;
   margin-bottom: 0.85rem;
-  border: 1px solid var(--border-subtle);
+  box-sizing: border-box;
 }
 
 .mastery-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.4rem;
   margin-bottom: 0.35rem;
-  font-size: 0.78rem;
+}
+
+.mastery-system-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
   color: var(--text-muted);
   font-weight: 700;
+  white-space: nowrap;
 }
 
-.stars-selector {
+.tobo-tag {
+  background: #EEF2FF;
+  color: #4F46E5;
+  border: 1px solid #C7D2FE;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.12rem 0.35rem;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.mastery-badge {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-lvl-1 { background: #F1F5F9; color: #64748B; border: 1px solid #E2E8F0; }
+.badge-lvl-2 { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+.badge-lvl-3 { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+.badge-lvl-4 { background: #EDE9FE; color: #6D28D9; border: 1px solid #DDD6FE; }
+.badge-lvl-5 { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+
+.mastery-stars-bar {
   display: flex;
-  gap: 0.35rem;
-}
-
-.star-btn {
-  background: transparent;
-  border: none;
-  font-size: 1.35rem;
-  cursor: pointer;
-  color: #CBD5E1;
-  transition: transform 0.15s ease, color 0.15s ease;
+  gap: 0.3rem;
+  font-size: 1.15rem;
   line-height: 1;
+  margin: 0.25rem 0;
 }
 
-.star-btn:hover {
-  transform: scale(1.25);
-  color: #FBBF24;
-}
-
-.star-btn.active {
+.mastery-star-filled {
   color: #F59E0B;
+}
+
+.mastery-star-empty {
+  color: #CBD5E1;
+}
+
+.mastery-system-hint {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0.2rem;
 }
 
 /* Personal Sentence Input & Partner Quote */
@@ -815,16 +857,20 @@ body {
   margin-top: auto;
   border-top: 1px solid var(--border-subtle);
   padding-top: 0.85rem;
+  box-sizing: border-box;
 }
 
 .sentence-input-row {
   display: flex;
   gap: 0.4rem;
   margin-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sentence-input-row input {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0; /* CRITICAL: prevents text input from pushing button outside */
   background: #FFFFFF;
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -832,12 +878,22 @@ body {
   color: var(--text-main);
   font-size: 0.82rem;
   font-family: var(--font-body);
+  box-sizing: border-box;
 }
 
 .sentence-input-row input:focus {
   outline: none;
   border-color: var(--busuu-blue);
   box-shadow: 0 0 0 2px rgba(11, 114, 231, 0.15);
+}
+
+.sentence-input-row .btn,
+.sentence-input-row button {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.42rem 0.75rem;
+  font-size: 0.8rem;
+  box-sizing: border-box;
 }
 
 .partner-sentence-quote {
