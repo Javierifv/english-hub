@@ -27,6 +27,9 @@ async function selectListeningLevel(lvl, loadFirst = true) {
   const btnMap = {
     'A1': 'listening-level-btn-a1',
     'A2': 'listening-level-btn-a2',
+    'B1': 'listening-level-btn-b1',
+    'B2': 'listening-level-btn-b2',
+    'C1': 'listening-level-btn-c1',
     'all': 'listening-level-btn-all'
   };
 

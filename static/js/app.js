@@ -615,7 +615,7 @@ function openPartnerSummaryModal() {
       <div class="empty-state" style="text-align: center; padding: 2rem;">
         <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">⏳</span>
         <strong style="color: #FFF; font-size: 1.1rem;">Tu compañero aún no ha completado el resumen de hoy.</strong>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">Cuando guarde y evalúe su texto con Gemini Flash, podrás leer su redacción y ver sus correcciones aquí.</p>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Cuando guarde y evalúe su texto con IA, podrás leer su redacción y ver sus correcciones aquí.</p>
       </div>
     `;
   } else {

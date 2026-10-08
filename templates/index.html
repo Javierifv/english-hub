@@ -273,7 +273,7 @@
     <section id="panel-reading" class="pillar-panel">
       <div class="panel-header">
         <div>
-          <h2>Paso 2: Lectura Inmersiva & Resumen con IA (Gemini Flash)</h2>
+          <h2>Paso 2: Reading, Translation & Summary</h2>
           <p class="section-desc">Lee con atención durante 15 minutos. Graduado por nivel MCER con resaltador interactivo y evaluación profunda con IA.</p>
         </div>
         <button class="btn btn-secondary btn-sm" id="btn-view-partner-summary" onclick="openPartnerSummaryModal()">
@@ -393,7 +393,7 @@
 
             <div class="studio-actions">
               <button id="btn-evaluate-translation" class="btn btn-primary btn-block" onclick="submitTranslationForEvaluation()">
-                ✨ Auditar Mi Traducción con Gemini Flash
+                ✨ Auditar Mi Traducción con IA
               </button>
             </div>
           </div>
@@ -405,14 +405,14 @@
               <span id="summary-word-count" class="word-counter">0 palabras (Mínimo: 50)</span>
             </div>
             <p class="studio-instruction">
-              Resume las ideas clave con tus propias palabras en inglés. Gemini Flash auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
+              Resume las ideas clave con tus propias palabras en inglés. La IA auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
             </p>
 
             <textarea id="summary-textarea" class="summary-input" rows="11" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
 
             <div class="studio-actions">
               <button id="btn-evaluate-summary" class="btn btn-primary btn-block" onclick="submitSummaryForEvaluation()">
-                ✨ Auditar y Evaluar con Gemini Flash
+                ✨ Auditar y Evaluar con IA
               </button>
             </div>
           </div>
@@ -423,7 +423,7 @@
       <div id="reading-evaluation-full-section" class="card reading-eval-full-card" style="display: none;">
         <div class="eval-full-header">
           <div class="eval-full-title-group">
-            <span class="eval-full-badge">⚡ Gemini Flash AI</span>
+            <span class="eval-full-badge">⚡ Auditoría IA</span>
             <h3 id="reading-eval-main-title">📋 Resultados de la Auditoría & Retroalimentación</h3>
           </div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="closeEvaluationSection()" title="Cerrar panel de auditoría">✕ Cerrar Auditoría</button>
@@ -449,31 +449,40 @@
         <div>
           <h2>Paso 3: Comprensión Auditiva (Listening)</h2>
           <p class="section-desc">
-            Audios oficiales de British Council. Selecciona tu nivel (A1 / A2), reproduce el audio y tipea en inglés lo que logres captar. Al finalizar, compara tu escrito con la transcripción original.
+            Audios oficiales de British Council (A1 a C1). Selecciona tu nivel, reproduce el diálogo y tipea en inglés lo que logres captar. Al finalizar, compara tu escrito con la transcripción original.
           </p>
         </div>
       </div>
 
       <!-- Listening CEFR Level & Track Navigator Toolbar -->
       <div class="listening-toolbar">
-        <div class="level-pills-group">
-          <span class="toolbar-label">Nivel de Listening:</span>
-          <button type="button" class="level-pill-btn active pill-a1" id="listening-level-btn-a1" onclick="selectListeningLevel('A1')">
-            🟢 A1 Principiante
-          </button>
-          <button type="button" class="level-pill-btn" id="listening-level-btn-a2" onclick="selectListeningLevel('A2')">
-            🔵 A2 Pre-intermedio
-          </button>
-          <button type="button" class="level-pill-btn" id="listening-level-btn-all" onclick="selectListeningLevel('all')">
-            🌐 Todos (10 Pistas)
-          </button>
-        </div>
         <div class="track-nav-group">
           <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(-1)" title="Pista Anterior">◀ Anterior</button>
           <select id="listening-track-select" class="chapter-dropdown" onchange="onListeningTrackDropdownChange(this.value)">
             <!-- Tracks populated by JS -->
           </select>
           <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(1)" title="Siguiente Pista">Siguiente ▶</button>
+        </div>
+        <div class="level-pills-group">
+          <span class="toolbar-label">Nivel:</span>
+          <button type="button" class="level-pill-btn active pill-a1" id="listening-level-btn-a1" onclick="selectListeningLevel('A1')">
+            🟢 A1
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-a2" onclick="selectListeningLevel('A2')">
+            🔵 A2
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-b1" onclick="selectListeningLevel('B1')">
+            📘 B1
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-b2" onclick="selectListeningLevel('B2')">
+            📙 B2
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-c1" onclick="selectListeningLevel('C1')">
+            🟣 C1
+          </button>
+          <button type="button" class="level-pill-btn" id="listening-level-btn-all" onclick="selectListeningLevel('all')">
+            🌐 Todos (60)
+          </button>
         </div>
       </div>
 

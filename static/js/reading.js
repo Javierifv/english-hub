@@ -51,19 +51,19 @@ async function selectReadingLevel(lvl, loadFirst = true) {
       select.innerHTML = readingChaptersList.map((r) => {
         const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
         let prefix = '📖 ';
-        let suffix = '';
+        let style = 'color: #475569;';
         if (r.is_completed === 1) {
           prefix = '✅ ';
-          suffix = r.completed_date ? ` (${r.completed_date})` : ' (Completado)';
+          style = 'color: #059669; font-weight: bold;';
         } else if (r.is_completed === 2) {
           prefix = '📝 ';
-          suffix = ' (En proceso)';
+          style = 'color: #2563EB; font-weight: bold;';
         }
 
         if (lvl === 'all') {
-          return `<option value="${r.id}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${suffix}</option>`;
+          return `<option value="${r.id}" style="${style}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}</option>`;
         }
-        return `<option value="${r.id}">${prefix}Capítulo ${r.chapter}: ${cleanName}${suffix}</option>`;
+        return `<option value="${r.id}" style="${style}">${prefix}Capítulo ${r.chapter}: ${cleanName}</option>`;
       }).join("");
 
       // Check if user had a saved chapter
@@ -95,19 +95,19 @@ async function refreshReadingChapterDropdown(keepReadingId) {
       select.innerHTML = readingChaptersList.map((r) => {
         const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
         let prefix = '📖 ';
-        let suffix = '';
+        let style = 'color: #475569;';
         if (r.is_completed === 1) {
           prefix = '✅ ';
-          suffix = r.completed_date ? ` (${r.completed_date})` : ' (Completado)';
+          style = 'color: #059669; font-weight: bold;';
         } else if (r.is_completed === 2) {
           prefix = '📝 ';
-          suffix = ' (En proceso)';
+          style = 'color: #2563EB; font-weight: bold;';
         }
 
         if (lvl === 'all') {
-          return `<option value="${r.id}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${suffix}</option>`;
+          return `<option value="${r.id}" style="${style}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}</option>`;
         }
-        return `<option value="${r.id}">${prefix}Capítulo ${r.chapter}: ${cleanName}${suffix}</option>`;
+        return `<option value="${r.id}" style="${style}">${prefix}Capítulo ${r.chapter}: ${cleanName}</option>`;
       }).join("");
 
       if (keepReadingId) {
@@ -444,7 +444,7 @@ function switchReadingPhase(phase) {
     if (transBox) transBox.style.display = hasTransAudit ? "block" : "none";
     if (summaryBox) summaryBox.style.display = "none";
     if (fullSec) fullSec.style.display = hasTransAudit ? "block" : "none";
-    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español (Gemini Flash)";
+    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español";
   } else {
     if (tabTranslation) tabTranslation.classList.remove("active");
     if (tabSummary) tabSummary.classList.add("active");
@@ -455,7 +455,7 @@ function switchReadingPhase(phase) {
     if (summaryBox) summaryBox.style.display = hasSummAudit ? "block" : "none";
     if (transBox) transBox.style.display = "none";
     if (fullSec) fullSec.style.display = hasSummAudit ? "block" : "none";
-    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés (Gemini Flash)";
+    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés";
   }
 }
 
@@ -526,7 +526,7 @@ async function submitTranslationForEvaluation() {
 
   const btn = document.getElementById("btn-evaluate-translation");
   btn.disabled = true;
-  btn.textContent = "Auditando fidelidad con Gemini Flash...";
+  btn.textContent = "Auditando fidelidad con IA...";
 
   try {
     const res = await fetch("/api/reading/evaluate-translation", {
@@ -564,7 +564,7 @@ async function submitTranslationForEvaluation() {
     alert("Error de conexión al evaluar la traducción.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "✨ Auditar Mi Traducción con Gemini Flash";
+    btn.textContent = "✨ Auditar Mi Traducción con IA";
   }
 }
 
@@ -578,7 +578,7 @@ function renderTranslationFeedback(f) {
   const summaryBox = document.getElementById("summary-evaluation-results");
 
   if (summaryBox) summaryBox.style.display = "none";
-  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español (Gemini Flash)";
+  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español";
   if (fullSec) {
     fullSec.style.display = "block";
     setTimeout(() => {
@@ -768,7 +768,7 @@ async function submitSummaryForEvaluation() {
     alert("Error de conexión al evaluar.");
   } finally {
     btn.disabled = false;
-    btn.textContent = "✨ Auditar y Evaluar con Gemini Flash";
+    btn.textContent = "✨ Auditar y Evaluar con IA";
   }
 }
 
@@ -782,7 +782,7 @@ function renderSummaryFeedback(f) {
   const transBox = document.getElementById("translation-evaluation-results");
 
   if (transBox) transBox.style.display = "none";
-  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés (Gemini Flash)";
+  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés";
   if (fullSec) {
     fullSec.style.display = "block";
     setTimeout(() => {
