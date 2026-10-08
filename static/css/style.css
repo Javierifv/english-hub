@@ -1539,6 +1539,203 @@ body {
 }
 
 /* =========================================================
+   FULL VIRTUAL KEYBOARD & SPELLING WORKSPACE (RONDA 2)
+   ========================================================= */
+.spelling-puzzle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.spelling-translation-prompt {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1E293B;
+  margin-bottom: 1.15rem;
+  text-align: center;
+}
+
+.spelling-translation-prompt strong {
+  color: var(--busuu-blue);
+  background: #EFF6FF;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #BFDBFE;
+  display: inline-block;
+}
+
+.spelling-input-box-wrap {
+  width: 100%;
+  margin-bottom: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spelling-input-field {
+  width: 100%;
+  max-width: 580px;
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 0.85rem 1.25rem;
+  color: #0F172A;
+  background: #FFFFFF;
+  border: 2.5px solid #CBD5E1;
+  border-radius: var(--radius-md);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.spelling-input-field:focus {
+  border-color: var(--busuu-blue);
+  box-shadow: 0 0 0 4px rgba(11, 114, 231, 0.18);
+}
+
+.spelling-input-field.input-correct {
+  border-color: var(--busuu-emerald) !important;
+  background: #ECFDF5 !important;
+  color: #065F46 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2) !important;
+}
+
+.spelling-input-field.input-wrong {
+  border-color: #EF4444 !important;
+  background: #FEF2F2 !important;
+  color: #991B1B !important;
+  animation: shakeWrong 0.4s ease;
+}
+
+.virtual-keyboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  max-width: 620px;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 0.65rem;
+  background: #F1F5F9;
+  border: 1.5px solid #E2E8F0;
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.vk-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.vk-key {
+  height: 44px;
+  min-width: 36px;
+  padding: 0 0.5rem;
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-bottom: 3px solid #94A3B8;
+  border-radius: 6px;
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1E293B;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.04);
+  touch-action: manipulation;
+}
+
+.vk-key:hover {
+  background: #F8FAFC;
+  border-color: var(--busuu-blue);
+  color: var(--busuu-blue);
+  transform: translateY(-1px);
+}
+
+.vk-key:active {
+  transform: translateY(2px);
+  border-bottom-width: 1px;
+}
+
+.vk-key-backspace {
+  min-width: 60px;
+  background: #F8FAFC;
+  color: #64748B;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.vk-key-space {
+  min-width: 180px;
+  background: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.vk-key-clear {
+  min-width: 75px;
+  background: #FEE2E2;
+  border-color: #FECACA;
+  border-bottom-color: #F87171;
+  color: #DC2626;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.vk-key-clear:hover {
+  background: #FCA5A5;
+  color: #991B1B;
+}
+
+.spelling-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.spelling-feedback-banner {
+  width: 100%;
+  max-width: 580px;
+  margin-top: 1rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.spelling-feedback-banner.feedback-correct {
+  background: #ECFDF5;
+  border: 1.5px solid #A7F3D0;
+  color: #065F46;
+}
+
+.spelling-feedback-banner.feedback-wrong {
+  background: #FEF2F2;
+  border: 1.5px solid #FECACA;
+  color: #991B1B;
+}
+
+/* =========================================================
    SPACED REPETITION (SRS) METRICS & QUEUE
    ========================================================= */
 .srs-metrics-row {

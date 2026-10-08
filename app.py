@@ -565,26 +565,19 @@ def get_vocab_quiz():
     else:
         # --- RONDA 2: Mayor Dificultad (Word Scramble & Traducción Inversa ES -> EN) -> Nivel 5/5 ---
         for w in words:
-            # 1. Letter Puzzle / Word Scramble (preserving spaces for compound words/phrases)
-            clean_word = re.sub(r"[^a-zA-Z\s]", "", w["word"]).strip().upper()
+            # 1. Active Recall / Full Keyboard Spelling Test
+            clean_word = re.sub(r"[^a-zA-Z\s'-]", "", w["word"]).strip()
             clean_word = " ".join(clean_word.split())
             if len(clean_word) >= 2:
-                letters = list(clean_word)
-                scrambled = letters.copy()
-                attempts = 0
-                while scrambled == letters and attempts < 10:
-                    random.shuffle(scrambled)
-                    attempts += 1
                 questions.append({
                     "round": 2,
-                    "type": "scramble",
+                    "type": "spelling",
                     "word_id": w["id"],
                     "target": clean_word,
                     "display_word": w["word"],
-                    "prompt": f"Ordena las letras en inglés para: '{w['translation']}'",
+                    "prompt": f"Traduce y Escribe en inglés: '{w['translation']}'",
                     "translation": w["translation"],
-                    "correct": clean_word,
-                    "letters": scrambled
+                    "correct": clean_word
                 })
 
             # 2. Reverse Meaning (ES -> EN)

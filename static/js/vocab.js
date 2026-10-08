@@ -345,9 +345,9 @@ function renderQuizQuestion(idx) {
       </button>
     `).join("");
 
-  } else if (q.type === "scramble") {
-    grid.style.display = "none"; // Hide default 2-col button grid
-    initScramblePuzzle(q);
+  } else if (q.type === "scramble" || q.type === "spelling") {
+    grid.style.display = "none"; // Hide standard 2-col choices grid
+    initSpellingKeyboardPuzzle(q);
 
   } else {
     // Standard multiple choice (meaning or reverse_meaning)
@@ -362,193 +362,184 @@ function renderQuizQuestion(idx) {
   }
 }
 
-/* --- SCRAMBLE PUZZLE CONTROLLER (Round 2: Horizontal & Badge Inventory) --- */
-function initScramblePuzzle(q) {
+/* --- FULL KEYBOARD SPELLING PUZZLE CONTROLLER (Round 2: Active Recall & Full Keyboard) --- */
+let currentSpellingPuzzle = null;
+
+function initSpellingKeyboardPuzzle(q) {
   const promptBox = document.getElementById("quiz-prompt-box");
+  const btnNext = document.getElementById("btn-next-quiz");
+  if (btnNext) btnNext.style.display = "none";
 
-  // Count occurrences of each character in target (including spaces)
-  const charCounts = {};
-  for (const char of q.target) {
-    charCounts[char] = (charCounts[char] || 0) + 1;
-  }
-
-  // Generate unique character tiles
-  const uniqueChars = Object.keys(charCounts);
-  
-  // Shuffle unique tiles so they are not in sequential word order
-  for (let i = uniqueChars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [uniqueChars[i], uniqueChars[j]] = [uniqueChars[j], uniqueChars[i]];
-  }
-
-  const tiles = uniqueChars.map(char => ({
-    char: char,
-    total: charCounts[char],
-    available: charCounts[char]
-  }));
-
-  currentScramble = {
+  currentSpellingPuzzle = {
     wordId: q.word_id,
-    target: q.target,
-    displayWord: q.display_word,
+    target: q.target || q.correct,
+    displayWord: q.display_word || q.target,
     translation: q.translation,
-    slots: Array(q.target.length).fill(null), // stores char placed at each slot index
-    tiles: tiles
+    isAnswered: false
   };
 
   promptBox.innerHTML = `
-    <div class="scramble-puzzle-wrap">
-      <div class="scramble-translation-prompt">🇪🇸 Traduce y Ordena en inglés: <strong>"${escapeHtml(q.translation)}"</strong></div>
-      
-      <!-- Horizontal slots where letters land side-by-side -->
-      <div class="scramble-slots-row" id="scramble-slots-row"></div>
-
-      <!-- Horizontal unique character tiles with count badges -->
-      <div class="scramble-tiles-row" id="scramble-tiles-row"></div>
-
-      <div class="scramble-actions">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="resetScramble()">🔄 Deshacer Todo</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="speakEnglish('${escapeQuotes(q.display_word)}', 0.9)">🔊 Escuchar Pista</button>
+    <div class="spelling-puzzle-wrap">
+      <div class="spelling-translation-prompt">
+        🇪🇸 Traduce y Escribe en inglés: <strong>"${escapeHtml(q.translation)}"</strong>
       </div>
+
+      <!-- Typing Display / Input Box (Accessible for physical keyboard & virtual keyboard) -->
+      <div class="spelling-input-box-wrap">
+        <input type="text" id="spelling-active-input" class="spelling-input-field" 
+               placeholder="Escribe la traducción aquí..." 
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               onkeydown="handleSpellingInputKeydown(event)">
+      </div>
+
+      <!-- Full Virtual Keyboard (QWERTY layout + Space + Backspace + Clear) -->
+      <div class="virtual-keyboard">
+        <div class="vk-row">
+          ${['Q','W','E','R','T','Y','U','I','O','P'].map(k => `
+            <button type="button" class="vk-key" onclick="pressVirtualKey('${k}')">${k}</button>
+          `).join("")}
+        </div>
+        <div class="vk-row">
+          ${['A','S','D','F','G','H','J','K','L'].map(k => `
+            <button type="button" class="vk-key" onclick="pressVirtualKey('${k}')">${k}</button>
+          `).join("")}
+        </div>
+        <div class="vk-row">
+          ${['Z','X','C','V','B','N','M'].map(k => `
+            <button type="button" class="vk-key" onclick="pressVirtualKey('${k}')">${k}</button>
+          `).join("")}
+          <button type="button" class="vk-key vk-key-backspace" onclick="pressVirtualBackspace()" title="Borrar última letra">⌫ Borrar</button>
+        </div>
+        <div class="vk-row">
+          <button type="button" class="vk-key vk-key-clear" onclick="clearSpellingInput()" title="Borrar todo">🧹 Limpiar</button>
+          <button type="button" class="vk-key vk-key-space" onclick="pressVirtualSpace()" title="Espacio">␣ Barra Espacio</button>
+        </div>
+      </div>
+
+      <!-- Actions & Validation -->
+      <div class="spelling-actions">
+        <button type="button" id="btn-validate-spelling" class="btn btn-primary" onclick="validateSpellingAnswer()">
+          ✓ Validar Respuesta
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="speakEnglish('${escapeQuotes(currentSpellingPuzzle.displayWord)}', 0.9)">
+          🔊 Escuchar Pista
+        </button>
+      </div>
+
+      <!-- Feedback Banner (shown after validation) -->
+      <div id="spelling-feedback-banner" class="spelling-feedback-banner" style="display: none;"></div>
     </div>
   `;
 
-  renderScrambleBoard();
-  attachScrambleKeyboardListener();
+  setTimeout(() => {
+    const input = document.getElementById("spelling-active-input");
+    if (input) input.focus();
+  }, 100);
 }
 
-function renderScrambleBoard() {
-  const slotsRow = document.getElementById("scramble-slots-row");
-  const tilesRow = document.getElementById("scramble-tiles-row");
-  if (!slotsRow || !tilesRow || !currentScramble) return;
+function pressVirtualKey(char) {
+  const input = document.getElementById("spelling-active-input");
+  if (!input || (currentSpellingPuzzle && currentSpellingPuzzle.isAnswered)) return;
+  input.value += char;
+  input.focus();
+}
 
-  // Render Horizontal Slots
-  slotsRow.innerHTML = currentScramble.slots.map((char, slotIdx) => {
-    if (char !== null) {
-      const isSpace = (char === " ");
-      const displayContent = isSpace ? "␣" : escapeHtml(char);
-      const spaceClass = isSpace ? "space-slot" : "";
-      return `<div class="scramble-slot filled ${spaceClass}" onclick="removeScrambleSlot(${slotIdx})" title="Clic para quitar letra">${displayContent}</div>`;
+function pressVirtualSpace() {
+  const input = document.getElementById("spelling-active-input");
+  if (!input || (currentSpellingPuzzle && currentSpellingPuzzle.isAnswered)) return;
+  input.value += " ";
+  input.focus();
+}
+
+function pressVirtualBackspace() {
+  const input = document.getElementById("spelling-active-input");
+  if (!input || (currentSpellingPuzzle && currentSpellingPuzzle.isAnswered)) return;
+  input.value = input.value.slice(0, -1);
+  input.focus();
+}
+
+function clearSpellingInput() {
+  const input = document.getElementById("spelling-active-input");
+  if (!input || (currentSpellingPuzzle && currentSpellingPuzzle.isAnswered)) return;
+  input.value = "";
+  input.focus();
+}
+
+function handleSpellingInputKeydown(e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (currentSpellingPuzzle && currentSpellingPuzzle.isAnswered) {
+      nextQuizQuestion();
+    } else {
+      validateSpellingAnswer();
     }
-    return `<div class="scramble-slot" title="Casilla vacía"></div>`;
-  }).join("");
-
-  // Render Horizontal Unique Tiles with inventory count badge
-  tilesRow.innerHTML = currentScramble.tiles.map(tile => {
-    const isSpace = (tile.char === " ");
-    const isDepleted = tile.available <= 0;
-    const spaceClass = isSpace ? "tile-space" : "";
-    const depletedClass = isDepleted ? "depleted" : "";
-    const displayLabel = isSpace ? "␣ Espacio" : escapeHtml(tile.char);
-
-    // Show badge on top if this letter repeats (total > 1)
-    const badgeHtml = (tile.total > 1) 
-      ? `<span class="tile-count-badge ${isDepleted ? 'zero' : ''}">${tile.available}</span>` 
-      : "";
-
-    return `
-      <button type="button" class="scramble-tile ${spaceClass} ${depletedClass}" 
-              onclick="tapScrambleTile('${isSpace ? ' ' : escapeQuotes(tile.char)}')"
-              ${isDepleted ? 'disabled' : ''}
-              title="${isSpace ? 'Espacio (Disponibles: ' + tile.available + ')' : 'Letra ' + tile.char + ' (Disponibles: ' + tile.available + ')'}">
-        <span>${displayLabel}</span>
-        ${badgeHtml}
-      </button>
-    `;
-  }).join("");
-}
-
-function tapScrambleTile(char) {
-  if (!currentScramble) return;
-  const tile = currentScramble.tiles.find(t => t.char === char);
-  if (!tile || tile.available <= 0) return;
-
-  // Find first empty slot
-  const emptyIdx = currentScramble.slots.findIndex(s => s === null);
-  if (emptyIdx === -1) return;
-
-  tile.available--;
-  currentScramble.slots[emptyIdx] = char;
-  renderScrambleBoard();
-
-  // Check if all slots filled
-  if (!currentScramble.slots.includes(null)) {
-    checkScrambleAnswer();
   }
 }
 
-function removeScrambleSlot(slotIdx) {
-  if (!currentScramble) return;
-  const char = currentScramble.slots[slotIdx];
-  if (char === null) return;
+function normalizeSpellingText(str) {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+    .replace(/[-–—]/g, " ")                          // convert hyphens to space
+    .replace(/[^a-z0-9\s']/g, "")                     // remove punctuation except apostrophes
+    .replace(/\s+/g, " ")                             // collapse multiple spaces
+    .trim();
+}
 
-  // Restore inventory count
-  const tile = currentScramble.tiles.find(t => t.char === char);
-  if (tile) {
-    tile.available = Math.min(tile.total, tile.available + 1);
+function validateSpellingAnswer() {
+  if (!currentSpellingPuzzle || currentSpellingPuzzle.isAnswered) return;
+  const input = document.getElementById("spelling-active-input");
+  const feedback = document.getElementById("spelling-feedback-banner");
+  const btnNext = document.getElementById("btn-next-quiz");
+  const btnValidate = document.getElementById("btn-validate-spelling");
+
+  const rawUser = (input?.value || "").trim();
+  if (!rawUser) {
+    alert("Por favor escribe tu respuesta antes de validar.");
+    if (input) input.focus();
+    return;
   }
 
-  currentScramble.slots[slotIdx] = null;
-  renderScrambleBoard();
-}
+  currentSpellingPuzzle.isAnswered = true;
+  if (input) input.disabled = true;
+  if (btnValidate) btnValidate.style.display = "none";
 
-function resetScramble() {
-  if (!currentScramble) return;
-  currentScramble.slots = Array(currentScramble.target.length).fill(null);
-  currentScramble.tiles.forEach(t => {
-    t.available = t.total;
-  });
-  renderScrambleBoard();
-}
+  const cleanUser = normalizeSpellingText(rawUser);
+  const cleanTarget = normalizeSpellingText(currentSpellingPuzzle.target);
+  const cleanDisplay = normalizeSpellingText(currentSpellingPuzzle.displayWord);
 
-function checkScrambleAnswer() {
-  const assembled = currentScramble.slots.map(s => s || "").join("");
-  const slotsRow = document.getElementById("scramble-slots-row");
-  const slotElements = slotsRow ? slotsRow.querySelectorAll(".scramble-slot") : [];
+  const isMatch = (cleanUser === cleanTarget) || (cleanUser === cleanDisplay);
 
-  if (assembled.toUpperCase() === currentScramble.target.toUpperCase()) {
-    slotElements.forEach(el => el.classList.add("correct-all"));
+  if (isMatch) {
+    if (input) input.classList.add("input-correct");
     quizScore++;
     document.getElementById("quiz-score-indicator").textContent = `Aciertos: ${quizScore}`;
-    speakEnglish(currentScramble.displayWord, 1.0);
-    document.getElementById("btn-next-quiz").style.display = "inline-flex";
+    if (feedback) {
+      feedback.className = "spelling-feedback-banner feedback-correct";
+      feedback.style.display = "block";
+      feedback.innerHTML = `🎉 <strong>¡Excelente! Respuesta correcta:</strong> "${escapeHtml(currentSpellingPuzzle.displayWord)}"`;
+    }
+    speakEnglish(currentSpellingPuzzle.displayWord, 1.0);
   } else {
-    slotElements.forEach(el => el.classList.add("wrong-all"));
-    if (currentScramble.wordId) {
-      quizWordResults[currentScramble.wordId] = false;
+    if (input) input.classList.add("input-wrong");
+    if (currentSpellingPuzzle.wordId) {
+      quizWordResults[currentSpellingPuzzle.wordId] = false;
     }
-    setTimeout(() => {
-      resetScramble();
-    }, 750);
+    if (feedback) {
+      feedback.className = "spelling-feedback-banner feedback-wrong";
+      feedback.style.display = "block";
+      feedback.innerHTML = `
+        ❌ <strong>Incorrecto.</strong><br>
+        Tu respuesta: <em>"${escapeHtml(rawUser)}"</em><br>
+        Respuesta correcta: <strong>"${escapeHtml(currentSpellingPuzzle.displayWord)}"</strong>
+      `;
+    }
+    speakEnglish(currentSpellingPuzzle.displayWord, 0.9);
   }
-}
 
-function attachScrambleKeyboardListener() {
-  window.removeEventListener("keydown", handleScrambleKeydown);
-  window.addEventListener("keydown", handleScrambleKeydown);
-}
-
-function handleScrambleKeydown(e) {
-  const slotsRow = document.getElementById("scramble-slots-row");
-  if (!slotsRow || !currentScramble) return;
-
-  // Do not intercept if user is typing into any input or textarea
-  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-
-  if (e.key === "Backspace") {
-    e.preventDefault();
-    for (let i = currentScramble.slots.length - 1; i >= 0; i--) {
-      if (currentScramble.slots[i] !== null) {
-        removeScrambleSlot(i);
-        break;
-      }
-    }
-  } else if (e.key === " ") {
-    e.preventDefault();
-    tapScrambleTile(" ");
-  } else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-    const upper = e.key.toUpperCase();
-    tapScrambleTile(upper);
+  if (btnNext) {
+    btnNext.style.display = "inline-flex";
+    btnNext.focus();
   }
 }
 
