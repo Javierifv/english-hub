@@ -155,35 +155,35 @@ async function loadReadingById(readingId) {
     document.getElementById("reading-level").textContent = `${reading.level} Level`;
     document.getElementById("reading-topic").textContent = reading.topic;
 
-    // Reading completion status banner and meta pill
+    // Reading completion status strip and meta pill
     const banner = document.getElementById("reading-status-banner");
     const bannerText = document.getElementById("reading-status-banner-text");
+    const bannerIcon = document.getElementById("reading-status-icon");
     const pill = document.getElementById("reading-completion-pill");
 
     if (reading.user_progress && reading.user_progress.is_completed) {
-      const compDate = reading.user_progress.completed_date || 'Fecha registrada';
+      const compDate = reading.user_progress.completed_date || 'Hoy';
       if (banner) {
         banner.style.display = "flex";
-        banner.style.background = "#ECFDF5";
-        banner.style.borderColor = "#A7F3D0";
+        banner.className = "reading-status-strip";
+        if (bannerIcon) bannerIcon.textContent = "✅";
         if (bannerText) {
-          bannerText.innerHTML = `¡Capítulo completado el <strong>${compDate}</strong>! Tanto tu traducción al español como tu resumen en inglés están finalizados y guardados.`;
+          bannerText.innerHTML = `<strong>Capítulo Completado</strong> · Realizado el ${compDate}`;
         }
       }
       if (pill) {
         pill.style.display = "inline-flex";
         pill.className = "badge badge-success";
-        pill.textContent = `✅ Ya trabajado (${compDate})`;
+        pill.textContent = `✅ Completado`;
       }
     } else if (reading.user_progress && (reading.user_progress.is_in_progress || reading.user_progress.has_translation || reading.user_progress.has_summary)) {
-      const compDate = reading.user_progress.completed_date || 'Hoy';
       const hasTrans = reading.user_progress.has_translation;
       if (banner) {
         banner.style.display = "flex";
-        banner.style.background = "#EFF6FF";
-        banner.style.borderColor = "#BFDBFE";
+        banner.className = "reading-status-strip in-progress";
+        if (bannerIcon) bannerIcon.textContent = "📝";
         if (bannerText) {
-          bannerText.innerHTML = `📝 Capítulo en proceso (${compDate}): ${hasTrans ? 'Traducción guardada y auditada' : 'Resumen guardado'}. Finaliza ambas fases para marcarlo como terminado al 100%.`;
+          bannerText.innerHTML = `<strong>En progreso</strong> · ${hasTrans ? 'Traducción guardada' : 'Resumen guardado'}`;
         }
       }
       if (pill) {
@@ -212,11 +212,22 @@ async function loadReadingById(readingId) {
       keywordsBox.innerHTML = `<span class="tag-title" style="color: var(--text-dim); font-size: 0.85rem;">Capítulo literario graduado en MCER</span>`;
     }
 
+    // Reset evaluation section
+    const evalFullSec = document.getElementById("reading-evaluation-full-section");
+    if (evalFullSec) evalFullSec.style.display = "none";
+    const transResultsBox = document.getElementById("translation-evaluation-results");
+    if (transResultsBox) { transResultsBox.innerHTML = ""; transResultsBox.style.display = "none"; }
+    const summResultsBox = document.getElementById("summary-evaluation-results");
+    if (summResultsBox) { summResultsBox.innerHTML = ""; summResultsBox.style.display = "none"; }
+
     // Load Spanish translation
     loadSavedTranslation();
 
     // Load English summary
     loadSavedSummary();
+
+    // Sync active phase view
+    switchReadingPhase(document.getElementById("tab-phase-summary")?.classList.contains("active") ? "summary" : "translation");
 
   } catch (err) {
     console.error("Error loading reading:", err);
@@ -418,16 +429,33 @@ function switchReadingPhase(phase) {
   const viewTranslation = document.getElementById("phase-view-translation");
   const viewSummary = document.getElementById("phase-view-summary");
 
+  const fullSec = document.getElementById("reading-evaluation-full-section");
+  const evalTitle = document.getElementById("reading-eval-main-title");
+  const transBox = document.getElementById("translation-evaluation-results");
+  const summaryBox = document.getElementById("summary-evaluation-results");
+
   if (phase === 'translation') {
     if (tabTranslation) tabTranslation.classList.add("active");
     if (tabSummary) tabSummary.classList.remove("active");
     if (viewTranslation) viewTranslation.style.display = "block";
     if (viewSummary) viewSummary.style.display = "none";
+
+    const hasTransAudit = transBox && transBox.innerHTML.trim().length > 0;
+    if (transBox) transBox.style.display = hasTransAudit ? "block" : "none";
+    if (summaryBox) summaryBox.style.display = "none";
+    if (fullSec) fullSec.style.display = hasTransAudit ? "block" : "none";
+    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español (Gemini Flash)";
   } else {
     if (tabTranslation) tabTranslation.classList.remove("active");
     if (tabSummary) tabSummary.classList.add("active");
     if (viewTranslation) viewTranslation.style.display = "none";
     if (viewSummary) viewSummary.style.display = "block";
+
+    const hasSummAudit = summaryBox && summaryBox.innerHTML.trim().length > 0;
+    if (summaryBox) summaryBox.style.display = hasSummAudit ? "block" : "none";
+    if (transBox) transBox.style.display = "none";
+    if (fullSec) fullSec.style.display = hasSummAudit ? "block" : "none";
+    if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés (Gemini Flash)";
   }
 }
 
@@ -544,6 +572,19 @@ function renderTranslationFeedback(f) {
   const container = document.getElementById("translation-evaluation-results");
   if (!container) return;
   container.style.display = "block";
+
+  const fullSec = document.getElementById("reading-evaluation-full-section");
+  const evalTitle = document.getElementById("reading-eval-main-title");
+  const summaryBox = document.getElementById("summary-evaluation-results");
+
+  if (summaryBox) summaryBox.style.display = "none";
+  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Traducción al Español (Gemini Flash)";
+  if (fullSec) {
+    fullSec.style.display = "block";
+    setTimeout(() => {
+      fullSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }
 
   // Highlighted explanations section
   let explanationsHtml = "";
@@ -736,6 +777,19 @@ function renderSummaryFeedback(f) {
   if (!container) return;
   container.style.display = "block";
 
+  const fullSec = document.getElementById("reading-evaluation-full-section");
+  const evalTitle = document.getElementById("reading-eval-main-title");
+  const transBox = document.getElementById("translation-evaluation-results");
+
+  if (transBox) transBox.style.display = "none";
+  if (evalTitle) evalTitle.textContent = "📋 Auditoría de Resumen en Inglés (Gemini Flash)";
+  if (fullSec) {
+    fullSec.style.display = "block";
+    setTimeout(() => {
+      fullSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+  }
+
   const matchedHtml = f.matched_vocab && f.matched_vocab.length > 0
     ? `<span class="eval-pill eval-pill-vocab">🎯 Palabras usadas: ${f.matched_vocab.join(", ")}</span>`
     : `<span class="eval-pill" style="background: rgba(255,255,255,0.05); color: var(--text-dim);">No usaste palabras del vocabulario de hoy</span>`;
@@ -816,6 +870,11 @@ function resetReadingTimer() {
   timerSeconds = 15 * 60;
   updateTimerDisplay();
   document.getElementById("btn-timer-toggle").textContent = "Iniciar";
+}
+
+function closeEvaluationSection() {
+  const fullSec = document.getElementById("reading-evaluation-full-section");
+  if (fullSec) fullSec.style.display = "none";
 }
 
 // =========================================================

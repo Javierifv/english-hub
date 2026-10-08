@@ -455,7 +455,7 @@ function updateHeaderUI() {
 
   // Update tabs label
   const wCount = state.userInfo ? state.userInfo.words_per_day : 5;
-  document.getElementById("tab-label-vocab").textContent = `1. Vocabulario (${wCount})`;
+  document.getElementById("tab-label-vocab").textContent = "1. Vocabulary";
   const countBadge = document.getElementById("vocab-count-badge");
   if (countBadge) countBadge.textContent = wCount;
 

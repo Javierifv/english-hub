@@ -119,12 +119,12 @@
     <nav class="pillar-tabs">
       <button class="pillar-tab active" data-tab="vocab" onclick="showPillar('vocab')">
         <span class="tab-icon">📖</span>
-        <span class="tab-name" id="tab-label-vocab">1. Vocabulario (5)</span>
+        <span class="tab-name" id="tab-label-vocab">1. Vocabulary</span>
         <span class="tab-check" id="tab-check-vocab">○</span>
       </button>
       <button class="pillar-tab" data-tab="reading" onclick="showPillar('reading')">
         <span class="tab-icon">📑</span>
-        <span class="tab-name">2. Lectura & Resumen</span>
+        <span class="tab-name">2. Reading</span>
         <span class="tab-check" id="tab-check-reading">○</span>
       </button>
       <button class="pillar-tab" data-tab="listening" onclick="showPillar('listening')">
@@ -134,12 +134,12 @@
       </button>
       <button class="pillar-tab" data-tab="shadowing" onclick="showPillar('shadowing')">
         <span class="tab-icon">🎙️</span>
-        <span class="tab-name">4. Shadowing Studio</span>
+        <span class="tab-name">4. Shadowing</span>
         <span class="tab-check" id="tab-check-shadowing">○</span>
       </button>
       <button class="pillar-tab" data-tab="speaking" onclick="showPillar('speaking')">
         <span class="tab-icon">💬</span>
-        <span class="tab-name">5. Speaking (WhatsApp)</span>
+        <span class="tab-name">5. Speaking</span>
         <span class="tab-check" id="tab-check-speaking">○</span>
       </button>
     </nav>
@@ -283,8 +283,15 @@
 
       <!-- Reading CEFR Level & Chapter Navigator Toolbar -->
       <div class="reading-toolbar">
+        <div class="chapter-nav-group">
+          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(-1)" title="Capítulo Anterior">◀ Anterior</button>
+          <select id="reading-chapter-select" class="chapter-dropdown" onchange="onReadingChapterDropdownChange(this.value)">
+            <!-- Chapters populated by JS -->
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(1)" title="Siguiente Capítulo">Siguiente ▶</button>
+        </div>
         <div class="level-pills-group">
-          <span class="toolbar-label">Nivel de Lectura:</span>
+          <span class="toolbar-label">Nivel:</span>
           <button type="button" class="level-pill-btn active pill-a1" id="reading-level-btn-a1" onclick="selectReadingLevel('A1')">
             📗 Nivel 1 (A1/A2)
           </button>
@@ -295,28 +302,18 @@
             📙 Nivel 3 (B2)
           </button>
           <button type="button" class="level-pill-btn" id="reading-level-btn-all" onclick="selectReadingLevel('all')">
-            🌐 Todos (93 Capítulos)
+            🌐 Todos (93)
           </button>
-        </div>
-        <div class="chapter-nav-group">
-          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(-1)" title="Capítulo Anterior">◀ Anterior</button>
-          <select id="reading-chapter-select" class="chapter-dropdown" onchange="onReadingChapterDropdownChange(this.value)">
-            <!-- Chapters populated by JS -->
-          </select>
-          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(1)" title="Siguiente Capítulo">Siguiente ▶</button>
         </div>
       </div>
 
       <div class="reading-split-layout">
         <!-- Left: Reading Reader -->
         <div class="card reading-article-card">
-          <!-- Persistent Completion Banner -->
-          <div id="reading-status-banner" style="display: none; background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm); padding: 0.75rem 1rem; margin-bottom: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; color: #065F46; font-size: 0.88rem; font-weight: 700;">
-              <span>✅</span>
-              <span id="reading-status-banner-text">¡Ya completaste esta lectura!</span>
-            </div>
-            <span class="badge badge-success" style="font-size: 0.76rem;">Capítulo Finalizado</span>
+          <!-- Minimalist Status Strip -->
+          <div id="reading-status-banner" class="reading-status-strip" style="display: none;">
+            <span class="status-strip-icon" id="reading-status-icon">✅</span>
+            <span id="reading-status-banner-text" class="status-strip-text">Capítulo completado</span>
           </div>
 
           <div class="article-meta">
@@ -385,14 +382,12 @@
           <!-- SUBVIEW 1: Spanish Translation Workspace -->
           <div id="phase-view-translation" class="phase-subview active">
             <div class="studio-header">
-              <div>
-                <h3>✍️ Paso 2.1: Tu Traducción al Español</h3>
-                <p class="studio-instruction">
-                  Traduce el capítulo completo a español con tus palabras. La IA revisará tu fidelidad semántica y te explicará las palabras 🟡 y frases 🟣 que marcaste.
-                </p>
-              </div>
+              <h3>✍️ Paso 2.1: Tu Traducción al Español</h3>
               <span id="translation-word-count" class="word-counter">0 palabras</span>
             </div>
+            <p class="studio-instruction">
+              Traduce el capítulo completo a español con tus palabras. La IA revisará tu fidelidad semántica y te explicará las palabras 🟡 y frases 🟣 que marcaste.
+            </p>
 
             <textarea id="translation-textarea" class="summary-input" rows="11" placeholder="Escribe aquí tu traducción al español del capítulo completo...&#10;&#10;Ejemplo:&#10;Mi nombre es Robinson Crusoe. Nací en Inglaterra en 1632..."></textarea>
 
@@ -401,38 +396,47 @@
                 ✨ Auditar Mi Traducción con Gemini Flash
               </button>
             </div>
-
-            <!-- Translation Evaluation Results Container -->
-            <div id="translation-evaluation-results" class="evaluation-results-box" style="display: none;">
-              <!-- Injected via JavaScript -->
-            </div>
           </div>
 
           <!-- SUBVIEW 2: English Summary Workspace -->
           <div id="phase-view-summary" class="phase-subview" style="display: none;">
             <div class="studio-header">
-              <div>
-                <h3>📝 Paso 2.2: Tu Resumen en Inglés</h3>
-                <p class="studio-instruction">
-                  Resume las ideas clave con tus propias palabras en inglés. Gemini Flash auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
-                </p>
-              </div>
+              <h3>📝 Paso 2.2: Tu Resumen en Inglés</h3>
               <span id="summary-word-count" class="word-counter">0 palabras (Mínimo: 50)</span>
             </div>
+            <p class="studio-instruction">
+              Resume las ideas clave con tus propias palabras en inglés. Gemini Flash auditará tu gramática, comprensión, conectores y detectará si usaste las palabras del día.
+            </p>
 
-            <textarea id="summary-textarea" class="summary-input" rows="10" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
+            <textarea id="summary-textarea" class="summary-input" rows="11" placeholder="Write your summary here in English... (Explain what the text was about and what you learned)"></textarea>
 
             <div class="studio-actions">
               <button id="btn-evaluate-summary" class="btn btn-primary btn-block" onclick="submitSummaryForEvaluation()">
                 ✨ Auditar y Evaluar con Gemini Flash
               </button>
             </div>
-
-            <!-- Evaluation Results Container -->
-            <div id="summary-evaluation-results" class="evaluation-results-box" style="display: none;">
-              <!-- Injected via JavaScript -->
-            </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Full-Width Bottom Section: AI Audit & Feedback Results -->
+      <div id="reading-evaluation-full-section" class="card reading-eval-full-card" style="display: none;">
+        <div class="eval-full-header">
+          <div class="eval-full-title-group">
+            <span class="eval-full-badge">⚡ Gemini Flash AI</span>
+            <h3 id="reading-eval-main-title">📋 Resultados de la Auditoría & Retroalimentación</h3>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="closeEvaluationSection()" title="Cerrar panel de auditoría">✕ Cerrar Auditoría</button>
+        </div>
+
+        <!-- Translation Evaluation Results Container -->
+        <div id="translation-evaluation-results" class="evaluation-results-box" style="display: none;">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Summary Evaluation Results Container -->
+        <div id="summary-evaluation-results" class="evaluation-results-box" style="display: none;">
+          <!-- Injected via JavaScript -->
         </div>
       </div>
     </section>

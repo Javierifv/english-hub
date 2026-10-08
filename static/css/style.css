@@ -1978,14 +1978,13 @@ body {
 .reading-toolbar,
 .listening-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.25rem;
   background: #FFFFFF;
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1.25rem;
+  padding: 0.75rem 1.25rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
 }
@@ -1993,8 +1992,10 @@ body {
 .level-pills-group {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 0.45rem;
+  flex-shrink: 0;
 }
 
 .toolbar-label {
@@ -2019,6 +2020,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  white-space: nowrap;
 }
 
 .level-pill-btn:hover {
@@ -2038,6 +2040,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex-shrink: 0;
 }
 
 .chapter-dropdown {
@@ -2049,13 +2052,90 @@ body {
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  max-width: 280px;
+  max-width: 260px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chapter-dropdown:focus {
   outline: none;
   border-color: var(--busuu-blue);
   box-shadow: 0 0 0 2px rgba(11, 114, 231, 0.15);
+}
+
+/* Minimalist Reading Status Strip */
+.reading-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.84rem;
+  color: #166534;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.reading-status-strip.in-progress {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  color: #1E40AF;
+}
+
+.status-strip-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.status-strip-text {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Full-Width AI Evaluation Card */
+.reading-eval-full-card {
+  margin-top: 1.75rem;
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.eval-full-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1.5px solid var(--border-subtle);
+}
+
+.eval-full-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.eval-full-badge {
+  background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#reading-eval-main-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
 }
 
 .reading-split-layout, .speaking-split-layout {
