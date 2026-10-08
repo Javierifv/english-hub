@@ -825,7 +825,10 @@ def get_reading():
                     p_dict["highlights_json"] = json.loads(p_dict["highlights_json"])
             except Exception:
                 pass
-            p_dict["is_completed"] = bool(p_dict.get("summary_text") or p_dict.get("translation_text"))
+            p_dict["has_translation"] = bool(p_dict.get("translation_text"))
+            p_dict["has_summary"] = bool(p_dict.get("summary_text"))
+            p_dict["is_completed"] = bool(p_dict.get("translation_text") and p_dict.get("summary_text"))
+            p_dict["is_in_progress"] = bool((p_dict.get("translation_text") or p_dict.get("summary_text")) and not p_dict["is_completed"])
             user_prog = p_dict
 
     conn.close()
@@ -851,7 +854,13 @@ def get_reading_list():
     query = """
         SELECT r.id, r.day_number as chapter, r.title, r.level, r.estimated_minutes,
                p.completed_at, p.date as completed_date,
-               CASE WHEN p.id IS NOT NULL AND (p.summary_text IS NOT NULL OR p.translation_text IS NOT NULL) THEN 1 ELSE 0 END as is_completed
+               CASE 
+                   WHEN p.id IS NOT NULL AND p.summary_text IS NOT NULL AND p.translation_text IS NOT NULL THEN 1
+                   WHEN p.id IS NOT NULL AND (p.summary_text IS NOT NULL OR p.translation_text IS NOT NULL) THEN 2
+                   ELSE 0 
+               END as is_completed,
+               CASE WHEN p.id IS NOT NULL AND p.translation_text IS NOT NULL THEN 1 ELSE 0 END as has_translation,
+               CASE WHEN p.id IS NOT NULL AND p.summary_text IS NOT NULL THEN 1 ELSE 0 END as has_summary
         FROM readings r
         LEFT JOIN user_reading_progress p ON r.id = p.reading_id AND p.user_id = ?
     """

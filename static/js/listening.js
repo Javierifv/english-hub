@@ -125,12 +125,10 @@ async function loadListeningById(clipId) {
     const input = document.getElementById("listening-dictation-input");
     if (state.todayLog && state.todayLog.listening_attempt) {
       input.value = state.todayLog.listening_attempt;
-      if (state.todayLog.listening_accuracy) {
-        verifyDictationDiff(); // render existing diff
-      }
     } else {
       input.value = "";
-      document.getElementById("listening-diff-results").style.display = "none";
+      const diffResults = document.getElementById("listening-diff-results");
+      if (diffResults) diffResults.style.display = "none";
     }
 
   } catch (err) {
@@ -227,18 +225,24 @@ function listeningForward(seconds) {
 }
 
 // Visual Diff Calculation & Verification
-async function verifyDictationDiff() {
+async function verifyListeningDiff(isSilent = false) {
   const input = document.getElementById("listening-dictation-input");
-  const userText = (input.value || "").trim();
+  const userText = (input?.value || "").trim();
 
   if (!userText) {
-    alert("Por favor escribe tu transcripción antes de comparar.");
+    if (!isSilent) alert("Por favor escribe en el cuadro lo que escuchaste antes de comparar.");
     return;
   }
 
   if (!currentListeningClip) {
-    alert("Clip de audio no cargado.");
+    if (!isSilent) alert("Clip de audio no cargado.");
     return;
+  }
+
+  const btn = document.getElementById("btn-verify-listening");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Comparando...";
   }
 
   try {
@@ -257,61 +261,95 @@ async function verifyDictationDiff() {
 
     if (data.success) {
       renderDiffResults(data.accuracy, data.diff_tokens, data.real_text);
-      speakEnglish(`Great job! Accuracy: ${data.accuracy} percent`, 1.0);
+      if (!isSilent) {
+        speakEnglish(`Accuracy: ${data.accuracy} percent`, 1.0);
+      }
       fetchStatusAndRefresh();
+    } else if (!isSilent) {
+      alert(data.error || "No se pudo realizar la comparación.");
     }
   } catch (err) {
-    console.error("Error verifying dictation:", err);
-    alert("Error al verificar dictado.");
+    console.error("Error verifying listening transcription:", err);
+    if (!isSilent) {
+      alert("Error al conectar con el servidor para la comparación.");
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "🔍 Comparar con Transcripción Original";
+    }
   }
 }
 
 function renderDiffResults(accuracy, diffTokens, realText) {
   const container = document.getElementById("listening-diff-results");
+  if (!container) return;
   container.style.display = "block";
 
   const pill = document.getElementById("listening-accuracy-pill");
-  pill.textContent = `${accuracy}% Exactitud`;
-  if (accuracy >= 80) {
-    pill.style.background = "rgba(0, 196, 140, 0.25)";
-    pill.style.color = "var(--busuu-emerald)";
-    pill.style.borderColor = "var(--busuu-emerald)";
-  } else if (accuracy >= 50) {
-    pill.style.background = "rgba(255, 176, 32, 0.25)";
-    pill.style.color = "var(--busuu-amber)";
-    pill.style.borderColor = "var(--busuu-amber)";
-  } else {
-    pill.style.background = "rgba(255, 90, 95, 0.25)";
-    pill.style.color = "var(--busuu-coral)";
-    pill.style.borderColor = "var(--busuu-coral)";
+  if (pill) {
+    pill.textContent = `${accuracy}% Coincidencia`;
+    if (accuracy >= 80) {
+      pill.style.background = "rgba(0, 196, 140, 0.2)";
+      pill.style.color = "var(--busuu-emerald)";
+      pill.style.borderColor = "var(--busuu-emerald)";
+    } else if (accuracy >= 50) {
+      pill.style.background = "rgba(255, 176, 32, 0.2)";
+      pill.style.color = "var(--busuu-amber)";
+      pill.style.borderColor = "var(--busuu-amber)";
+    } else {
+      pill.style.background = "rgba(255, 90, 95, 0.2)";
+      pill.style.color = "var(--busuu-coral)";
+      pill.style.borderColor = "var(--busuu-coral)";
+    }
   }
 
-  const streamBox = document.getElementById("diff-token-stream");
-  streamBox.innerHTML = diffTokens.map(tok => {
-    if (tok.type === "correct") {
-      return `<span class="token-word token-correct">${tok.word}</span>`;
-    } else if (tok.type === "missed") {
-      return `<span class="token-word token-missed" title="Omitida">[+${tok.word}]</span>`;
-    } else if (tok.type === "extra") {
-      return `<span class="token-word token-extra" title="Palabra extra"><s>${tok.word}</s></span>`;
-    } else if (tok.type === "wrong") {
-      return `<span class="token-word token-wrong" title="Esperaba: ${tok.expected}"><s>${tok.got}</s> <small>(${tok.expected})</small></span>`;
-    }
-    return "";
-  }).join(" ");
+  // Word-by-word diff display using proper CSS classes
+  const streamBox = document.getElementById("diff-tokens-display");
+  if (streamBox && Array.isArray(diffTokens)) {
+    streamBox.innerHTML = diffTokens.map(tok => {
+      if (tok.type === "correct") {
+        return `<span class="diff-word-correct">${escapeHtml(tok.word)}</span>`;
+      } else if (tok.type === "missed") {
+        return `<span class="diff-word-missed" title="Omitida">[+${escapeHtml(tok.word)}]</span>`;
+      } else if (tok.type === "extra") {
+        return `<span class="diff-word-extra" title="Palabra extra"><s>${escapeHtml(tok.word)}</s></span>`;
+      } else if (tok.type === "wrong") {
+        return `<span class="diff-word-wrong" title="Esperaba: ${escapeHtml(tok.expected)}"><s>${escapeHtml(tok.got)}</s> <small>(${escapeHtml(tok.expected)})</small></span>`;
+      }
+      return "";
+    }).join(" ");
+  }
 
-  const realBox = document.getElementById("real-transcript-text");
-  realBox.textContent = realText;
+  // Real full transcript display
+  const realBox = document.getElementById("original-transcript-box");
+  if (realBox) {
+    realBox.style.display = "block";
+    const formatted = escapeHtml(realText).replace(/\n/g, '<br>');
+    realBox.innerHTML = `<div style="font-size: 0.95rem; line-height: 1.8; color: var(--text-main); font-weight: 500;">${formatted}</div>`;
+  }
+
+  const toggleBtn = document.getElementById("btn-toggle-transcript");
+  if (toggleBtn) {
+    toggleBtn.textContent = "🙈 Ocultar Transcripción";
+  }
 }
 
-function toggleFullTranscript() {
-  const box = document.getElementById("real-transcript-box");
+function toggleOriginalTranscript() {
+  const box = document.getElementById("original-transcript-box");
   const btn = document.getElementById("btn-toggle-transcript");
+  if (!box) return;
   if (box.style.display === "none") {
     box.style.display = "block";
-    btn.textContent = "Ocultar Transcripción Original";
+    if (btn) btn.textContent = "🙈 Ocultar Transcripción";
   } else {
     box.style.display = "none";
-    btn.textContent = "Mostrar Transcripción Original Completa";
+    if (btn) btn.textContent = "👁️ Mostrar Transcripción";
   }
 }
+
+// Function aliases for compatibility
+window.verifyListeningDiff = verifyListeningDiff;
+window.verifyDictationDiff = verifyListeningDiff;
+window.toggleOriginalTranscript = toggleOriginalTranscript;
+window.toggleFullTranscript = toggleOriginalTranscript;

@@ -129,7 +129,7 @@
       </button>
       <button class="pillar-tab" data-tab="listening" onclick="showPillar('listening')">
         <span class="tab-icon">🎧</span>
-        <span class="tab-name">3. Listening & Dictado</span>
+        <span class="tab-name">3. Listening</span>
         <span class="tab-check" id="tab-check-listening">○</span>
       </button>
       <button class="pillar-tab" data-tab="shadowing" onclick="showPillar('shadowing')">
@@ -443,9 +443,9 @@
     <section id="panel-listening" class="pillar-panel">
       <div class="panel-header">
         <div>
-          <h2>Paso 3: Deep Listening & Dictado (Técnica Dictogloss)</h2>
+          <h2>Paso 3: Comprensión Auditiva (Listening)</h2>
           <p class="section-desc">
-            Audios oficiales British Council con voces neuronales HD. Selecciona tu nivel (A1 para Javier, A2 para compañero), escucha y tipea.
+            Audios oficiales de British Council. Selecciona tu nivel (A1 / A2), reproduce el audio y tipea en inglés lo que logres captar. Al finalizar, compara tu escrito con la transcripción original.
           </p>
         </div>
       </div>
@@ -498,18 +498,18 @@
           </div>
         </div>
 
-        <!-- Dictation Editor -->
+        <!-- Listening Input Workspace -->
         <div class="dictation-workspace">
           <div class="dictation-prompt">
-            <label for="listening-dictation-input"><strong>Tipea exactamente lo que escuchas:</strong></label>
-            <span class="tip-pill">No mires el texto real hasta terminar de escribir</span>
+            <label for="listening-dictation-input"><strong>Tipea lo que escuchas del audio:</strong></label>
+            <span class="tip-pill">Reproduce a tu ritmo (puedes pausar o retroceder 5s). Luego compara contra el original</span>
           </div>
 
-          <textarea id="listening-dictation-input" class="dictation-input" rows="5" placeholder="Listen carefully and type what you hear word for word..."></textarea>
+          <textarea id="listening-dictation-input" class="dictation-input" rows="5" placeholder="Listen carefully and type what you hear in English..."></textarea>
 
           <div class="dictation-actions">
-            <button class="btn btn-primary" onclick="verifyDictationDiff()">
-              🔍 Comparar Dictado (Diff Visual)
+            <button id="btn-verify-listening" class="btn btn-primary" onclick="verifyListeningDiff()">
+              🔍 Comparar con Transcripción Original
             </button>
           </div>
         </div>
@@ -517,8 +517,8 @@
         <!-- Diff Results Window -->
         <div id="listening-diff-results" class="diff-results-card" style="display: none;">
           <div class="diff-header">
-            <h4>Resultado de la Comparación</h4>
-            <div id="listening-accuracy-pill" class="accuracy-pill">--% Exactitud</div>
+            <h4>Comparación con Transcripción Original</h4>
+            <div id="listening-accuracy-pill" class="accuracy-pill">--% Coincidencia</div>
           </div>
 
           <div class="diff-legend">
@@ -532,11 +532,14 @@
             <!-- Tokens injected by JS -->
           </div>
 
-          <div class="real-transcript-reveal">
-            <button class="btn btn-sm btn-ghost" onclick="toggleOriginalTranscript()">
-              👁️ Ver Transcripción Original Completa
-            </button>
-            <div id="original-transcript-box" class="transcript-box" style="display: none;"></div>
+          <div class="real-transcript-reveal" style="margin-top: 1.25rem; border-top: 1.5px solid var(--border-subtle); padding-top: 1rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+              <strong style="color: var(--text-main); font-size: 0.95rem;">📜 Transcripción Original Completa:</strong>
+              <button id="btn-toggle-transcript" class="btn btn-sm btn-secondary" onclick="toggleOriginalTranscript()">
+                👁️ Ocultar / Mostrar
+              </button>
+            </div>
+            <div id="original-transcript-box" class="transcript-box" style="display: block;"></div>
           </div>
         </div>
       </div>

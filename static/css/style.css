@@ -2395,12 +2395,14 @@ mark.hl-word:hover, mark.hl-phrase:hover {
 
 .transcript-box {
   margin-top: 0.75rem;
-  background: #FFFFFF;
-  border: 1.5px solid var(--border-subtle);
-  padding: 1rem;
+  background: #F8FAFC;
+  border: 1.5px solid #CBD5E1;
+  padding: 1.25rem;
   border-radius: var(--radius-sm);
-  color: #334155;
-  line-height: 1.7;
+  color: #0F172A;
+  line-height: 1.8;
+  font-size: 0.95rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 /* =========================================================

@@ -49,15 +49,21 @@ async function selectReadingLevel(lvl, loadFirst = true) {
     const select = document.getElementById("reading-chapter-select");
     if (select && readingChaptersList.length > 0) {
       select.innerHTML = readingChaptersList.map((r) => {
-        // Clean title
         const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
-        const checkPrefix = r.is_completed ? '✅ ' : '📖 ';
-        const completedDateSuffix = (r.is_completed && r.completed_date) ? ` (${r.completed_date})` : '';
+        let prefix = '📖 ';
+        let suffix = '';
+        if (r.is_completed === 1) {
+          prefix = '✅ ';
+          suffix = r.completed_date ? ` (${r.completed_date})` : ' (Completado)';
+        } else if (r.is_completed === 2) {
+          prefix = '📝 ';
+          suffix = ' (En proceso)';
+        }
 
         if (lvl === 'all') {
-          return `<option value="${r.id}">${checkPrefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${completedDateSuffix}</option>`;
+          return `<option value="${r.id}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${suffix}</option>`;
         }
-        return `<option value="${r.id}">${checkPrefix}Capítulo ${r.chapter}: ${cleanName}${completedDateSuffix}</option>`;
+        return `<option value="${r.id}">${prefix}Capítulo ${r.chapter}: ${cleanName}${suffix}</option>`;
       }).join("");
 
       // Check if user had a saved chapter
@@ -76,6 +82,40 @@ async function selectReadingLevel(lvl, loadFirst = true) {
     }
   } catch (err) {
     console.error("Error loading reading chapter list:", err);
+  }
+}
+
+async function refreshReadingChapterDropdown(keepReadingId) {
+  try {
+    const lvl = state.readingLevel || 'A1';
+    const listRes = await fetch(`/api/reading/list?level=${lvl}&user_id=${state.currentUser}`);
+    readingChaptersList = await listRes.json();
+    const select = document.getElementById("reading-chapter-select");
+    if (select && readingChaptersList.length > 0) {
+      select.innerHTML = readingChaptersList.map((r) => {
+        const cleanName = r.title.replace(/\[.*?\]\s*/, '').replace(/Cap\.\s*\d+\s*[–-]\s*/, '').trim();
+        let prefix = '📖 ';
+        let suffix = '';
+        if (r.is_completed === 1) {
+          prefix = '✅ ';
+          suffix = r.completed_date ? ` (${r.completed_date})` : ' (Completado)';
+        } else if (r.is_completed === 2) {
+          prefix = '📝 ';
+          suffix = ' (En proceso)';
+        }
+
+        if (lvl === 'all') {
+          return `<option value="${r.id}">${prefix}[${r.level}] Cap. ${r.chapter}: ${cleanName}${suffix}</option>`;
+        }
+        return `<option value="${r.id}">${prefix}Capítulo ${r.chapter}: ${cleanName}${suffix}</option>`;
+      }).join("");
+
+      if (keepReadingId) {
+        select.value = keepReadingId;
+      }
+    }
+  } catch (err) {
+    console.error("Error refreshing reading chapters dropdown:", err);
   }
 }
 
@@ -124,13 +164,32 @@ async function loadReadingById(readingId) {
       const compDate = reading.user_progress.completed_date || 'Fecha registrada';
       if (banner) {
         banner.style.display = "flex";
+        banner.style.background = "#ECFDF5";
+        banner.style.borderColor = "#A7F3D0";
         if (bannerText) {
-          bannerText.textContent = `¡Completaste esta lectura el ${compDate}! Tu traducción y resumen han sido archivados abajo para tu consulta.`;
+          bannerText.innerHTML = `¡Capítulo completado el <strong>${compDate}</strong>! Tanto tu traducción al español como tu resumen en inglés están finalizados y guardados.`;
         }
       }
       if (pill) {
         pill.style.display = "inline-flex";
-        pill.textContent = `✅ Completado (${compDate})`;
+        pill.className = "badge badge-success";
+        pill.textContent = `✅ Ya trabajado (${compDate})`;
+      }
+    } else if (reading.user_progress && (reading.user_progress.is_in_progress || reading.user_progress.has_translation || reading.user_progress.has_summary)) {
+      const compDate = reading.user_progress.completed_date || 'Hoy';
+      const hasTrans = reading.user_progress.has_translation;
+      if (banner) {
+        banner.style.display = "flex";
+        banner.style.background = "#EFF6FF";
+        banner.style.borderColor = "#BFDBFE";
+        if (bannerText) {
+          bannerText.innerHTML = `📝 Capítulo en proceso (${compDate}): ${hasTrans ? 'Traducción guardada y auditada' : 'Resumen guardado'}. Finaliza ambas fases para marcarlo como terminado al 100%.`;
+        }
+      }
+      if (pill) {
+        pill.style.display = "inline-flex";
+        pill.className = "badge badge-accent";
+        pill.textContent = `📝 En proceso`;
       }
     } else {
       if (banner) banner.style.display = "none";
@@ -465,7 +524,10 @@ async function submitTranslationForEvaluation() {
       }
       fetchStatusAndRefresh();
       // Reload chapters dropdown to show completion checkmark
-      selectReadingLevel(currentSelectedLevel);
+      await refreshReadingChapterDropdown(currentReadingData ? currentReadingData.id : null);
+      if (currentReadingData) {
+        await loadReadingById(currentReadingData.id);
+      }
     } else {
       alert(data.error || "Ocurrió un error al auditar la traducción.");
     }
@@ -653,7 +715,10 @@ async function submitSummaryForEvaluation() {
       speakEnglish("Summary evaluated successfully!", 1.0);
       fetchStatusAndRefresh();
       // Reload chapters dropdown to show completion checkmark
-      selectReadingLevel(currentSelectedLevel);
+      await refreshReadingChapterDropdown(currentReadingData ? currentReadingData.id : null);
+      if (currentReadingData) {
+        await loadReadingById(currentReadingData.id);
+      }
     } else {
       alert(data.error || "Ocurrió un error al evaluar el resumen.");
     }
