@@ -1,38 +1,53 @@
 import sqlite3
 import os
+import json
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "duohub.db")
 
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
-content_ch1_level1 = """I am six years old. I see a nice picture. The picture is in a book. It is a picture of a big snake. The snake eats an animal. Here is the picture.
+content_ch1_family = """My name is Robinson. I am from England. I am eighteen years old. My father is German. My mother is English. I have two brothers. I have one sister. We are a good family.
 
-The book says, "Snakes eat the whole animal. And they sleep for six months."
-I think about the life in the forest. I make my first picture. This is my picture number one.
+My father is a good businessman. We have money. I have a good school. I have a good life. But I have a dream. I want to travel. I want to see the world.
 
-I show my fantastic picture to one person. And I ask this person, "Are you scared?"
-This person answers, "How can I be scared? It is a hat."
-My picture is not a picture of a hat. It is a picture of a big snake. An elephant is inside the snake. Then I make my picture number two. The picture shows the inside of the big snake. Now people understand. This is my picture number two.
+My father is a good man. He wants the best for me. But my dream is not his dream. He is not happy. The situation is not easy.
 
-People tell me what they think. They tell me that it is not good to make pictures. They tell me that it is better to study geography, history, maths and grammar. After these words, I don’t want to make pictures. I don’t want to make pictures because my picture number one and picture number two are not good for the people. People don’t understand simple things.
+It is morning. My father is in his room. He wants to speak with me. I go to his room. My father has some questions. My father wants to know why I want to travel.
 
-And now, I am not a child. I am a big person. I have a job. I am a pilot. I fly planes. I fly in many countries. And it is true that geography is good for me. Geography can help me if I am lost in the night.
+My father says, "Travelling is dangerous. Travelling is not comfortable. You can die."
 
-During my life, I work with the people a lot. They are usually serious people. Sometimes I meet a person who is a little normal. When I meet this person, I show him my picture number one. I always have this picture with me. I want to know if this person understands life. But the person always says, "It is a hat." Then I never speak to this person about big snakes or forests or stars. And we speak about work, sport and family. And the person is happy. For him I am a normal man.
+I think about it. Travelling is dangerous. It is not comfortable. I can die. But it is also very interesting. I can see new countries. I can meet new people.
 
-I live alone. I don’t know people for an open conversation. But one day it all changes. I have an accident in the Sahara Desert.
-Something is broken in my plane. I have nobody in the plane with me. It is not easy to repair the plane alone. But I must do it. It is a question of life or death. I have water for only a week."""
+I think about travelling every day. Maybe my mother can help me.
 
-title = "[Nivel 1 (A1/A2)] Cap. 1 - Hat"
-key_vocab = '["snake", "picture", "scared", "pilot", "desert", "accident"]'
+I speak with my mother. I tell my mother, "I want to travel. I want to see the world. Please, speak with my father. Maybe with your help, I can travel."
+
+My mother loves me. But she thinks that travelling is dangerous. She thinks that my place is at home. She thinks that life in England is the best for me.
+
+One year later, I visit one big town. The name of this town is Hull.
+
+I meet my friend. His father has a ship. They travel to London. My friend tells me, "Go with me."
+
+I think about it. I am not prepared. But I can try if travelling is for me.
+
+I go to London. I am very happy. It is my first long journey. It is very interesting. The first hour is good. But then we have problems. We see a storm. The storm is big. The wind is strong. The ship goes up and down. I have fear. I think about my home. I think about my comfortable bed.
+
+The storm is finished in the morning. The weather is nice. And the evening is beautiful. Everything is quiet.
+
+One man comes to me. We speak. We speak about the storm. I speak about my fear. The man gives me a drink. I drink very much. I sleep very well at night.
+
+The next day, I forget about my home. I forget about my comfortable bed. I dream more about travelling."""
+
+title = "[Nivel 1 (A1/A2)] Cap. 1 - Family"
+key_vocab = json.dumps(["travel", "dream", "businessman", "dangerous", "situation", "journey", "storm", "ship"])
 
 cursor.execute("""
     UPDATE readings
-    SET title = ?, content = ?, key_vocabulary = ?, topic = 'The Little Prince / Robinson Crusoe in Levels'
+    SET title = ?, content = ?, key_vocabulary = ?, topic = 'Robinson Crusoe', source = 'https://www.robinsoncrusoeinlevels.com/'
     WHERE day_number = 1 AND level = 'A1'
-""", (title, content_ch1_level1, key_vocab))
+""", (title, content_ch1_family, key_vocab))
 
 conn.commit()
-print("Updated Level 1 Chapter 1 with 100% exact text from website!")
+print("Updated Level 1 Chapter 1 with Robinson Crusoe - Family!")
 conn.close()
