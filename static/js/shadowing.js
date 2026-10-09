@@ -13,8 +13,7 @@ let recordStartTime = 0;
 let recordTimerInterval = null;
 let isShadowingModelPlaying = false;
 let shadowingPlaybackSpeed = 1.0;
-let shadowingModelVolume = 0.7;
-let shadowingOutputMode = 'headphones'; // 'headphones', 'speakers', or 'silent'
+let shadowingModelVolume = 1.0;
 
 // Mic Live Audio Analysis
 let micAudioCtx = null;
@@ -46,26 +45,6 @@ function changeShadowingModelVolume(val) {
   const label = document.getElementById("shadowing-vol-label");
   if (label) {
     label.textContent = `${Math.round(shadowingModelVolume * 100)}%`;
-  }
-}
-
-function setShadowingOutputMode(mode) {
-  shadowingOutputMode = mode;
-  document.querySelectorAll(".output-mode-btn").forEach(btn => btn.classList.remove("active"));
-  const activeBtn = document.getElementById(`mode-btn-${mode}`);
-  if (activeBtn) activeBtn.classList.add("active");
-
-  const slider = document.getElementById("shadowing-model-volume");
-  if (mode === "headphones") {
-    changeShadowingModelVolume(1.0);
-    if (slider) slider.value = 1.0;
-  } else if (mode === "speakers") {
-    // Gentle volume to drastically minimize mic speaker bleed
-    changeShadowingModelVolume(0.30);
-    if (slider) slider.value = 0.30;
-  } else if (mode === "silent") {
-    changeShadowingModelVolume(0.0);
-    if (slider) slider.value = 0.0;
   }
 }
 
@@ -366,13 +345,7 @@ async function toggleRecording() {
       // Auto-play native audio if checked
       if (shouldAutoPlay && masterAudio && masterAudio.src) {
         masterAudio.currentTime = 0;
-        if (shadowingOutputMode === 'silent') {
-          masterAudio.volume = 0;
-        } else if (shadowingOutputMode === 'speakers') {
-          masterAudio.volume = Math.min(shadowingModelVolume, 0.35);
-        } else {
-          masterAudio.volume = shadowingModelVolume;
-        }
+        masterAudio.volume = shadowingModelVolume;
         masterAudio.play().then(() => {
           isShadowingModelPlaying = true;
           const playBtn = document.getElementById("btn-play-shadowing-model");
@@ -559,7 +532,6 @@ window.toggleShadowingTranscript = toggleShadowingTranscript;
 window.togglePlayShadowingModel = togglePlayShadowingModel;
 window.changeShadowingSpeed = changeShadowingSpeed;
 window.changeShadowingModelVolume = changeShadowingModelVolume;
-window.setShadowingOutputMode = setShadowingOutputMode;
 window.toggleRecording = toggleRecording;
 window.auditShadowingWithAI = auditShadowingWithAI;
 window.markShadowingDone = markShadowingDone;

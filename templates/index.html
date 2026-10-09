@@ -487,10 +487,19 @@
       </div>
 
       <div class="card listening-studio-card">
+        <!-- Minimalist Status Strip for Listening -->
+        <div id="listening-status-banner" class="reading-status-strip" style="display: none; margin-bottom: 1rem;">
+          <span class="status-strip-icon" id="listening-status-icon">✅</span>
+          <span id="listening-status-banner-text" class="status-strip-text">Audio completado</span>
+        </div>
+
         <!-- Audio Player Controls -->
         <div class="audio-control-bar">
           <div class="audio-info">
-            <h3 id="listening-title">Clip de Audio del Día</h3>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+              <h3 id="listening-title">Clip de Audio del Día</h3>
+              <span id="listening-completion-pill" class="badge badge-success" style="display: none;">✅ Completado</span>
+            </div>
             <span id="listening-level" class="badge badge-accent">A1</span>
           </div>
 
@@ -498,11 +507,13 @@
             <audio id="listening-html5-audio" preload="auto"></audio>
             <button id="btn-play-listening" class="btn btn-primary btn-icon-lg" onclick="togglePlayListening()">▶ Reproducir</button>
 
-            <!-- Timeline & Slider Scrubber -->
+            <!-- Timeline & Slider Scrubber with Integrated Rewind & Forward buttons -->
             <div class="audio-timeline-wrap">
+              <button type="button" class="btn-seek-step" onclick="listeningRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
               <span id="listening-time-current" class="timeline-time">00:00</span>
-              <input type="range" id="listening-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onListeningSliderSeek(this.value)" title="Desplaza para avanzar o retroceder en el audio">
+              <input type="range" id="listening-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onListeningSliderSeek(this.value)" title="Desplaza para avanzar o retroceder libremente">
               <span id="listening-time-total" class="timeline-time">00:00</span>
+              <button type="button" class="btn-seek-step" onclick="listeningForward(5)" title="Avanzar 5 segundos">+5s ⏩</button>
             </div>
             
             <div class="speed-selector">
@@ -552,40 +563,54 @@
           </div>
         </div>
 
-        <!-- Diff Results Window -->
+        <!-- Structured Results Window -->
         <div id="listening-diff-results" class="diff-results-card" style="display: none;">
           <div class="diff-header">
-            <h4>Comparación con Transcripción Original</h4>
+            <h4>📊 Resultados de tu Dictado</h4>
             <div style="display: flex; align-items: center; gap: 0.65rem;">
               <div id="listening-time-spent-pill" class="time-spent-pill" style="display: none;">⏱️ 00:00</div>
               <div id="listening-accuracy-pill" class="accuracy-pill">--% Coincidencia</div>
             </div>
           </div>
 
-          <div class="diff-legend">
-            <span class="legend-item"><span class="color-dot dot-correct"></span> Correcto</span>
-            <span class="legend-item"><span class="color-dot dot-missed"></span> Palabra Omitida</span>
-            <span class="legend-item"><span class="color-dot dot-wrong"></span> Error / Reemplazo</span>
-            <span class="legend-item"><span class="color-dot dot-extra"></span> Palabra Extra</span>
-          </div>
-
-          <div id="diff-tokens-display" class="diff-stream-container">
-            <!-- Tokens injected by JS -->
-          </div>
-
-          <div class="real-transcript-reveal" style="margin-top: 1.25rem; border-top: 1.5px solid var(--border-subtle); padding-top: 1rem;">
+          <!-- Section 1: Transcripción Original Oficial Completa (Limpia) -->
+          <div class="clean-transcript-block">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
-              <strong style="color: var(--text-main); font-size: 0.95rem;">📜 Transcripción Original Completa:</strong>
-              <button id="btn-toggle-transcript" class="btn btn-sm btn-secondary" onclick="toggleOriginalTranscript()">
-                👁️ Ocultar / Mostrar
+              <strong style="color: var(--text-main); font-size: 0.95rem;">📜 Transcripción Original Oficial Completa:</strong>
+              <button type="button" id="btn-toggle-user-typed" class="btn btn-sm btn-ghost" onclick="toggleUserTypedText()">
+                👁️ Ver lo que escribiste
               </button>
             </div>
-            <div id="original-transcript-box" class="transcript-box" style="display: block;"></div>
+            <div id="original-transcript-box" class="transcript-box"></div>
+            <div id="user-typed-box" class="user-typed-box" style="display: none;"></div>
           </div>
 
-          <!-- Comprehensive AI Listening Audit Report -->
-          <div id="listening-ai-audit-section" class="listening-ai-audit-card" style="display: none;">
-            <!-- Populated by JS -->
+          <!-- Section 2: Palabras Faltantes Clave -->
+          <div id="listening-missing-words-section" style="display: none; margin-top: 1.25rem;">
+            <div class="audit-section-subtitle">🟡 Palabras y Frases Faltantes Clave (Omitidas en tu dictado):</div>
+            <div id="listening-missing-words-list" class="missing-words-grid"></div>
+          </div>
+
+          <!-- Section 3: Confusiones Fonéticas & Enlace Británico (Palabras que escribiste mal) -->
+          <div id="listening-phonetic-section" style="display: none; margin-top: 1.25rem;">
+            <div class="audit-section-subtitle">❌ Confusiones Fonéticas & Enlace Británico:</div>
+            <div id="listening-phonetic-grid" class="confusion-grid"></div>
+          </div>
+
+          <!-- Section 4: Elementos Gramaticales u Omisiones Clave -->
+          <div id="listening-grammar-section" style="display: none; margin-top: 1.25rem;">
+            <div class="audit-section-subtitle">🔍 Elementos Gramaticales u Omisiones Clave:</div>
+            <ul id="listening-grammar-list" class="audit-missed-list"></ul>
+          </div>
+
+          <!-- Section 5: Conclusión y Consejos de la IA (Al Final) -->
+          <div id="listening-ai-audit-section" class="listening-ai-conclusion-card" style="display: none; margin-top: 1.5rem;">
+            <div class="audit-header">
+              <div class="audit-title">🎓 Conclusión del Evaluador & Consejos</div>
+              <span id="listening-ai-source-tag" class="audit-source-tag">Auditoría IA</span>
+            </div>
+            <p id="listening-ai-verdict" class="audit-verdict-p"></p>
+            <div id="listening-ai-coaching" class="audit-coaching-box"></div>
           </div>
         </div>
       </div>
@@ -651,17 +676,45 @@
             </div>
           </div>
 
+          <!-- 5 Pasos del Método Argüelles -->
+          <div class="arguelles-steps-card">
+            <div class="arguelles-header">
+              <span class="arguelles-icon">📚</span>
+              <strong>Los 5 Pasos del Método Argüelles (Shadowing):</strong>
+            </div>
+            <div class="arguelles-step-item">
+              <span class="step-num">1</span>
+              <div><strong>Escucha Ciega:</strong> Escucha atentamente sin mirar el texto; capta el tono, ritmo y musicalidad natural.</div>
+            </div>
+            <div class="arguelles-step-item">
+              <span class="step-num">2</span>
+              <div><strong>Lectura Sincronizada:</strong> Escucha mientras sigues la transcripción para conectar grafía con sonido real.</div>
+            </div>
+            <div class="arguelles-step-item">
+              <span class="step-num">3</span>
+              <div><strong>Eco en Murmullo (Mumble):</strong> Con audífonos, imita las palabras en susurro pegado a la voz nativa.</div>
+            </div>
+            <div class="arguelles-step-item">
+              <span class="step-num">4</span>
+              <div><strong>Sombreo en Voz Alta:</strong> Articula al unísono con energía, imitando la entonación, pausas y velocidad.</div>
+            </div>
+            <div class="arguelles-step-item">
+              <span class="step-num">5</span>
+              <div><strong>Postura Activa:</strong> Mantén la espalda recta o camina para favorecer la respiración y proyección vocal.</div>
+            </div>
+          </div>
+
           <!-- Complete Transcript Read-Along Container (Hidden by default for Pure Ear Shadowing) -->
           <div class="shadowing-transcript-wrap">
             <div class="transcript-header-row">
               <div>
-                <span class="transcript-subtitle">🎧 Modo Audición Pura</span>
+                <span class="transcript-subtitle">🎧 Transcripción de Apoyo</span>
                 <p class="transcript-hint" style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
                   Entrena tu oído imitando sin leer el texto. Si necesitas apoyo puntual, puedes revelarlo.
                 </p>
               </div>
               <button type="button" id="btn-toggle-shadowing-transcript" class="btn btn-sm btn-secondary" onclick="toggleShadowingTranscript()">
-                👁️ Revelar Transcripción de Apoyo
+                👁️ Revelar Transcripción
               </button>
             </div>
             <div id="shadowing-transcript-collapsible" style="display: none; margin-top: 0.75rem;">
@@ -676,44 +729,15 @@
         <div class="card shadowing-recorder-card">
           <div class="recorder-card-header">
             <h3>🎙️ Consola de Grabación y Práctica</h3>
-            <span class="recorder-sub">Habla sobre la voz del audio al mismo tiempo</span>
+            <span class="recorder-sub">Habla sobre la voz del audio al mismo tiempo con audífonos</span>
           </div>
 
-          <!-- Headphone Pro Tip Box -->
-          <div class="headphone-tip-box">
+          <!-- Headphone Pro Tip Box (Uso Obligatorio) -->
+          <div class="headphone-tip-box required-box">
             <span class="headphone-tip-icon">🎧</span>
             <div class="headphone-tip-content">
-              <strong>Consejo de Oro para Shadowing:</strong>
-              <span>Usa audífonos para escuchar el audio modelo mientras hablas. Así tu micrófono grabará <em>únicamente tu voz limpia</em> sin interferencias de los altavoces.</span>
-            </div>
-          </div>
-
-          <!-- Output Mode Selector (Headphones vs Speakers vs Voice Only) -->
-          <div class="output-mode-selector">
-            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-right: 0.2rem;">Modo de Audio:</span>
-            <button type="button" class="output-mode-btn active" id="mode-btn-headphones" onclick="setShadowingOutputMode('headphones')">
-              🎧 Audífonos (100% Vol)
-            </button>
-            <button type="button" class="output-mode-btn" id="mode-btn-speakers" onclick="setShadowingOutputMode('speakers')">
-              🔊 Altavoces (30% Vol Suave)
-            </button>
-            <button type="button" class="output-mode-btn" id="mode-btn-silent" onclick="setShadowingOutputMode('silent')">
-              🤫 Mudo al Grabar
-            </button>
-          </div>
-
-          <div class="shadowing-instructions-box">
-            <div class="info-row">
-              <span class="info-badge">1</span>
-              <p>Presiona <strong>Iniciar Shadowing</strong>. El audio nativo comenzará a reproducirse y tu micrófono grabará tu voz simultáneamente.</p>
-            </div>
-            <div class="info-row">
-              <span class="info-badge">2</span>
-              <p>Pronuncia el texto imitando la entonación y velocidad del hablante nativo.</p>
-            </div>
-            <div class="info-row">
-              <span class="info-badge">3</span>
-              <p>Al terminar, audita tu pronunciación con IA para detectar diferencias de ritmo y consonantes.</p>
+              <strong>Uso Obligatorio de Audífonos:</strong>
+              <span>Para practicar Shadowing sin que los altavoces de tu equipo interfieran con el micrófono ni tapen tu pronunciación, conecta siempre tus auriculares. Así tu micrófono grabará <em>únicamente tu voz limpia</em>.</span>
             </div>
           </div>
 
@@ -1057,11 +1081,11 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/js/app.js?v=2.5"></script>
-  <script src="/static/js/vocab.js?v=2.5"></script>
-  <script src="/static/js/reading.js?v=2.5"></script>
-  <script src="/static/js/listening.js?v=2.5"></script>
-  <script src="/static/js/shadowing.js?v=2.5"></script>
-  <script src="/static/js/speaking.js?v=2.5"></script>
+  <script src="/static/js/app.js?v=2.6"></script>
+  <script src="/static/js/vocab.js?v=2.6"></script>
+  <script src="/static/js/reading.js?v=2.6"></script>
+  <script src="/static/js/listening.js?v=2.6"></script>
+  <script src="/static/js/shadowing.js?v=2.6"></script>
+  <script src="/static/js/speaking.js?v=2.6"></script>
 </body>
 </html>

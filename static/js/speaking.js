@@ -22,7 +22,7 @@ let speakingAnimFrame = null;
 
 async function loadSpeakingData(day) {
   try {
-    const res = await fetch(`/api/speaking?day=${day}`);
+    const res = await fetch(`/api/speaking?day=${day}&user_id=${state.currentUser}`);
     const data = await res.json();
 
     document.getElementById("speaking-topic-name").textContent = data.topic || "General";

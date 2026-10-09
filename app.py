@@ -1285,7 +1285,13 @@ Student's Written Attempt (typed in {time_seconds} seconds):
 
 Provide your pedagogical audit as a JSON object with this EXACT structure:
 {{
-  "overall_verdict": "<2-3 sentences in Spanish assessing their ear fidelity, comprehension, and typing speed>",
+  "missing_words": [
+    {{
+      "word_or_phrase": "<important word or short phrase from official transcript that student omitted>",
+      "context": "<short excerpt of the sentence showing where it belongs, e.g. '...book a [meeting room] after...'>",
+      "importance": "clave"
+    }}
+  ],
   "phonetic_confusion": [
     {{
       "heard": "<what student typed or heard>",
@@ -1296,6 +1302,7 @@ Provide your pedagogical audit as a JSON object with this EXACT structure:
   "missed_elements": [
     "<bullet point in Spanish highlighting grammatical markers, prepositions, or fast contractions omitted>"
   ],
+  "overall_verdict": "<2-3 sentences in Spanish assessing their ear fidelity, comprehension, and typing speed>",
   "coaching_tip": "<1 high-impact tip in Spanish for training the ear with this specific British audio pattern>"
 }}
 """
@@ -1310,9 +1317,10 @@ Provide your pedagogical audit as a JSON object with this EXACT structure:
     if not ai_audit:
         ai_audit = {
             "source": "Motor Local",
-            "overall_verdict": f"Lograste un {accuracy}% de coincidencia auditiva en {time_seconds} segundos. Gran esfuerzo de transcripción.",
+            "missing_words": [],
             "phonetic_confusion": [],
-            "missed_elements": ["Revisa las palabras marcadas en el visor de diferencias superior."],
+            "missed_elements": ["Revisa la transcripción original completa para identificar las frases que no lograste captar."],
+            "overall_verdict": f"Lograste un {accuracy}% de coincidencia auditiva en {time_seconds} segundos. Gran esfuerzo de transcripción.",
             "coaching_tip": "Escucha nuevamente con atención a cómo los hablantes británicos enlazan las consonantes finales con las vocales siguientes."
         }
 
@@ -1452,12 +1460,39 @@ def complete_shadowing():
 @app.route("/api/speaking", methods=["GET"])
 def get_speaking():
     day_number = request.args.get("day", default=1, type=int)
+    user_id = request.args.get("user_id", default=1, type=int)
+
     conn = get_db()
-    prompt = conn.execute("SELECT * FROM speaking_prompts WHERE day_number = ?", (day_number,)).fetchone()
+    cursor = conn.cursor()
+    prompt = cursor.execute("SELECT * FROM speaking_prompts WHERE day_number = ?", (day_number,)).fetchone()
     if not prompt:
-        prompt = conn.execute("SELECT * FROM speaking_prompts ORDER BY day_number DESC LIMIT 1").fetchone()
-    
-    words = conn.execute("SELECT word, translation FROM vocabulary WHERE day_number = ? LIMIT 5", (day_number,)).fetchall()
+        prompt = cursor.execute("SELECT * FROM speaking_prompts ORDER BY day_number DESC LIMIT 1").fetchone()
+
+    # Query exact vocabulary assigned for this user and day
+    cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
+    u_row = cursor.fetchone()
+    count = u_row["words_per_day"] if u_row else 5
+    mode = u_row["selection_mode"] if u_row else "progressive"
+
+    if mode == "random":
+        offset_seed = (day_number * 37) % 500
+        words_query = """
+            SELECT id, word, translation
+            FROM vocabulary
+            ORDER BY ((id * 31 + ?) % 534) ASC
+            LIMIT ?
+        """
+        words = cursor.execute(words_query, (offset_seed, count)).fetchall()
+    else:
+        offset = max(0, (day_number - 1) * count)
+        words_query = """
+            SELECT id, word, translation
+            FROM vocabulary
+            ORDER BY id ASC
+            LIMIT ? OFFSET ?
+        """
+        words = cursor.execute(words_query, (count, offset)).fetchall()
+
     conn.close()
 
     p_dict = dict(prompt) if prompt else {}

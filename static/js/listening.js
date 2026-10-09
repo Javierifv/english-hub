@@ -234,6 +234,26 @@ async function loadListeningById(clipId) {
       }
     }
 
+    // Update completion pill & status banner
+    const compPill = document.getElementById("listening-completion-pill");
+    const statusBanner = document.getElementById("listening-status-banner");
+    const statusText = document.getElementById("listening-status-banner-text");
+
+    if (state.todayLog && state.todayLog.listening_done) {
+      if (compPill) compPill.style.display = "inline-block";
+      if (statusBanner) {
+        statusBanner.style.display = "flex";
+        if (statusText) {
+          const acc = state.todayLog.listening_accuracy || 0;
+          const secs = state.todayLog.listening_time_seconds || 0;
+          statusText.textContent = `Dictado completado (${acc}% de coincidencia en ${secs}s)`;
+        }
+      }
+    } else {
+      if (compPill) compPill.style.display = "none";
+      if (statusBanner) statusBanner.style.display = "none";
+    }
+
     // Set existing attempt & time if already done
     const input = document.getElementById("listening-dictation-input");
     if (state.todayLog && state.todayLog.listening_attempt) {
@@ -330,19 +350,25 @@ function changeListeningSpeed(val) {
   }
 }
 
-function listeningRewind(seconds) {
+function listeningRewind(seconds = 5) {
   const audioElem = document.getElementById("listening-html5-audio");
-  if (audioElem && audioElem.src && audioElem.src.includes(".mp3")) {
+  if (audioElem && audioElem.src) {
     audioElem.currentTime = Math.max(0, audioElem.currentTime - seconds);
-  } else {
-    togglePlayListening();
+    const slider = document.getElementById("listening-audio-slider");
+    if (slider) slider.value = audioElem.currentTime;
+    const curTime = document.getElementById("listening-time-current");
+    if (curTime) curTime.textContent = formatAudioTime(audioElem.currentTime);
   }
 }
 
-function listeningForward(seconds) {
+function listeningForward(seconds = 5) {
   const audioElem = document.getElementById("listening-html5-audio");
-  if (audioElem && audioElem.src && audioElem.src.includes(".mp3")) {
+  if (audioElem && audioElem.src) {
     audioElem.currentTime = Math.min(audioElem.duration || 999, audioElem.currentTime + seconds);
+    const slider = document.getElementById("listening-audio-slider");
+    if (slider) slider.value = audioElem.currentTime;
+    const curTime = document.getElementById("listening-time-current");
+    if (curTime) curTime.textContent = formatAudioTime(audioElem.currentTime);
   }
 }
 
@@ -367,7 +393,7 @@ async function verifyListeningDiff(isSilent = false) {
   const btn = document.getElementById("btn-verify-listening");
   if (btn) {
     btn.disabled = true;
-    btn.textContent = "Comparando...";
+    btn.textContent = "Comparando y auditando con IA...";
   }
 
   try {
@@ -386,7 +412,16 @@ async function verifyListeningDiff(isSilent = false) {
     const data = await res.json();
 
     if (data.success) {
-      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text, data.time_seconds || listeningStopwatchSeconds, data.ai_audit);
+      const compPill = document.getElementById("listening-completion-pill");
+      const statusBanner = document.getElementById("listening-status-banner");
+      const statusText = document.getElementById("listening-status-banner-text");
+      if (compPill) compPill.style.display = "inline-block";
+      if (statusBanner) {
+        statusBanner.style.display = "flex";
+        if (statusText) statusText.textContent = `Dictado completado (${data.accuracy}% de coincidencia en ${data.time_seconds || listeningStopwatchSeconds}s)`;
+      }
+
+      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text, data.time_seconds || listeningStopwatchSeconds, data.ai_audit, userText);
       if (!isSilent) {
         speakEnglish(`Accuracy: ${data.accuracy} percent`, 1.0);
       }
@@ -407,11 +442,28 @@ async function verifyListeningDiff(isSilent = false) {
   }
 }
 
-function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0, aiAudit = null) {
+let lastUserTypedText = "";
+
+function toggleUserTypedText() {
+  const box = document.getElementById("user-typed-box");
+  const btn = document.getElementById("btn-toggle-user-typed");
+  if (!box) return;
+  if (box.style.display === "none") {
+    box.style.display = "block";
+    if (btn) btn.textContent = "🙈 Ocultar lo que escribiste";
+  } else {
+    box.style.display = "none";
+    if (btn) btn.textContent = "👁️ Ver lo que escribiste";
+  }
+}
+
+function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0, aiAudit = null, userTypedText = "") {
   const container = document.getElementById("listening-diff-results");
   if (!container) return;
   container.style.display = "block";
+  container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+  // 1. Métricas: Tiempo y Coincidencia
   const timePill = document.getElementById("listening-time-spent-pill");
   if (timePill) {
     const totalSecs = timeSeconds || listeningStopwatchSeconds;
@@ -439,113 +491,105 @@ function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0, aiAu
     }
   }
 
-  // Word-by-word diff display using proper CSS classes
-  const streamBox = document.getElementById("diff-tokens-display");
-  if (streamBox && Array.isArray(diffTokens)) {
-    streamBox.innerHTML = diffTokens.map(tok => {
-      if (tok.type === "correct") {
-        return `<span class="diff-word-correct">${escapeHtml(tok.word)}</span>`;
-      } else if (tok.type === "missed") {
-        return `<span class="diff-word-missed" title="Omitida">[+${escapeHtml(tok.word)}]</span>`;
-      } else if (tok.type === "extra") {
-        return `<span class="diff-word-extra" title="Palabra extra"><s>${escapeHtml(tok.word)}</s></span>`;
-      } else if (tok.type === "wrong") {
-        return `<span class="diff-word-wrong" title="Esperaba: ${escapeHtml(tok.expected)}"><s>${escapeHtml(tok.got)}</s> <small>(${escapeHtml(tok.expected)})</small></span>`;
-      }
-      return "";
-    }).join(" ");
-  }
-
-  // Real full transcript display
+  // 2. Transcripción Original Oficial Completa (Limpia y legible)
   const realBox = document.getElementById("original-transcript-box");
   if (realBox) {
-    realBox.style.display = "block";
     const formatted = escapeHtml(realText).replace(/\n/g, '<br>');
-    realBox.innerHTML = `<div style="font-size: 0.95rem; line-height: 1.8; color: var(--text-main); font-weight: 500;">${formatted}</div>`;
+    realBox.innerHTML = `<div style="font-size: 0.98rem; line-height: 1.8; color: var(--text-main); font-weight: 500;">${formatted}</div>`;
   }
 
-  // AI Listening Audit Report Section
-  const auditSection = document.getElementById("listening-ai-audit-section");
-  if (auditSection) {
-    if (aiAudit) {
-      auditSection.style.display = "block";
-      let confusionHtml = "";
-      if (aiAudit.phonetic_confusion && aiAudit.phonetic_confusion.length > 0) {
-        confusionHtml = `
-          <div class="audit-section-subtitle">👂 Confusiones Fonéticas & Enlace Británico:</div>
-          <div class="confusion-grid">
-            ${aiAudit.phonetic_confusion.map(item => `
-              <div class="confusion-chip">
-                <div class="chip-header">
-                  <span>❌ "${escapeHtml(item.heard || '')}"</span>
-                  <span>👉 ✅ "${escapeHtml(item.spoken || '')}"</span>
-                </div>
-                <div class="chip-desc">${escapeHtml(item.explanation || '')}</div>
-              </div>
-            `).join('')}
+  // Texto que escribió el usuario (toggle limpio)
+  lastUserTypedText = userTypedText || (document.getElementById("listening-dictation-input")?.value || "");
+  const userBox = document.getElementById("user-typed-box");
+  if (userBox) {
+    userBox.textContent = lastUserTypedText;
+    userBox.style.display = "none";
+  }
+  const btnToggleTyped = document.getElementById("btn-toggle-user-typed");
+  if (btnToggleTyped) btnToggleTyped.textContent = "👁️ Ver lo que escribiste";
+
+  // 3. Palabras y Frases Faltantes Clave
+  const missingSection = document.getElementById("listening-missing-words-section");
+  const missingList = document.getElementById("listening-missing-words-list");
+  if (missingSection && missingList) {
+    if (aiAudit && Array.isArray(aiAudit.missing_words) && aiAudit.missing_words.length > 0) {
+      missingSection.style.display = "block";
+      missingList.innerHTML = aiAudit.missing_words.map(item => `
+        <div class="missing-word-card">
+          <div class="missing-word-target">
+            <span>🟡 "${escapeHtml(item.word_or_phrase || '')}"</span>
+            <button type="button" class="btn btn-xs btn-ghost" onclick="speakEnglish('${escapeQuotes(item.word_or_phrase || '')}', 0.85)" title="Escuchar pronunciación">🔊</button>
           </div>
-        `;
-      }
-
-      let missedHtml = "";
-      if (aiAudit.missed_elements && aiAudit.missed_elements.length > 0) {
-        missedHtml = `
-          <div class="audit-section-subtitle">🔍 Elementos Gramaticales u Omisiones Clave:</div>
-          <ul class="audit-missed-list">
-            ${aiAudit.missed_elements.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
-          </ul>
-        `;
-      }
-
-      let coachingHtml = "";
-      if (aiAudit.coaching_tip) {
-        coachingHtml = `
-          <div class="audit-coaching-box">
-            <strong>🎯 Consejo para Entrenar el Oído:</strong> ${escapeHtml(aiAudit.coaching_tip)}
-          </div>
-        `;
-      }
-
-      auditSection.innerHTML = `
-        <div class="audit-header">
-          <div class="audit-title">⚡ Auditoría IA de Comprensión Auditiva</div>
-          <span class="audit-source-tag">${escapeHtml(aiAudit.source || 'Auditoría IA')}</span>
+          <div class="missing-word-context">${escapeHtml(item.context || '')}</div>
         </div>
-        <p class="audit-verdict-p">${escapeHtml(aiAudit.overall_verdict || '')}</p>
-        ${confusionHtml}
-        ${missedHtml}
-        ${coachingHtml}
-      `;
+      `).join('');
     } else {
-      auditSection.style.display = "none";
+      missingSection.style.display = "none";
     }
   }
 
-  const toggleBtn = document.getElementById("btn-toggle-transcript");
-  if (toggleBtn) {
-    toggleBtn.textContent = "🙈 Ocultar Transcripción";
+  // 4. Confusiones Fonéticas & Enlace Británico (Palabras que escribiste mal)
+  const phoneticSection = document.getElementById("listening-phonetic-section");
+  const phoneticGrid = document.getElementById("listening-phonetic-grid");
+  if (phoneticSection && phoneticGrid) {
+    if (aiAudit && Array.isArray(aiAudit.phonetic_confusion) && aiAudit.phonetic_confusion.length > 0) {
+      phoneticSection.style.display = "block";
+      phoneticGrid.innerHTML = aiAudit.phonetic_confusion.map(item => `
+        <div class="confusion-chip">
+          <div class="chip-header">
+            <span>❌ "${escapeHtml(item.heard || '')}"</span>
+            <span>👉 ✅ "${escapeHtml(item.spoken || '')}"</span>
+          </div>
+          <div class="chip-desc">${escapeHtml(item.explanation || '')}</div>
+        </div>
+      `).join('');
+    } else {
+      phoneticSection.style.display = "none";
+    }
   }
-}
 
-function toggleOriginalTranscript() {
-  const box = document.getElementById("original-transcript-box");
-  const btn = document.getElementById("btn-toggle-transcript");
-  if (!box) return;
-  if (box.style.display === "none") {
-    box.style.display = "block";
-    if (btn) btn.textContent = "🙈 Ocultar Transcripción";
-  } else {
-    box.style.display = "none";
-    if (btn) btn.textContent = "👁️ Mostrar Transcripción";
+  // 5. Elementos Gramaticales u Omisiones Clave
+  const grammarSection = document.getElementById("listening-grammar-section");
+  const grammarList = document.getElementById("listening-grammar-list");
+  if (grammarSection && grammarList) {
+    if (aiAudit && Array.isArray(aiAudit.missed_elements) && aiAudit.missed_elements.length > 0) {
+      grammarSection.style.display = "block";
+      grammarList.innerHTML = aiAudit.missed_elements.map(m => `<li>${escapeHtml(m)}</li>`).join('');
+    } else {
+      grammarSection.style.display = "none";
+    }
+  }
+
+  // 6. Conclusión del Evaluador & Consejos (Al Final)
+  const aiSection = document.getElementById("listening-ai-audit-section");
+  const aiVerdict = document.getElementById("listening-ai-verdict");
+  const aiCoaching = document.getElementById("listening-ai-coaching");
+  const aiSourceTag = document.getElementById("listening-ai-source-tag");
+
+  if (aiSection && aiAudit) {
+    aiSection.style.display = "block";
+    if (aiSourceTag) aiSourceTag.textContent = aiAudit.source || "Auditoría IA";
+    if (aiVerdict) aiVerdict.textContent = aiAudit.overall_verdict || "";
+    if (aiCoaching) {
+      if (aiAudit.coaching_tip) {
+        aiCoaching.style.display = "block";
+        aiCoaching.innerHTML = `<strong>🎯 Consejo para Entrenar el Oído:</strong> ${escapeHtml(aiAudit.coaching_tip)}`;
+      } else {
+        aiCoaching.style.display = "none";
+      }
+    }
+  } else if (aiSection) {
+    aiSection.style.display = "none";
   }
 }
 
 // Function aliases for compatibility
 window.verifyListeningDiff = verifyListeningDiff;
 window.verifyDictationDiff = verifyListeningDiff;
-window.toggleOriginalTranscript = toggleOriginalTranscript;
-window.toggleFullTranscript = toggleOriginalTranscript;
+window.toggleUserTypedText = toggleUserTypedText;
 window.onListeningSliderSeek = onListeningSliderSeek;
+window.listeningRewind = listeningRewind;
+window.listeningForward = listeningForward;
 window.toggleListeningStopwatch = toggleListeningStopwatch;
 window.resetListeningStopwatch = resetListeningStopwatch;
 window.onListeningInputChange = onListeningInputChange;
