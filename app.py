@@ -1235,6 +1235,7 @@ def verify_listening():
     day_number = data.get("day", 1)
     clip_id = data.get("clip_id")
     user_text = (data.get("user_text") or "").strip()
+    time_seconds = data.get("time_seconds", 0)
 
     conn = get_db()
     if clip_id:
@@ -1251,11 +1252,11 @@ def verify_listening():
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE daily_logs
-        SET listening_done = 1, listening_attempt = ?, listening_accuracy = ?, day_number = ?,
+        SET listening_done = 1, listening_attempt = ?, listening_accuracy = ?, listening_time_seconds = ?, day_number = ?,
             completed_count = vocab_done + reading_done + 1 + shadowing_done + speaking_done,
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ? AND date = ?
-    """, (user_text, accuracy, day_number, user_id, today_str))
+    """, (user_text, accuracy, time_seconds, day_number, user_id, today_str))
     conn.commit()
     conn.close()
 
@@ -1263,7 +1264,8 @@ def verify_listening():
         "success": True,
         "accuracy": accuracy,
         "diff_tokens": diff_tokens,
-        "real_text": real_text
+        "real_text": real_text,
+        "time_seconds": time_seconds
     })
 
 # --- API: Module 4 - Shadowing ---

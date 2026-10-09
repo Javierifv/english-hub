@@ -2063,6 +2063,12 @@ body {
   box-shadow: 0 0 0 2px rgba(11, 114, 231, 0.15);
 }
 
+#listening-track-select {
+  min-width: 320px;
+  max-width: 480px;
+  width: auto;
+}
+
 /* Minimalist Reading Status Strip */
 .reading-status-strip {
   display: flex;
@@ -2577,6 +2583,215 @@ mark.hl-word:hover, mark.hl-phrase:hover {
   padding: 0.35rem 0.5rem;
   border-radius: var(--radius-sm);
   font-weight: 700;
+}
+
+/* Audio Scrubber Timeline */
+.audio-timeline-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: #FFFFFF;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-subtle);
+  min-width: 260px;
+  flex: 1;
+}
+
+.timeline-time {
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 38px;
+  text-align: center;
+}
+
+.audio-scrubber-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 4px;
+  background: #E2E8F0;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+}
+
+.audio-scrubber-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--busuu-blue);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.audio-scrubber-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+.audio-scrubber-slider::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--busuu-blue);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Live Dictation Stopwatch Dock */
+.listening-stopwatch-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #F1F5F9;
+  border: 1.5px solid #E2E8F0;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.stopwatch-info-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stopwatch-icon {
+  font-size: 1.35rem;
+}
+
+.stopwatch-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.stopwatch-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stopwatch-digits {
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.stopwatch-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.stopwatch-badge.badge-idle {
+  background: #E2E8F0;
+  color: var(--text-muted);
+}
+
+.stopwatch-badge.badge-running {
+  background: #DCFCE7;
+  color: #15803D;
+  border: 1px solid #86EFAC;
+  animation: pulse-badge 1.5s infinite;
+}
+
+.stopwatch-badge.badge-paused {
+  background: #FEF3C7;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.stopwatch-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.time-spent-pill {
+  font-family: 'SF Mono', 'Courier New', monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: #EFF6FF;
+  color: var(--busuu-blue);
+  border: 1px solid #BFDBFE;
+}
+
+/* Shadowing Headphone Tip & Mic Meter */
+.headphone-tip-box {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: #F0FDF4;
+  border: 1.5px solid #BBF7D0;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.86rem;
+  color: #166534;
+  line-height: 1.45;
+}
+
+.headphone-tip-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.headphone-tip-content strong {
+  display: block;
+  font-size: 0.88rem;
+  margin-bottom: 0.15rem;
+}
+
+.mic-meter-box {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.mic-meter-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.mic-meter-track {
+  width: 100%;
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.mic-meter-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #10B981 0%, #3B82F6 70%, #EF4444 100%);
+  border-radius: 999px;
+  transition: width 0.08s ease-out;
 }
 
 .dictation-prompt {

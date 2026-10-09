@@ -1,6 +1,7 @@
 /**
  * DUOHUB - Pillar 3: Listening & Dictation Diff Controller
- * Supports CEFR Levels (A1 for Javier, A2 for Partner), British Council Transcripts & HD Neural Audio
+ * Supports CEFR Levels (A1 to C1), British Council Transcripts & HD Neural Audio
+ * Features: Audio Seek Scrubber, Live Dictation Stopwatch, Word Diff Verification
  */
 
 let currentListeningClip = null;
@@ -8,6 +9,90 @@ let listeningTracksList = [];
 let currentTrackIndex = 0;
 let isAudioPlaying = false;
 let listeningSpeed = 1.0;
+
+// Stopwatch State
+let listeningStopwatchSeconds = 0;
+let listeningStopwatchInterval = null;
+let isListeningStopwatchRunning = false;
+
+function formatAudioTime(seconds) {
+  if (isNaN(seconds) || seconds < 0) return "00:00";
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function startListeningStopwatch() {
+  if (isListeningStopwatchRunning) return;
+  isListeningStopwatchRunning = true;
+  updateStopwatchStatus("running");
+  listeningStopwatchInterval = setInterval(() => {
+    listeningStopwatchSeconds++;
+    updateStopwatchDisplay();
+  }, 1000);
+}
+
+function pauseListeningStopwatch() {
+  if (!isListeningStopwatchRunning) return;
+  isListeningStopwatchRunning = false;
+  clearInterval(listeningStopwatchInterval);
+  updateStopwatchStatus("paused");
+}
+
+function toggleListeningStopwatch() {
+  if (isListeningStopwatchRunning) {
+    pauseListeningStopwatch();
+  } else {
+    startListeningStopwatch();
+  }
+}
+
+function resetListeningStopwatch() {
+  pauseListeningStopwatch();
+  listeningStopwatchSeconds = 0;
+  updateStopwatchDisplay();
+  updateStopwatchStatus("idle");
+}
+
+function updateStopwatchDisplay() {
+  const el = document.getElementById("listening-stopwatch-display");
+  if (el) el.textContent = formatAudioTime(listeningStopwatchSeconds);
+}
+
+function updateStopwatchStatus(status) {
+  const badge = document.getElementById("listening-stopwatch-badge");
+  const toggleBtn = document.getElementById("btn-stopwatch-toggle");
+  if (!badge) return;
+  badge.className = "stopwatch-badge";
+  if (status === "running") {
+    badge.classList.add("badge-running");
+    badge.textContent = "🟢 En curso";
+    if (toggleBtn) toggleBtn.textContent = "⏸ Pausar";
+  } else if (status === "paused") {
+    badge.classList.add("badge-paused");
+    badge.textContent = "⏸ Pausado";
+    if (toggleBtn) toggleBtn.textContent = "▶ Reanudar";
+  } else {
+    badge.classList.add("badge-idle");
+    badge.textContent = "Listo para iniciar";
+    if (toggleBtn) toggleBtn.textContent = "▶ Iniciar";
+  }
+}
+
+function onListeningInputChange() {
+  if (!isListeningStopwatchRunning && listeningStopwatchSeconds === 0) {
+    startListeningStopwatch();
+  }
+}
+
+function onListeningSliderSeek(val) {
+  const audioElem = document.getElementById("listening-html5-audio");
+  if (audioElem && audioElem.src) {
+    audioElem.currentTime = parseFloat(val);
+    const curTime = document.getElementById("listening-time-current");
+    if (curTime) curTime.textContent = formatAudioTime(parseFloat(val));
+  }
+}
 
 async function loadListeningData(day) {
   const savedLevel = localStorage.getItem('duohub_listening_lvl_u' + state.currentUser) || state.listeningLevel || 'A1';
@@ -42,8 +127,9 @@ async function selectListeningLevel(lvl, loadFirst = true) {
 
     const select = document.getElementById("listening-track-select");
     if (select && listeningTracksList.length > 0) {
+      // Clean display without level brackets or extra noise, allowing full title display
       select.innerHTML = listeningTracksList.map((t) => `
-        <option value="${t.id}">[${t.level}] ${t.title} (~${t.duration_seconds}s)</option>
+        <option value="${t.id}">${t.title}</option>
       `).join("");
 
       // Check if user had a saved track
@@ -100,8 +186,19 @@ async function loadListeningById(clipId) {
     document.getElementById("listening-title").textContent = clip.title;
     document.getElementById("listening-level").textContent = `${clip.level} Level`;
 
-    // Configure HTML5 Audio Player
+    // Configure HTML5 Audio Player & Scrubber Slider
     const audioElem = document.getElementById("listening-html5-audio");
+    const slider = document.getElementById("listening-audio-slider");
+    const curTime = document.getElementById("listening-time-current");
+    const totTime = document.getElementById("listening-time-total");
+
+    if (slider) {
+      slider.value = 0;
+      slider.max = clip.duration_seconds || 100;
+    }
+    if (curTime) curTime.textContent = "00:00";
+    if (totTime) totTime.textContent = formatAudioTime(clip.duration_seconds || 0);
+
     if (audioElem) {
       audioElem.pause();
       isAudioPlaying = false;
@@ -111,9 +208,22 @@ async function loadListeningById(clipId) {
         audioElem.src = clip.audio_url;
         audioElem.playbackRate = listeningSpeed;
 
+        audioElem.onloadedmetadata = () => {
+          if (slider && audioElem.duration) slider.max = audioElem.duration;
+          if (totTime && audioElem.duration) totTime.textContent = formatAudioTime(audioElem.duration);
+        };
+
+        audioElem.ontimeupdate = () => {
+          if (slider && !slider.matches(':active')) {
+            slider.value = audioElem.currentTime;
+          }
+          if (curTime) curTime.textContent = formatAudioTime(audioElem.currentTime);
+        };
+
         audioElem.onended = () => {
           isAudioPlaying = false;
           document.getElementById("btn-play-listening").textContent = "▶ Reproducir";
+          if (slider) slider.value = slider.max;
         };
 
         audioElem.onerror = () => {
@@ -124,12 +234,18 @@ async function loadListeningById(clipId) {
       }
     }
 
-    // Set existing attempt if already done
+    // Set existing attempt & time if already done
     const input = document.getElementById("listening-dictation-input");
     if (state.todayLog && state.todayLog.listening_attempt) {
       input.value = state.todayLog.listening_attempt;
+      if (state.todayLog.listening_time_seconds) {
+        listeningStopwatchSeconds = state.todayLog.listening_time_seconds;
+        updateStopwatchDisplay();
+        updateStopwatchStatus("paused");
+      }
     } else {
       input.value = "";
+      resetListeningStopwatch();
       const diffResults = document.getElementById("listening-diff-results");
       if (diffResults) diffResults.style.display = "none";
     }
@@ -143,6 +259,9 @@ function togglePlayListening() {
   if (!currentListeningClip) return;
   const audioElem = document.getElementById("listening-html5-audio");
   const playBtn = document.getElementById("btn-play-listening");
+
+  // Auto-start stopwatch when user starts listening
+  startListeningStopwatch();
 
   // Prefer HTML5 Audio Player (Local MP3 generated by Edge Neural Voices)
   if (audioElem && audioElem.src && audioElem.src.includes(".mp3")) {
@@ -242,6 +361,9 @@ async function verifyListeningDiff(isSilent = false) {
     return;
   }
 
+  // Pause stopwatch upon verification
+  pauseListeningStopwatch();
+
   const btn = document.getElementById("btn-verify-listening");
   if (btn) {
     btn.disabled = true;
@@ -257,13 +379,14 @@ async function verifyListeningDiff(isSilent = false) {
         date: state.currentDate,
         day: state.currentDay,
         clip_id: currentListeningClip.id,
-        user_text: userText
+        user_text: userText,
+        time_seconds: listeningStopwatchSeconds
       })
     });
     const data = await res.json();
 
     if (data.success) {
-      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text);
+      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text, data.time_seconds || listeningStopwatchSeconds);
       if (!isSilent) {
         speakEnglish(`Accuracy: ${data.accuracy} percent`, 1.0);
       }
@@ -284,10 +407,19 @@ async function verifyListeningDiff(isSilent = false) {
   }
 }
 
-function renderDiffResults(accuracy, diffTokens, realText) {
+function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0) {
   const container = document.getElementById("listening-diff-results");
   if (!container) return;
   container.style.display = "block";
+
+  const timePill = document.getElementById("listening-time-spent-pill");
+  if (timePill) {
+    const totalSecs = timeSeconds || listeningStopwatchSeconds;
+    const m = Math.floor(totalSecs / 60);
+    const s = totalSecs % 60;
+    timePill.textContent = `⏱️ ${m > 0 ? m + 'm ' : ''}${s}s`;
+    timePill.style.display = "inline-block";
+  }
 
   const pill = document.getElementById("listening-accuracy-pill");
   if (pill) {
@@ -356,3 +488,7 @@ window.verifyListeningDiff = verifyListeningDiff;
 window.verifyDictationDiff = verifyListeningDiff;
 window.toggleOriginalTranscript = toggleOriginalTranscript;
 window.toggleFullTranscript = toggleOriginalTranscript;
+window.onListeningSliderSeek = onListeningSliderSeek;
+window.toggleListeningStopwatch = toggleListeningStopwatch;
+window.resetListeningStopwatch = resetListeningStopwatch;
+window.onListeningInputChange = onListeningInputChange;

@@ -138,6 +138,7 @@ def init_db():
         listening_done INTEGER DEFAULT 0,
         listening_attempt TEXT,
         listening_accuracy REAL DEFAULT 0,
+        listening_time_seconds INTEGER DEFAULT 0,
         shadowing_done INTEGER DEFAULT 0,
         shadowing_audio_path TEXT,
         speaking_done INTEGER DEFAULT 0,
@@ -156,6 +157,8 @@ def init_db():
         cursor.execute("ALTER TABLE daily_logs ADD COLUMN reading_translation TEXT")
     if "reading_translation_feedback" not in existing_dl_cols:
         cursor.execute("ALTER TABLE daily_logs ADD COLUMN reading_translation_feedback TEXT")
+    if "listening_time_seconds" not in existing_dl_cols:
+        cursor.execute("ALTER TABLE daily_logs ADD COLUMN listening_time_seconds INTEGER DEFAULT 0")
 
     # Safe migration: ensure new columns exist in users table
     cursor.execute("PRAGMA table_info(users)")

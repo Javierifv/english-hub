@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.4">
 </head>
 <body>
 
@@ -496,16 +496,21 @@
 
           <div class="audio-controls-center">
             <audio id="listening-html5-audio" preload="auto"></audio>
-            <button class="btn btn-secondary btn-icon" onclick="listeningRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
             <button id="btn-play-listening" class="btn btn-primary btn-icon-lg" onclick="togglePlayListening()">▶ Reproducir</button>
-            <button class="btn btn-secondary btn-icon" onclick="listeningForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
+
+            <!-- Timeline & Slider Scrubber -->
+            <div class="audio-timeline-wrap">
+              <span id="listening-time-current" class="timeline-time">00:00</span>
+              <input type="range" id="listening-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onListeningSliderSeek(this.value)" title="Desplaza para avanzar o retroceder en el audio">
+              <span id="listening-time-total" class="timeline-time">00:00</span>
+            </div>
             
             <div class="speed-selector">
               <label>Velocidad:</label>
               <select id="listening-speed-select" onchange="changeListeningSpeed(this.value)">
-                <option value="0.75">0.75x (Lento)</option>
+                <option value="0.75">0.75x</option>
                 <option value="0.9">0.9x</option>
-                <option value="1.0" selected>1.0x (Normal)</option>
+                <option value="1.0" selected>1.0x</option>
               </select>
             </div>
           </div>
@@ -513,12 +518,32 @@
 
         <!-- Listening Input Workspace -->
         <div class="dictation-workspace">
-          <div class="dictation-prompt">
-            <label for="listening-dictation-input"><strong>Tipea lo que escuchas del audio:</strong></label>
-            <span class="tip-pill">Reproduce a tu ritmo (puedes pausar o retroceder 5s). Luego compara contra el original</span>
+          <!-- Live Dictation Stopwatch Dock -->
+          <div class="listening-stopwatch-dock">
+            <div class="stopwatch-info-group">
+              <span class="stopwatch-icon">⏱️</span>
+              <div class="stopwatch-text">
+                <span class="stopwatch-label">Tiempo de Dictado:</span>
+                <span id="listening-stopwatch-display" class="stopwatch-digits">00:00</span>
+              </div>
+              <span id="listening-stopwatch-badge" class="stopwatch-badge badge-idle">Listo para iniciar</span>
+            </div>
+            <div class="stopwatch-btn-group">
+              <button type="button" id="btn-stopwatch-toggle" class="btn btn-sm btn-secondary" onclick="toggleListeningStopwatch()">
+                ⏸ Pausar
+              </button>
+              <button type="button" class="btn btn-sm btn-ghost" onclick="resetListeningStopwatch()" title="Reiniciar cronómetro">
+                🔄 Reiniciar
+              </button>
+            </div>
           </div>
 
-          <textarea id="listening-dictation-input" class="dictation-input" rows="5" placeholder="Listen carefully and type what you hear in English..."></textarea>
+          <div class="dictation-prompt">
+            <label for="listening-dictation-input"><strong>Tipea lo que escuchas del audio:</strong></label>
+            <span class="tip-pill">Usa el slider para moverte libremente en el audio. El cronómetro medirá tu tiempo.</span>
+          </div>
+
+          <textarea id="listening-dictation-input" class="dictation-input" rows="5" placeholder="Listen carefully and type what you hear in English..." oninput="onListeningInputChange()"></textarea>
 
           <div class="dictation-actions">
             <button id="btn-verify-listening" class="btn btn-primary" onclick="verifyListeningDiff()">
@@ -531,7 +556,10 @@
         <div id="listening-diff-results" class="diff-results-card" style="display: none;">
           <div class="diff-header">
             <h4>Comparación con Transcripción Original</h4>
-            <div id="listening-accuracy-pill" class="accuracy-pill">--% Coincidencia</div>
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+              <div id="listening-time-spent-pill" class="time-spent-pill" style="display: none;">⏱️ 00:00</div>
+              <div id="listening-accuracy-pill" class="accuracy-pill">--% Coincidencia</div>
+            </div>
           </div>
 
           <div class="diff-legend">
@@ -591,29 +619,43 @@
           <div class="shadowing-player-bar">
             <audio id="shadowing-master-audio" preload="auto"></audio>
             <div class="audio-controls-row">
-              <button class="btn btn-secondary btn-icon" onclick="shadowingRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
               <button id="btn-play-shadowing-model" class="btn btn-primary btn-icon-lg" onclick="togglePlayShadowingModel()">▶ Escuchar Audio Modelo</button>
-              <button class="btn btn-secondary btn-icon" onclick="shadowingForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
+
+              <!-- Timeline & Slider Scrubber for Shadowing -->
+              <div class="audio-timeline-wrap">
+                <span id="shadowing-time-current" class="timeline-time">00:00</span>
+                <input type="range" id="shadowing-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onShadowingSliderSeek(this.value)" title="Desplaza para avanzar o retroceder en el audio modelo">
+                <span id="shadowing-time-total" class="timeline-time">00:00</span>
+              </div>
 
               <div class="speed-selector">
                 <label>Velocidad:</label>
                 <select id="shadowing-speed-select" onchange="changeShadowingSpeed(this.value)">
-                  <option value="0.75">0.75x (Lento)</option>
+                  <option value="0.75">0.75x</option>
                   <option value="0.9">0.9x</option>
-                  <option value="1.0" selected>1.0x (Normal)</option>
+                  <option value="1.0" selected>1.0x</option>
                 </select>
               </div>
             </div>
           </div>
 
-          <!-- Complete Transcript Read-Along Container -->
+          <!-- Complete Transcript Read-Along Container (Hidden by default for Pure Ear Shadowing) -->
           <div class="shadowing-transcript-wrap">
             <div class="transcript-header-row">
-              <span class="transcript-subtitle">📖 Transcripción Completa del Audio:</span>
-              <span class="transcript-hint">Lee en voz alta mientras escuchas la voz del audio</span>
+              <div>
+                <span class="transcript-subtitle">🎧 Modo Audición Pura</span>
+                <p class="transcript-hint" style="margin: 0.2rem 0 0 0; font-size: 0.8rem; color: var(--text-muted);">
+                  Entrena tu oído imitando sin leer el texto. Si necesitas apoyo puntual, puedes revelarlo.
+                </p>
+              </div>
+              <button type="button" id="btn-toggle-shadowing-transcript" class="btn btn-sm btn-secondary" onclick="toggleShadowingTranscript()">
+                👁️ Revelar Transcripción de Apoyo
+              </button>
             </div>
-            <div id="shadowing-full-transcript" class="shadowing-transcript-text">
-              <!-- Transcript populated by JS -->
+            <div id="shadowing-transcript-collapsible" style="display: none; margin-top: 0.75rem;">
+              <div id="shadowing-full-transcript" class="shadowing-transcript-text">
+                <!-- Transcript populated by JS -->
+              </div>
             </div>
           </div>
         </div>
@@ -623,6 +665,15 @@
           <div class="recorder-card-header">
             <h3>🎙️ Consola de Grabación y Práctica</h3>
             <span class="recorder-sub">Habla sobre la voz del audio al mismo tiempo</span>
+          </div>
+
+          <!-- Headphone Pro Tip Box -->
+          <div class="headphone-tip-box">
+            <span class="headphone-tip-icon">🎧</span>
+            <div class="headphone-tip-content">
+              <strong>Consejo de Oro para Shadowing:</strong>
+              <span>Usa audífonos para escuchar el audio modelo mientras hablas. Así tu micrófono grabará <em>únicamente tu voz limpia</em> sin interferencias de los altavoces.</span>
+            </div>
           </div>
 
           <div class="shadowing-instructions-box">
@@ -637,6 +688,17 @@
             <div class="info-row">
               <span class="info-badge">3</span>
               <p>Al terminar, reproduce tu grabación para detectar diferencias de ritmo y consonantes.</p>
+            </div>
+          </div>
+
+          <!-- Live Mic VU Meter & Indicator -->
+          <div id="mic-meter-container" class="mic-meter-box" style="display: none;">
+            <div class="mic-meter-label-row">
+              <span>🎙️ Nivel de Entrada de Micrófono:</span>
+              <span id="mic-meter-status">Detectando voz...</span>
+            </div>
+            <div class="mic-meter-track">
+              <div id="mic-meter-bar" class="mic-meter-bar" style="width: 0%;"></div>
             </div>
           </div>
 
@@ -921,11 +983,11 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/js/app.js?v=2.2"></script>
-  <script src="/static/js/vocab.js?v=2.2"></script>
-  <script src="/static/js/reading.js?v=2.2"></script>
-  <script src="/static/js/listening.js?v=2.2"></script>
-  <script src="/static/js/shadowing.js?v=2.2"></script>
-  <script src="/static/js/speaking.js?v=2.2"></script>
+  <script src="/static/js/app.js?v=2.4"></script>
+  <script src="/static/js/vocab.js?v=2.4"></script>
+  <script src="/static/js/reading.js?v=2.4"></script>
+  <script src="/static/js/listening.js?v=2.4"></script>
+  <script src="/static/js/shadowing.js?v=2.4"></script>
+  <script src="/static/js/speaking.js?v=2.4"></script>
 </body>
 </html>

@@ -2,6 +2,7 @@
  * DUOHUB - Pillar 4: Shadowing Studio Controller
  * Links directly to the active Listening audio track and complete transcript.
  * Enables simultaneous listening & speech recording for authentic shadowing technique.
+ * Features: Pure Audition Mode (collapsible transcript), Master Audio Scrubber, Live Mic VU Meter.
  */
 
 let currentShadowingClip = null;
@@ -12,6 +13,40 @@ let recordStartTime = 0;
 let recordTimerInterval = null;
 let isShadowingModelPlaying = false;
 let shadowingPlaybackSpeed = 1.0;
+
+// Mic Live Audio Analysis
+let micAudioCtx = null;
+let micAnalyser = null;
+let micAnimFrame = null;
+
+function formatShadowingTime(seconds) {
+  if (isNaN(seconds) || seconds < 0) return "00:00";
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function onShadowingSliderSeek(val) {
+  const masterAudio = document.getElementById("shadowing-master-audio");
+  if (masterAudio && masterAudio.src) {
+    masterAudio.currentTime = parseFloat(val);
+    const curTime = document.getElementById("shadowing-time-current");
+    if (curTime) curTime.textContent = formatShadowingTime(parseFloat(val));
+  }
+}
+
+function toggleShadowingTranscript() {
+  const box = document.getElementById("shadowing-transcript-collapsible");
+  const btn = document.getElementById("btn-toggle-shadowing-transcript");
+  if (!box) return;
+  if (box.style.display === "none") {
+    box.style.display = "block";
+    if (btn) btn.textContent = "🙈 Ocultar Transcripción";
+  } else {
+    box.style.display = "none";
+    if (btn) btn.textContent = "👁️ Revelar Transcripción de Apoyo";
+  }
+}
 
 async function loadShadowingData(day) {
   try {
@@ -38,8 +73,19 @@ async function loadShadowingData(day) {
     document.getElementById("shadowing-track-title").textContent = clip.title;
     document.getElementById("shadowing-level-badge").textContent = `${clip.level} Level`;
 
-    // 3. Set up Master Model Audio Player
+    // 3. Set up Master Model Audio Player & Scrubber
     const masterAudio = document.getElementById("shadowing-master-audio");
+    const slider = document.getElementById("shadowing-audio-slider");
+    const curTime = document.getElementById("shadowing-time-current");
+    const totTime = document.getElementById("shadowing-time-total");
+
+    if (slider) {
+      slider.value = 0;
+      slider.max = clip.duration_seconds || 100;
+    }
+    if (curTime) curTime.textContent = "00:00";
+    if (totTime) totTime.textContent = formatShadowingTime(clip.duration_seconds || 0);
+
     if (masterAudio) {
       masterAudio.pause();
       isShadowingModelPlaying = false;
@@ -50,16 +96,29 @@ async function loadShadowingData(day) {
         masterAudio.src = clip.audio_url;
         masterAudio.playbackRate = shadowingPlaybackSpeed;
 
+        masterAudio.onloadedmetadata = () => {
+          if (slider && masterAudio.duration) slider.max = masterAudio.duration;
+          if (totTime && masterAudio.duration) totTime.textContent = formatShadowingTime(masterAudio.duration);
+        };
+
+        masterAudio.ontimeupdate = () => {
+          if (slider && !slider.matches(':active')) {
+            slider.value = masterAudio.currentTime;
+          }
+          if (curTime) curTime.textContent = formatShadowingTime(masterAudio.currentTime);
+        };
+
         masterAudio.onended = () => {
           isShadowingModelPlaying = false;
           if (playBtn) playBtn.textContent = "▶ Escuchar Audio Modelo";
+          if (slider) slider.value = slider.max;
         };
       } else {
         masterAudio.src = "";
       }
     }
 
-    // 4. Render Complete Transcript with clean dialogue formatting
+    // 4. Render Complete Transcript (Hidden by default for pure ear training)
     renderShadowingTranscript(clip.transcript);
 
     // 5. Check if user already completed shadowing for this date
@@ -76,6 +135,12 @@ async function loadShadowingData(day) {
 function renderShadowingTranscript(rawTranscript) {
   const container = document.getElementById("shadowing-full-transcript");
   if (!container) return;
+
+  // Always keep transcript hidden initially when loading a track
+  const collapsible = document.getElementById("shadowing-transcript-collapsible");
+  const toggleBtn = document.getElementById("btn-toggle-shadowing-transcript");
+  if (collapsible) collapsible.style.display = "none";
+  if (toggleBtn) toggleBtn.textContent = "👁️ Revelar Transcripción de Apoyo";
 
   if (!rawTranscript || rawTranscript.trim().length === 0) {
     container.innerHTML = `<div class="empty-state">Transcripción no disponible para esta pista.</div>`;
@@ -138,20 +203,6 @@ function togglePlayShadowingModel() {
   }
 }
 
-function shadowingRewind(seconds) {
-  const audio = document.getElementById("shadowing-master-audio");
-  if (audio) {
-    audio.currentTime = Math.max(0, audio.currentTime - seconds);
-  }
-}
-
-function shadowingForward(seconds) {
-  const audio = document.getElementById("shadowing-master-audio");
-  if (audio) {
-    audio.currentTime = Math.min(audio.duration || 999, audio.currentTime + seconds);
-  }
-}
-
 function changeShadowingSpeed(val) {
   shadowingPlaybackSpeed = parseFloat(val);
   const audio = document.getElementById("shadowing-master-audio");
@@ -166,13 +217,38 @@ async function toggleRecording() {
   const statusDot = document.getElementById("rec-status-dot");
   const masterAudio = document.getElementById("shadowing-master-audio");
   const shouldAutoPlay = document.getElementById("chk-auto-play-audio") ? document.getElementById("chk-auto-play-audio").checked : true;
+  const meterContainer = document.getElementById("mic-meter-container");
+  const meterBar = document.getElementById("mic-meter-bar");
+  const meterStatus = document.getElementById("mic-meter-status");
 
   if (!isRecording) {
     // START RECORDING
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Use clean unsuppressed audio constraints so speaker playback does not cause aggressive browser AEC gating/muting
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: true
+          }
+        });
+      } catch (errFallback) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+
       recordedChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
+
+      // Select optimal supported MIME type
+      let recorderOptions = {};
+      if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        recorderOptions = { mimeType: 'audio/webm;codecs=opus' };
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        recorderOptions = { mimeType: 'audio/webm' };
+      }
+
+      mediaRecorder = new MediaRecorder(stream, recorderOptions);
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -181,11 +257,13 @@ async function toggleRecording() {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+        const mime = mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(recordedChunks, { type: mime });
         const audioUrl = URL.createObjectURL(audioBlob);
         const player = document.getElementById("user-audio-player");
         if (player) {
           player.src = audioUrl;
+          player.volume = 1.0;
         }
         const playbackRow = document.getElementById("recording-playback-row");
         if (playbackRow) {
@@ -193,6 +271,38 @@ async function toggleRecording() {
           playbackRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       };
+
+      // Set up real-time Mic VU Meter
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        micAudioCtx = new AudioCtx();
+        const source = micAudioCtx.createMediaStreamSource(stream);
+        micAnalyser = micAudioCtx.createAnalyser();
+        micAnalyser.fftSize = 256;
+        source.connect(micAnalyser);
+
+        if (meterContainer) meterContainer.style.display = "block";
+        const dataArray = new Uint8Array(micAnalyser.frequencyBinCount);
+
+        const updateMeter = () => {
+          if (!isRecording) return;
+          micAnalyser.getByteFrequencyData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          const avg = sum / dataArray.length;
+          const pct = Math.min(100, Math.round((avg / 128) * 100));
+          if (meterBar) meterBar.style.width = pct + "%";
+          if (meterStatus) {
+            meterStatus.textContent = pct > 10 ? "🎤 Captando voz (OK)" : "🎤 Esperando voz...";
+          }
+          micAnimFrame = requestAnimationFrame(updateMeter);
+        };
+        updateMeter();
+      } catch (eVis) {
+        console.warn("Could not start visualizer meter:", eVis);
+      }
 
       mediaRecorder.start();
       isRecording = true;
@@ -232,6 +342,14 @@ async function toggleRecording() {
     }
     isRecording = false;
     clearInterval(recordTimerInterval);
+    if (micAnimFrame) cancelAnimationFrame(micAnimFrame);
+    if (micAudioCtx) {
+      micAudioCtx.close().catch(() => {});
+      micAudioCtx = null;
+    }
+    if (meterBar) meterBar.style.width = "0%";
+    if (meterStatus) meterStatus.textContent = "Grabación detenida";
+
     btn.classList.remove("recording");
     btn.innerHTML = `<span class="rec-dot"></span> 🎙️ Grabar Otra Toma de Shadowing`;
     if (statusDot) statusDot.classList.remove("pulsing");
@@ -266,3 +384,12 @@ async function markShadowingDone() {
     console.error("Error marking shadowing done:", err);
   }
 }
+
+// Window global exports
+window.onShadowingSliderSeek = onShadowingSliderSeek;
+window.toggleShadowingTranscript = toggleShadowingTranscript;
+window.togglePlayShadowingModel = togglePlayShadowingModel;
+window.changeShadowingSpeed = changeShadowingSpeed;
+window.toggleRecording = toggleRecording;
+window.markShadowingDone = markShadowingDone;
+window.loadShadowingData = loadShadowingData;
