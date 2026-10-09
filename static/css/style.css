@@ -3336,6 +3336,177 @@ mark.hl-word:hover, mark.hl-phrase:hover {
   margin-bottom: 0.5rem;
 }
 
+/* AI Audit Cards: Listening, Shadowing, Speaking */
+.listening-ai-audit-card,
+.shadowing-ai-audit-card,
+.speaking-ai-audit-card {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  animation: fadeIn 0.25s ease-out;
+}
+
+.audit-header-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1.5px solid var(--border-subtle);
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.audit-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.audit-source-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: #EFF6FF;
+  color: var(--busuu-blue);
+  border: 1px solid #BFDBFE;
+}
+
+.audit-verdict-p {
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: #1E293B;
+  background: #F8FAFC;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid var(--busuu-blue);
+  border-radius: var(--radius-xs);
+  margin-bottom: 1rem;
+}
+
+.audit-section-subtitle {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0.85rem 0 0.45rem;
+}
+
+.confusion-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.confusion-chip {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.confusion-chip .chip-header {
+  font-weight: 800;
+  color: #B45309;
+  margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.confusion-chip .chip-desc {
+  color: #78350F;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.audit-missed-list {
+  padding-left: 1.25rem;
+  margin: 0.45rem 0 0.85rem;
+  color: #334155;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.audit-coaching-box {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.86rem;
+  color: #166534;
+  line-height: 1.5;
+}
+
+/* Volume Slider Controls */
+.model-volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.volume-range {
+  width: 75px;
+  height: 5px;
+  cursor: pointer;
+  accent-color: var(--busuu-blue);
+}
+
+.vol-label {
+  min-width: 30px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+/* Shadowing & Speaking Output Mode Pills */
+.output-mode-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.output-mode-btn {
+  background: #F8FAFC;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.output-mode-btn:hover {
+  background: #E2E8F0;
+  color: var(--text-main);
+}
+
+.output-mode-btn.active {
+  background: #0284C7;
+  color: #FFFFFF;
+  border-color: #0369A1;
+}
+
+/* Speaking Challenge In-App Studio */
+.speaking-recorder-card {
+  display: flex;
+  flex-direction: column;
+}
+
 /* =========================================================
    MODAL DIALOGS
    ========================================================= */

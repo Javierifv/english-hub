@@ -386,7 +386,7 @@ async function verifyListeningDiff(isSilent = false) {
     const data = await res.json();
 
     if (data.success) {
-      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text, data.time_seconds || listeningStopwatchSeconds);
+      renderDiffResults(data.accuracy, data.diff_tokens, data.real_text, data.time_seconds || listeningStopwatchSeconds, data.ai_audit);
       if (!isSilent) {
         speakEnglish(`Accuracy: ${data.accuracy} percent`, 1.0);
       }
@@ -407,7 +407,7 @@ async function verifyListeningDiff(isSilent = false) {
   }
 }
 
-function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0) {
+function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0, aiAudit = null) {
   const container = document.getElementById("listening-diff-results");
   if (!container) return;
   container.style.display = "block";
@@ -462,6 +462,63 @@ function renderDiffResults(accuracy, diffTokens, realText, timeSeconds = 0) {
     realBox.style.display = "block";
     const formatted = escapeHtml(realText).replace(/\n/g, '<br>');
     realBox.innerHTML = `<div style="font-size: 0.95rem; line-height: 1.8; color: var(--text-main); font-weight: 500;">${formatted}</div>`;
+  }
+
+  // AI Listening Audit Report Section
+  const auditSection = document.getElementById("listening-ai-audit-section");
+  if (auditSection) {
+    if (aiAudit) {
+      auditSection.style.display = "block";
+      let confusionHtml = "";
+      if (aiAudit.phonetic_confusion && aiAudit.phonetic_confusion.length > 0) {
+        confusionHtml = `
+          <div class="audit-section-subtitle">👂 Confusiones Fonéticas & Enlace Británico:</div>
+          <div class="confusion-grid">
+            ${aiAudit.phonetic_confusion.map(item => `
+              <div class="confusion-chip">
+                <div class="chip-header">
+                  <span>❌ "${escapeHtml(item.heard || '')}"</span>
+                  <span>👉 ✅ "${escapeHtml(item.spoken || '')}"</span>
+                </div>
+                <div class="chip-desc">${escapeHtml(item.explanation || '')}</div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      let missedHtml = "";
+      if (aiAudit.missed_elements && aiAudit.missed_elements.length > 0) {
+        missedHtml = `
+          <div class="audit-section-subtitle">🔍 Elementos Gramaticales u Omisiones Clave:</div>
+          <ul class="audit-missed-list">
+            ${aiAudit.missed_elements.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
+          </ul>
+        `;
+      }
+
+      let coachingHtml = "";
+      if (aiAudit.coaching_tip) {
+        coachingHtml = `
+          <div class="audit-coaching-box">
+            <strong>🎯 Consejo para Entrenar el Oído:</strong> ${escapeHtml(aiAudit.coaching_tip)}
+          </div>
+        `;
+      }
+
+      auditSection.innerHTML = `
+        <div class="audit-header">
+          <div class="audit-title">⚡ Auditoría IA de Comprensión Auditiva</div>
+          <span class="audit-source-tag">${escapeHtml(aiAudit.source || 'Auditoría IA')}</span>
+        </div>
+        <p class="audit-verdict-p">${escapeHtml(aiAudit.overall_verdict || '')}</p>
+        ${confusionHtml}
+        ${missedHtml}
+        ${coachingHtml}
+      `;
+    } else {
+      auditSection.style.display = "none";
+    }
   }
 
   const toggleBtn = document.getElementById("btn-toggle-transcript");

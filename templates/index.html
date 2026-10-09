@@ -582,6 +582,11 @@
             </div>
             <div id="original-transcript-box" class="transcript-box" style="display: block;"></div>
           </div>
+
+          <!-- Comprehensive AI Listening Audit Report -->
+          <div id="listening-ai-audit-section" class="listening-ai-audit-card" style="display: none;">
+            <!-- Populated by JS -->
+          </div>
         </div>
       </div>
     </section>
@@ -624,8 +629,15 @@
               <!-- Timeline & Slider Scrubber for Shadowing -->
               <div class="audio-timeline-wrap">
                 <span id="shadowing-time-current" class="timeline-time">00:00</span>
-                <input type="range" id="shadowing-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onShadowingSliderSeek(this.value)" title="Desplaza para avanzar o retroceder en el audio modelo">
+                <input type="range" id="shadowing-audio-slider" class="audio-scrubber-slider" min="0" max="100" value="0" step="0.1" oninput="onShadowingSliderSeek(this.value)" title="Desplaza para avanzar o retroceder en el audio">
                 <span id="shadowing-time-total" class="timeline-time">00:00</span>
+              </div>
+
+              <!-- Master Model Volume Control -->
+              <div class="model-volume-control">
+                <span title="Volumen de voz nativa">🔊</span>
+                <input type="range" id="shadowing-model-volume" class="volume-range" min="0" max="1" step="0.05" value="0.7" oninput="changeShadowingModelVolume(this.value)">
+                <span id="shadowing-vol-label" class="vol-label">70%</span>
               </div>
 
               <div class="speed-selector">
@@ -676,6 +688,20 @@
             </div>
           </div>
 
+          <!-- Output Mode Selector (Headphones vs Speakers vs Voice Only) -->
+          <div class="output-mode-selector">
+            <span style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); margin-right: 0.2rem;">Modo de Audio:</span>
+            <button type="button" class="output-mode-btn active" id="mode-btn-headphones" onclick="setShadowingOutputMode('headphones')">
+              🎧 Audífonos (100% Vol)
+            </button>
+            <button type="button" class="output-mode-btn" id="mode-btn-speakers" onclick="setShadowingOutputMode('speakers')">
+              🔊 Altavoces (30% Vol Suave)
+            </button>
+            <button type="button" class="output-mode-btn" id="mode-btn-silent" onclick="setShadowingOutputMode('silent')">
+              🤫 Mudo al Grabar
+            </button>
+          </div>
+
           <div class="shadowing-instructions-box">
             <div class="info-row">
               <span class="info-badge">1</span>
@@ -687,7 +713,7 @@
             </div>
             <div class="info-row">
               <span class="info-badge">3</span>
-              <p>Al terminar, reproduce tu grabación para detectar diferencias de ritmo y consonantes.</p>
+              <p>Al terminar, audita tu pronunciación con IA para detectar diferencias de ritmo y consonantes.</p>
             </div>
           </div>
 
@@ -729,11 +755,20 @@
               <span class="playback-tag">✓ Captura lista</span>
             </div>
 
-            <div class="playback-controls-grid">
+            <div class="playback-controls-grid" style="margin-bottom: 0.75rem;">
               <div class="playback-column">
                 <label>Reproducir Tu Voz:</label>
-                <audio id="user-audio-player" controls></audio>
+                <audio id="user-audio-player" controls style="width: 100%;"></audio>
               </div>
+            </div>
+
+            <button id="btn-audit-shadowing" class="btn btn-primary btn-block" style="margin-bottom: 0.75rem;" onclick="auditShadowingWithAI()">
+              ✨ Auditar Mi Pronunciación & Cadencia con IA
+            </button>
+
+            <!-- Shadowing AI Audit Results -->
+            <div id="shadowing-ai-audit-container" class="shadowing-ai-audit-card" style="display: none; margin-bottom: 0.85rem;">
+              <!-- Populated by JS -->
             </div>
 
             <button class="btn btn-success btn-lg btn-block" onclick="markShadowingDone()">
@@ -745,14 +780,14 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- PILLAR 5: SPEAKING CHALLENGE (WHATSAPP) -->
+    <!-- PILLAR 5: SPEAKING CHALLENGE (AUDIO EN LA PLATAFORMA) -->
     <!-- ========================================== -->
     <section id="panel-speaking" class="pillar-panel">
       <div class="panel-header">
         <div>
-          <h2>Paso 5: Reto de Speaking (Audio de WhatsApp 5+ Min)</h2>
+          <h2>Paso 5: Reto de Speaking Oral (1 a 5 Minutos)</h2>
           <p class="section-desc">
-            Envíale un audio a tu compañero por WhatsApp respondiendo a la pregunta del día. ¡Intenta incluir las palabras del vocabulario de hoy!
+            Graba tu respuesta oral directamente en DuoHub respondiendo a la pregunta del día. ¡Intenta incluir las palabras del vocabulario de hoy y audítate con IA!
           </p>
         </div>
       </div>
@@ -774,29 +809,68 @@
             </div>
           </div>
 
-          <!-- 5-Minute Timer -->
-          <div class="speaking-timer-box">
-            <div class="speaking-timer-display" id="speaking-timer-display">05:00</div>
-            <div class="speaking-timer-buttons">
-              <button id="btn-speaking-timer-toggle" class="btn btn-outline" onclick="toggleSpeakingTimer()">Iniciar Temporizador</button>
-              <button class="btn btn-ghost" onclick="resetSpeakingTimer()">Reiniciar</button>
+          <!-- Target Words to force in speech -->
+          <div style="margin-top: 1.25rem;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-bottom: 0.5rem;">🎯 Palabras Objetivo a Incluir en tu Audio:</h4>
+            <div id="speaking-target-words-list" class="target-words-checklist">
+              <!-- Injected by JS -->
             </div>
           </div>
         </div>
 
-        <!-- Right: Target Words Checklist & Confirmation -->
-        <div class="card target-words-card">
-          <h3>🎯 Palabras Objetivo a Forzar en tu Audio</h3>
-          <p>Marca las palabras que lograste pronunciar durante tu grabación:</p>
-
-          <div id="speaking-target-words-list" class="target-words-checklist">
-            <!-- Injected by JS -->
+        <!-- Right: In-App Recording Studio & AI Audit -->
+        <div class="card speaking-recorder-card">
+          <div class="recorder-card-header">
+            <h3>🎙️ Estudio de Grabación Oral</h3>
+            <span class="recorder-sub">Habla entre 1 y 5 minutos contando tu respuesta</span>
           </div>
 
-          <div class="whatsapp-action-box">
-            <p class="action-note">Una vez enviado el audio a tu compañero por WhatsApp:</p>
-            <button id="btn-complete-speaking" class="btn btn-success btn-lg btn-block" onclick="markSpeakingDone()">
-              🚀 ¡Audio Enviado a Mi Compañero!
+          <!-- Live Mic VU Meter for Speaking -->
+          <div id="speaking-mic-meter-container" class="mic-meter-box" style="display: none;">
+            <div class="mic-meter-label-row">
+              <span>🎙️ Nivel de Entrada de Micrófono:</span>
+              <span id="speaking-mic-meter-status">Detectando voz...</span>
+            </div>
+            <div class="mic-meter-track">
+              <div id="speaking-mic-meter-bar" class="mic-meter-bar" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Main Recording Action & Timer -->
+          <div class="recorder-action-dock">
+            <button id="btn-record-speaking" class="btn btn-record btn-lg btn-block" onclick="toggleSpeakingRecording()">
+              <span class="rec-dot"></span> Iniciar Grabación de Speaking
+            </button>
+            <div class="rec-timer-display">
+              <span class="rec-status-dot" id="speaking-rec-status-dot"></span>
+              <span id="speaking-recording-timer" class="rec-timer">00:00</span>
+            </div>
+          </div>
+
+          <!-- Playback and AI Evaluation Station -->
+          <div id="speaking-playback-station" class="playback-station" style="display: none; margin-top: 1.25rem;">
+            <div class="playback-header">
+              <h4>🎧 Tu Audio Registrado</h4>
+              <span class="playback-tag">✓ Listo para auditar</span>
+            </div>
+
+            <div class="playback-controls-grid" style="margin-bottom: 1rem;">
+              <div class="playback-column">
+                <audio id="speaking-user-audio-player" controls style="width: 100%;"></audio>
+              </div>
+            </div>
+
+            <button id="btn-audit-speaking" class="btn btn-primary btn-lg btn-block" onclick="auditSpeakingWithAI()" style="margin-bottom: 0.75rem;">
+              ✨ Auditar Mi Speaking con IA
+            </button>
+
+            <!-- Speaking AI Audit Results -->
+            <div id="speaking-ai-audit-container" class="speaking-ai-audit-card" style="display: none; margin-bottom: 1rem;">
+              <!-- Injected by JS -->
+            </div>
+
+            <button id="btn-complete-speaking" class="btn btn-success btn-lg btn-block" onclick="saveAndFinishSpeaking()">
+              ✓ Guardar y Marcar Reto de Speaking Completado
             </button>
           </div>
         </div>
@@ -983,11 +1057,11 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/js/app.js?v=2.4"></script>
-  <script src="/static/js/vocab.js?v=2.4"></script>
-  <script src="/static/js/reading.js?v=2.4"></script>
-  <script src="/static/js/listening.js?v=2.4"></script>
-  <script src="/static/js/shadowing.js?v=2.4"></script>
-  <script src="/static/js/speaking.js?v=2.4"></script>
+  <script src="/static/js/app.js?v=2.5"></script>
+  <script src="/static/js/vocab.js?v=2.5"></script>
+  <script src="/static/js/reading.js?v=2.5"></script>
+  <script src="/static/js/listening.js?v=2.5"></script>
+  <script src="/static/js/shadowing.js?v=2.5"></script>
+  <script src="/static/js/speaking.js?v=2.5"></script>
 </body>
 </html>

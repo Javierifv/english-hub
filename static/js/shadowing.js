@@ -13,6 +13,8 @@ let recordStartTime = 0;
 let recordTimerInterval = null;
 let isShadowingModelPlaying = false;
 let shadowingPlaybackSpeed = 1.0;
+let shadowingModelVolume = 0.7;
+let shadowingOutputMode = 'headphones'; // 'headphones', 'speakers', or 'silent'
 
 // Mic Live Audio Analysis
 let micAudioCtx = null;
@@ -32,6 +34,38 @@ function onShadowingSliderSeek(val) {
     masterAudio.currentTime = parseFloat(val);
     const curTime = document.getElementById("shadowing-time-current");
     if (curTime) curTime.textContent = formatShadowingTime(parseFloat(val));
+  }
+}
+
+function changeShadowingModelVolume(val) {
+  shadowingModelVolume = parseFloat(val);
+  const masterAudio = document.getElementById("shadowing-master-audio");
+  if (masterAudio) {
+    masterAudio.volume = shadowingModelVolume;
+  }
+  const label = document.getElementById("shadowing-vol-label");
+  if (label) {
+    label.textContent = `${Math.round(shadowingModelVolume * 100)}%`;
+  }
+}
+
+function setShadowingOutputMode(mode) {
+  shadowingOutputMode = mode;
+  document.querySelectorAll(".output-mode-btn").forEach(btn => btn.classList.remove("active"));
+  const activeBtn = document.getElementById(`mode-btn-${mode}`);
+  if (activeBtn) activeBtn.classList.add("active");
+
+  const slider = document.getElementById("shadowing-model-volume");
+  if (mode === "headphones") {
+    changeShadowingModelVolume(1.0);
+    if (slider) slider.value = 1.0;
+  } else if (mode === "speakers") {
+    // Gentle volume to drastically minimize mic speaker bleed
+    changeShadowingModelVolume(0.30);
+    if (slider) slider.value = 0.30;
+  } else if (mode === "silent") {
+    changeShadowingModelVolume(0.0);
+    if (slider) slider.value = 0.0;
   }
 }
 
@@ -113,6 +147,7 @@ async function loadShadowingData(day) {
           if (playBtn) playBtn.textContent = "▶ Escuchar Audio Modelo";
           if (slider) slider.value = slider.max;
         };
+        masterAudio.volume = shadowingModelVolume;
       } else {
         masterAudio.src = "";
       }
@@ -125,6 +160,24 @@ async function loadShadowingData(day) {
     if (state.todayLog && state.todayLog.shadowing_done) {
       const recDot = document.getElementById("rec-status-dot");
       if (recDot) recDot.classList.add("done");
+
+      if (state.todayLog.shadowing_audio_path) {
+        const player = document.getElementById("user-audio-player");
+        if (player) player.src = state.todayLog.shadowing_audio_path;
+        const playbackRow = document.getElementById("recording-playback-row");
+        if (playbackRow) playbackRow.style.display = "block";
+      }
+
+      if (state.todayLog.shadowing_ai_feedback) {
+        try {
+          const feedback = typeof state.todayLog.shadowing_ai_feedback === "string"
+            ? JSON.parse(state.todayLog.shadowing_ai_feedback)
+            : state.todayLog.shadowing_ai_feedback;
+          renderShadowingAiAudit(feedback);
+        } catch (e) {
+          console.warn("Could not parse saved shadowing AI feedback:", e);
+        }
+      }
     }
 
   } catch (err) {
@@ -313,6 +366,13 @@ async function toggleRecording() {
       // Auto-play native audio if checked
       if (shouldAutoPlay && masterAudio && masterAudio.src) {
         masterAudio.currentTime = 0;
+        if (shadowingOutputMode === 'silent') {
+          masterAudio.volume = 0;
+        } else if (shadowingOutputMode === 'speakers') {
+          masterAudio.volume = Math.min(shadowingModelVolume, 0.35);
+        } else {
+          masterAudio.volume = shadowingModelVolume;
+        }
         masterAudio.play().then(() => {
           isShadowingModelPlaying = true;
           const playBtn = document.getElementById("btn-play-shadowing-model");
@@ -364,6 +424,114 @@ async function toggleRecording() {
   }
 }
 
+async function auditShadowingWithAI() {
+  if (!recordedChunks || recordedChunks.length === 0) {
+    alert("Primero graba tu toma de Shadowing antes de solicitar la auditoría con IA.");
+    return;
+  }
+
+  const btn = document.getElementById("btn-audit-shadowing");
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = "⏳ Evaluando pronunciación y cadencia con IA...";
+  }
+
+  try {
+    const mime = (mediaRecorder && mediaRecorder.mimeType) ? mediaRecorder.mimeType : 'audio/webm';
+    const audioBlob = new Blob(recordedChunks, { type: mime });
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "shadowing_practice.webm");
+    formData.append("user_id", state.currentUser);
+    formData.append("date", state.currentDate);
+    formData.append("day", state.currentDay);
+    if (currentShadowingClip && currentShadowingClip.id) {
+      formData.append("clip_id", currentShadowingClip.id);
+    }
+
+    const res = await fetch("/api/shadowing/evaluate", {
+      method: "POST",
+      body: formData
+    });
+    const data = await res.json();
+
+    if (data.success && data.feedback) {
+      renderShadowingAiAudit(data.feedback);
+      speakEnglish(`Shadowing evaluated! Fluency score: ${data.feedback.fluency_score || 80}`, 1.0);
+      fetchStatusAndRefresh();
+    } else {
+      alert(data.error || "No se pudo completar la evaluación con IA.");
+    }
+  } catch (err) {
+    console.error("Error evaluating shadowing with AI:", err);
+    alert("Error al conectar con el servidor para la auditoría de pronunciación.");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = "✨ Auditar Mi Pronunciación & Cadencia con IA";
+    }
+  }
+}
+
+function renderShadowingAiAudit(feedback) {
+  const container = document.getElementById("shadowing-ai-audit-container");
+  if (!container || !feedback) return;
+  container.style.display = "block";
+
+  let strengthsHtml = "";
+  if (feedback.strengths && feedback.strengths.length > 0) {
+    strengthsHtml = `
+      <div class="audit-section-subtitle">💪 Aciertos y Fortalezas:</div>
+      <ul class="audit-missed-list">
+        ${feedback.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  let polishHtml = "";
+  if (feedback.words_to_polish && feedback.words_to_polish.length > 0) {
+    polishHtml = `
+      <div class="audit-section-subtitle">🎯 Palabras a Pulir (Pronunciación / Enlace):</div>
+      <div class="confusion-grid">
+        ${feedback.words_to_polish.map(item => `
+          <div class="confusion-chip">
+            <div class="chip-header">
+              <span>🔊 "${escapeHtml(item.word || '')}"</span>
+              <button type="button" class="btn btn-xs btn-ghost" onclick="speakEnglish('${escapeQuotes(item.word || '')}', 0.85)" title="Escuchar pronunciación nativa">🔊</button>
+            </div>
+            <div class="chip-desc">${escapeHtml(item.note || '')}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  let cadenceHtml = "";
+  if (feedback.cadence_tip) {
+    cadenceHtml = `
+      <div class="audit-coaching-box">
+        <strong>🌊 Consejo de Cadencia y Sincronía:</strong> ${escapeHtml(feedback.cadence_tip)}
+      </div>
+    `;
+  }
+
+  const score = feedback.fluency_score || 80;
+  const scoreColor = score >= 85 ? 'var(--busuu-emerald)' : (score >= 65 ? 'var(--busuu-amber)' : 'var(--busuu-coral)');
+
+  container.innerHTML = `
+    <div class="audit-header">
+      <div class="audit-title">🎙️ Evaluación IA de Pronunciación & Cadencia</div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="audit-source-tag">${escapeHtml(feedback.source || 'Auditoría IA')}</span>
+        <span class="badge" style="background: ${scoreColor}; color: #FFF; font-weight: 800;">${score}/100 Puntos</span>
+      </div>
+    </div>
+    <p class="audit-verdict-p">${escapeHtml(feedback.pronunciation_verdict || '')}</p>
+    ${strengthsHtml}
+    ${polishHtml}
+    ${cadenceHtml}
+  `;
+}
+
 async function markShadowingDone() {
   try {
     const res = await fetch("/api/shadowing/complete", {
@@ -390,6 +558,9 @@ window.onShadowingSliderSeek = onShadowingSliderSeek;
 window.toggleShadowingTranscript = toggleShadowingTranscript;
 window.togglePlayShadowingModel = togglePlayShadowingModel;
 window.changeShadowingSpeed = changeShadowingSpeed;
+window.changeShadowingModelVolume = changeShadowingModelVolume;
+window.setShadowingOutputMode = setShadowingOutputMode;
 window.toggleRecording = toggleRecording;
+window.auditShadowingWithAI = auditShadowingWithAI;
 window.markShadowingDone = markShadowingDone;
 window.loadShadowingData = loadShadowingData;
