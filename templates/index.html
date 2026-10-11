@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="EnglishHub">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.7">
 </head>
 <body>
 
@@ -108,23 +108,6 @@
   <!-- Main Container -->
   <main class="main-content">
     
-    <!-- Partner Accountability Bar -->
-    <div class="accountability-banner">
-      <div class="banner-left">
-        <span class="banner-icon">🤝</span>
-        <div>
-          <strong id="active-user-greeting">Entrenando como Javier</strong>
-          <p id="partner-status-text">Tu compañero lleva 0 de 5 tareas completadas hoy.</p>
-        </div>
-      </div>
-      <div class="daily-progress-container">
-        <div class="progress-bar-wrap">
-          <div id="daily-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
-        </div>
-        <span id="daily-progress-text" class="progress-percent">0/5 Completado</span>
-      </div>
-    </div>
-
     <!-- Read-Only Partner Inspector Banner -->
     <div id="read-only-banner" class="read-only-banner" style="display: none;">
       <div class="read-only-banner-inner">
@@ -169,6 +152,11 @@
       </button>
     </nav>
 
+    <!-- Slim Modern Daily Progress Bar -->
+    <div class="hub-compact-progress-wrap" title="Progreso del día (0/5 completado)">
+      <div id="daily-progress-bar" class="hub-compact-progress-fill" style="width: 0%"></div>
+    </div>
+
     <!-- ========================================== -->
     <!-- PILLAR 1: VOCABULARY (CARDS, QUIZ & SRS) -->
     <!-- ========================================== -->
@@ -182,9 +170,10 @@
           <button class="btn btn-secondary btn-sm" onclick="openVocabSettingsModal()">
             ⚙️ Ajustar Cantidad y Modo
           </button>
-          <button id="btn-complete-vocab" class="btn btn-primary" onclick="markVocabDone()">
-            ✓ Confirmar Vocabulario
-          </button>
+          <div id="vocab-status-pill" class="vocab-status-pill" title="El vocabulario se completa automáticamente al superar la Ronda 1 y Ronda 2 alcanzando 5 estrellas (5★)">
+            <span id="vocab-status-icon">⏳</span>
+            <span id="vocab-status-text">Pendiente: Rondas 1 &amp; 2 (5★)</span>
+          </div>
         </div>
       </div>
 

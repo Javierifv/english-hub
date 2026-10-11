@@ -163,6 +163,9 @@ async function loadShadowingData(day) {
       if (auditBox) { auditBox.style.display = "none"; auditBox.innerHTML = ""; }
     }
 
+    if (typeof applyReadOnlyLocks === "function") {
+      applyReadOnlyLocks(state.isReadOnly);
+    }
   } catch (err) {
     console.error("Error loading shadowing track data:", err);
   }

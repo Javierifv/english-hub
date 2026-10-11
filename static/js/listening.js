@@ -284,6 +284,9 @@ async function loadListeningById(clipId) {
       if (diffResults) diffResults.style.display = "none";
     }
 
+    if (typeof applyReadOnlyLocks === "function") {
+      applyReadOnlyLocks(state.isReadOnly);
+    }
   } catch (err) {
     console.error("Error loading listening clip:", err);
   }

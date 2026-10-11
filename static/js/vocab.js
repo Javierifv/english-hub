@@ -38,6 +38,30 @@ function renderMasteryStars(lvl) {
   }).join("");
 }
 
+function updateVocabStatusPill(words) {
+  const pill = document.getElementById("vocab-status-pill");
+  const icon = document.getElementById("vocab-status-icon");
+  const text = document.getElementById("vocab-status-text");
+  if (!pill || !text) return;
+
+  const isDone = state.todayLog && state.todayLog.vocab_done === 1;
+  const list = words || currentDayWords || [];
+  const fiveStars = list.filter(w => (w.user_mastery || 1) >= 5).length;
+  const total = list.length || 5;
+
+  if (isDone) {
+    pill.classList.add("completed");
+    if (icon) icon.textContent = "✓";
+    text.textContent = `Dominio Total (5★) · ${fiveStars}/${total} Palabras`;
+    pill.title = "¡Vocabulario completado! Has alcanzado 5 estrellas en las palabras del día superando las Rondas 1 y 2.";
+  } else {
+    pill.classList.remove("completed");
+    if (icon) icon.textContent = "⏳";
+    text.textContent = `Rondas 1 & 2: ${fiveStars}/${total} en 5★`;
+    pill.title = "Supera la Ronda 1 y Ronda 2 alcanzando 5 estrellas (5★) en todas las palabras para marcar automáticamente este pilar.";
+  }
+}
+
 async function loadVocabData(day) {
   const container = document.getElementById("vocab-cards-grid");
   try {
@@ -47,6 +71,7 @@ async function loadVocabData(day) {
 
     if (!words || words.length === 0) {
       container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
+      updateVocabStatusPill([]);
       return;
     }
 
@@ -55,6 +80,11 @@ async function loadVocabData(day) {
     if (badge) badge.textContent = words.length;
 
     container.innerHTML = words.map(w => renderVocabCard(w)).join("");
+
+    updateVocabStatusPill(words);
+    if (typeof applyReadOnlyLocks === 'function') {
+      applyReadOnlyLocks(state.isReadOnly);
+    }
 
   } catch (err) {
     console.error("Error loading vocab:", err);
@@ -184,6 +214,31 @@ function setVocabSubView(viewName) {
 function switchVocabView(viewName) {
   setVocabSubView(viewName);
   if (viewName === 'quiz') {
+    if (state.isReadOnly) {
+      const promptBox = document.getElementById("quiz-prompt-box");
+      const grid = document.getElementById("quiz-options-grid");
+      const nextBtn = document.getElementById("btn-next-quiz");
+      if (nextBtn) nextBtn.style.display = "none";
+      if (promptBox) {
+        promptBox.innerHTML = `
+          <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">👁️</div>
+          <div style="font-size: 1.35rem; font-weight: 800; color: #1E293B;">Modo Solo Lectura</div>
+          <p style="color: var(--text-muted); font-size: 0.92rem; margin-top: 0.35rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+            Estás revisando el avance de tu compañero. Los Tests de Dominio (Rondas 1 y 2) solo se pueden rendir desde su propia sesión activa.
+          </p>
+        `;
+      }
+      if (grid) {
+        grid.style.display = "flex";
+        grid.style.justifyContent = "center";
+        grid.innerHTML = `
+          <button class="btn btn-secondary" onclick="switchVocabView('cards')">
+            🗂️ Ver Tarjetas de Vocabulario
+          </button>
+        `;
+      }
+      return;
+    }
     startDailyVocabQuiz(1);
   } else if (viewName === 'srs') {
     loadSrsView();
@@ -580,30 +635,32 @@ async function finishQuiz() {
   const promptBox = document.getElementById("quiz-prompt-box");
   const grid = document.getElementById("quiz-options-grid");
   const nextBtn = document.getElementById("btn-next-quiz");
-  nextBtn.style.display = "none";
+  if (nextBtn) nextBtn.style.display = "none";
 
   const total = quizQuestions.length;
+  let submitRes = null;
 
   // Submit results to backend for automated Tobo mastery calculation
   try {
-    await fetch("/api/vocab/quiz/submit-results", {
+    const res = await fetch("/api/vocab/quiz/submit-results", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: state.currentUser,
         round: currentQuizRound,
         word_results: quizWordResults,
-        date: state.currentDateStr,
+        date: state.currentDate,
         day: state.currentDay
       })
     });
+    submitRes = await res.json();
   } catch (e) {
     console.error("Error submitting quiz results:", e);
   }
 
-  // Update header progress in real-time
-  if (typeof updateStatusHeader === "function") {
-    updateStatusHeader();
+  // Refresh status & badges across the app
+  if (typeof fetchStatusAndRefresh === "function") {
+    await fetchStatusAndRefresh();
   }
 
   if (currentQuizRound === 1) {
@@ -619,7 +676,7 @@ async function finishQuiz() {
         Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado <strong>Nivel 3/5</strong> en ${wordLabelText}.
       </div>
       <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #1E40AF; font-size: 0.88rem; text-align: left; line-height: 1.45;">
-        💡 <strong>Sistema Tobo SRS:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong>, rinde la <strong>Ronda 2</strong> con mayor dificultad (deletreo activo y traducción).
+        💡 <strong>Sistema Tobo SRS:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong> y completar este pilar, rinde la <strong>Ronda 2</strong> (deletreo activo y traducción).
       </div>
     `;
 
@@ -627,7 +684,7 @@ async function finishQuiz() {
     grid.innerHTML = `
       <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
         <button class="btn btn-primary btn-lg" onclick="startQuizWithContext(2)">
-          🚀 Iniciar Ronda 2 (Mayor Dificultad - Desbloquear Nivel 5/5)
+          🚀 Iniciar Ronda 2 (Desbloquear Nivel 5/5 y Completar Pilar)
         </button>
         ${isSrs ? `
           <button class="btn btn-secondary btn-lg" onclick="switchVocabView('srs');">
@@ -647,20 +704,39 @@ async function finishQuiz() {
       ? `la palabra "${currentQuizContext.wordLabels[0]}"`
       : (isSrs ? `las palabras evaluadas` : 'las palabras de hoy');
 
+    const isMastered = submitRes && submitRes.is_fully_mastered;
+    const mCount = submitRes ? submitRes.mastered_count : quizScore;
+    const tCount = submitRes ? submitRes.total_target : total;
+
+    if (isMastered) {
+      speakEnglish("Vocabulary fully mastered! Five stars achieved.", 1.0);
+    }
+
     promptBox.innerHTML = `
-      <div style="font-size: 2.4rem; margin-bottom: 0.35rem;">🏆</div>
-      <div style="color: var(--busuu-emerald); font-size: 1.6rem; font-weight: 800;">¡Dominio Total Desbloqueado!</div>
-      <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
-        Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado el <strong>Nivel 5/5 (⭐⭐⭐⭐⭐)</strong> en ${wordLabelText}.
+      <div style="font-size: 2.4rem; margin-bottom: 0.35rem;">${isMastered ? '🏆' : '⭐'}</div>
+      <div style="color: var(--busuu-emerald); font-size: 1.6rem; font-weight: 800;">
+        ${isMastered ? '¡Dominio Total Desbloqueado (5★)!' : '¡Ronda 2 Finalizada!'}
       </div>
-      <div style="background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #065F46; font-size: 0.88rem; text-align: left; line-height: 1.45;">
-        🎉 <strong>¡Excelente trabajo!</strong> Has demostrado retención activa en deletreo y traducción. Las palabras han sido registradas como dominadas al 100% en tu banco de repaso espaciado.
+      <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.35rem;">
+        ${isMastered 
+          ? `Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. ¡Todas las palabras (${mCount}/${tCount}) alcanzaron <strong>Nivel 5/5 (⭐⭐⭐⭐⭐)</strong>!` 
+          : `Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Llevas <strong>${mCount}</strong> de <strong>${tCount}</strong> palabras en <strong>Nivel 5/5</strong>.`}
+      </div>
+      <div style="background: ${isMastered ? '#ECFDF5' : '#FFFBEB'}; border: 1.5px solid ${isMastered ? '#A7F3D0' : '#FDE68A'}; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: ${isMastered ? '#065F46' : '#92400E'}; font-size: 0.88rem; text-align: left; line-height: 1.45;">
+        ${isMastered 
+          ? '🎉 <strong>¡Pilar de Vocabulario Completado con Éxito!</strong> Has demostrado retención activa en deletreo y traducción. El sistema marcó automáticamente este pilar con 5 estrellas.' 
+          : '💡 <strong>Casi listo:</strong> Para completar automáticamente el pilar de vocabulario, todas las palabras deben estar en 5 estrellas (5★). Vuelve a intentar la Ronda 2 para dominar las palabras pendientes.'}
       </div>
     `;
 
     grid.style.display = "grid";
     grid.innerHTML = `
-      <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; margin-top: 0.5rem;">
+      <div style="grid-column: span 2; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; margin-top: 0.5rem;">
+        ${!isMastered ? `
+          <button class="btn btn-primary btn-lg" onclick="startQuizWithContext(2)">
+            🔄 Reintentar Ronda 2 (Alcanzar 5★ en Todo)
+          </button>
+        ` : ''}
         ${isSrs ? `
           <button class="btn btn-success btn-lg" onclick="switchVocabView('srs');">
             📊 Volver al Banco de Repaso (Ver Nivel 5/5)

@@ -614,6 +614,46 @@ body {
   min-width: 110px;
 }
 
+/* Compact daily progress bar under tabs */
+.hub-compact-progress-wrap {
+  width: 100%;
+  height: 5px;
+  background: #E2E8F0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: -0.75rem 0 1.5rem 0;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.hub-compact-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--busuu-blue) 0%, var(--busuu-emerald) 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* Automated Vocab Status Pill */
+.vocab-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.95rem;
+  border-radius: var(--radius-sm);
+  background: #FEF3C7;
+  border: 1.5px solid #FDE68A;
+  color: #92400E;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  transition: var(--transition-fast);
+}
+
+.vocab-status-pill.completed {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  color: #065F46;
+}
+
 /* =========================================================
    5 PILLARS NAVIGATION BAR
    ========================================================= */
@@ -817,6 +857,65 @@ body {
 .btn-sm { padding: 0.4rem 0.85rem; font-size: 0.82rem; }
 .btn-lg { padding: 0.9rem 1.85rem; font-size: 1.05rem; }
 .btn-block { width: 100%; }
+
+/* --- DISABLED BUTTONS & READ-ONLY MODE STYLING --- */
+.btn:disabled,
+.btn[disabled],
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-success:disabled,
+.btn-outline:disabled,
+.btn-record:disabled,
+.btn.disabled {
+  background: #E2E8F0 !important;
+  color: #94A3B8 !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.55 !important;
+}
+
+/* Global Read-Only Mode (Neutralizes all mutation/action buttons) */
+body.read-only-mode .btn-primary:not(.btn-return-account):not(.btn-nav-date):not(.btn-today-pill):not(#btn-play-listening):not(#btn-play-shadowing-model),
+body.read-only-mode .btn-success,
+body.read-only-mode .btn-save-sentence,
+body.read-only-mode .btn-record,
+body.read-only-mode #btn-evaluate-translation,
+body.read-only-mode #btn-evaluate-summary,
+body.read-only-mode #btn-verify-listening,
+body.read-only-mode #btn-record-mic,
+body.read-only-mode #btn-audit-shadowing,
+body.read-only-mode #btn-record-speaking,
+body.read-only-mode #btn-audit-speaking,
+body.read-only-mode #btn-complete-speaking,
+body.read-only-mode .sentence-btn-row button {
+  background: #E2E8F0 !important;
+  color: #94A3B8 !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.5 !important;
+}
+
+body.read-only-mode textarea,
+body.read-only-mode .dictation-input,
+body.read-only-mode .summary-input,
+body.read-only-mode .sentence-textarea {
+  background-color: #F8FAFC !important;
+  color: #64748B !important;
+  cursor: not-allowed !important;
+  border-color: #E2E8F0 !important;
+  pointer-events: none !important;
+}
+
+body.read-only-mode .target-word-item {
+  pointer-events: none !important;
+  cursor: default !important;
+}
 
 .btn-icon {
   background: transparent;

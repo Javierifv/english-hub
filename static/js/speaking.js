@@ -91,6 +91,9 @@ async function loadSpeakingData(day) {
       }
     }
 
+    if (typeof applyReadOnlyLocks === "function") {
+      applyReadOnlyLocks(state.isReadOnly);
+    }
   } catch (err) {
     console.error("Error loading speaking prompt:", err);
   }

@@ -726,13 +726,40 @@ def submit_quiz_results():
             "review_count": new_reviews
         }
 
-    # Automatically mark vocab_done in daily_logs
-    cursor.execute("""
-        INSERT INTO daily_logs (user_id, date, day_number, vocab_done)
-        VALUES (?, ?, ?, 1)
-        ON CONFLICT(user_id, date) DO UPDATE SET
-            vocab_done = 1
-    """, (user_id, date_str, day_number))
+    # Check if all words assigned for this day have reached level 5 (5 stars)
+    cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
+    u_row = cursor.fetchone()
+    w_limit = u_row["words_per_day"] if u_row else 5
+    sel_mode = u_row["selection_mode"] if u_row else "progressive"
+
+    if sel_mode == "random":
+        cursor.execute("SELECT id FROM vocabulary WHERE day_number = ? ORDER BY id ASC LIMIT ?", (day_number, w_limit))
+    else:
+        cursor.execute("SELECT id FROM vocabulary ORDER BY id ASC LIMIT ? OFFSET ?", (w_limit, (day_number - 1) * w_limit))
+
+    target_words = cursor.fetchall()
+    target_ids = [tw["id"] for tw in target_words]
+
+    is_fully_mastered = False
+    mastered_count = 0
+    if target_ids:
+        placeholders = ",".join("?" for _ in target_ids)
+        cursor.execute(f"""
+            SELECT COUNT(*) FROM user_word_progress 
+            WHERE user_id = ? AND word_id IN ({placeholders}) AND mastery_level >= 5
+        """, [user_id] + target_ids)
+        mastered_count = cursor.fetchone()[0]
+        # Only unlock completion if user has completed Round 2 AND all words are at level 5
+        if round_num >= 2 and mastered_count >= len(target_ids):
+            is_fully_mastered = True
+
+    if is_fully_mastered:
+        cursor.execute("""
+            INSERT INTO daily_logs (user_id, date, day_number, vocab_done)
+            VALUES (?, ?, ?, 1)
+            ON CONFLICT(user_id, date) DO UPDATE SET
+                vocab_done = 1
+        """, (user_id, date_str, day_number))
 
     # Recalculate completed_count in daily_logs
     cursor.execute("""
@@ -751,7 +778,10 @@ def submit_quiz_results():
     return jsonify({
         "success": True,
         "round": round_num,
-        "updated": updated
+        "updated": updated,
+        "is_fully_mastered": is_fully_mastered,
+        "mastered_count": mastered_count,
+        "total_target": len(target_ids)
     })
 
 @app.route("/api/vocab/srs", methods=["GET"])

@@ -604,9 +604,10 @@ async function fetchStatusAndRefresh() {
 
 function updateHeaderUI() {
   // Update Streak
-  document.getElementById("streak-count").textContent = state.streak;
+  const streakEl = document.getElementById("streak-count");
+  if (streakEl) streakEl.textContent = state.streak;
 
-  // Active user greeting
+  // Active user greeting (if present)
   const activeName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : 'Estudiante';
   const userLvl = state.preferredLevel || 'A1';
   const greetingEl = document.getElementById("active-user-greeting");
@@ -618,11 +619,12 @@ function updateHeaderUI() {
 
   // Update tabs label
   const wCount = state.userInfo ? state.userInfo.words_per_day : 5;
-  document.getElementById("tab-label-vocab").textContent = "1. Vocabulary";
+  const tabLbl = document.getElementById("tab-label-vocab");
+  if (tabLbl) tabLbl.textContent = "1. Vocabulary";
   const countBadge = document.getElementById("vocab-count-badge");
   if (countBadge) countBadge.textContent = wCount;
 
-  // Partner status
+  // Partner status (if present)
   const partnerElem = document.getElementById("partner-status-text");
   if (partnerElem) {
     if (state.partnerStatus && state.partnerStatus.name) {
@@ -656,18 +658,30 @@ function updateHeaderUI() {
   // Render User Dropdown Pill
   renderUserDropdownUI();
 
-  // Update Daily Progress Bar
-  const count = state.todayLog.completed_count || 0;
+  // Update Daily Progress Bar (slim bar under tabs)
+  const count = (state.todayLog && state.todayLog.completed_count !== undefined) ? state.todayLog.completed_count : 0;
   const pct = Math.round((count / 5) * 100);
-  document.getElementById("daily-progress-bar").style.width = `${pct}%`;
-  document.getElementById("daily-progress-text").textContent = `${count}/5 Completado`;
+  const pb = document.getElementById("daily-progress-bar");
+  if (pb) pb.style.width = `${pct}%`;
+  const pt = document.getElementById("daily-progress-text");
+  if (pt) pt.textContent = `${count}/5 Completado`;
+
+  // Update navbar user stats pill
+  const headerStats = document.getElementById("header-user-stats");
+  if (headerStats) headerStats.textContent = `${count}/5`;
 
   // Update Pillar checkmarks
-  updatePillarBadge("vocab", state.todayLog.vocab_done);
-  updatePillarBadge("reading", state.todayLog.reading_done);
-  updatePillarBadge("listening", state.todayLog.listening_done);
-  updatePillarBadge("shadowing", state.todayLog.shadowing_done);
-  updatePillarBadge("speaking", state.todayLog.speaking_done);
+  const tLog = state.todayLog || {};
+  updatePillarBadge("vocab", tLog.vocab_done);
+  updatePillarBadge("reading", tLog.reading_done);
+  updatePillarBadge("listening", tLog.listening_done);
+  updatePillarBadge("shadowing", tLog.shadowing_done);
+  updatePillarBadge("speaking", tLog.speaking_done);
+
+  // Update vocab status pill (Automated completion)
+  if (typeof updateVocabStatusPill === "function") {
+    updateVocabStatusPill();
+  }
 
   // Check for 5/5 celebration
   if (count === 5 && !state.isReadOnly && !sessionStorage.getItem(`celebrated_day_${state.currentDay}_u_${state.currentUser}`)) {
@@ -677,69 +691,55 @@ function updateHeaderUI() {
 }
 
 function applyReadOnlyLocks(isReadOnly) {
-  // Vocabulary
-  const vocabBtn = document.getElementById("btn-complete-vocab");
-  if (vocabBtn) {
-    vocabBtn.disabled = isReadOnly;
-    vocabBtn.title = isReadOnly ? "Modo Solo Lectura: Viendo a tu compañero" : "";
-    vocabBtn.style.opacity = isReadOnly ? "0.45" : "1";
-    vocabBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
-  }
-  const practiceInp = document.getElementById("vocab-practice-input");
-  if (practiceInp) practiceInp.disabled = isReadOnly;
+  // Toggle global class on body
+  document.body.classList.toggle("read-only-mode", isReadOnly);
 
-  // Reading
-  const evalBtn = document.getElementById("btn-evaluate-reading");
-  if (evalBtn) {
-    evalBtn.disabled = isReadOnly;
-    evalBtn.title = isReadOnly ? "Modo Solo Lectura: Viendo a tu compañero" : "";
-    evalBtn.style.opacity = isReadOnly ? "0.45" : "1";
-    evalBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
-  }
-  const summaryInp = document.getElementById("summary-text");
-  if (summaryInp) summaryInp.readOnly = isReadOnly;
-  const transInp = document.getElementById("reading-translation-input");
-  if (transInp) transInp.readOnly = isReadOnly;
-  const transBtn = document.getElementById("btn-eval-translation");
-  if (transBtn) {
-    transBtn.disabled = isReadOnly;
-    transBtn.style.opacity = isReadOnly ? "0.45" : "1";
-    transBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
-  }
+  // 1. Vocabulary
+  document.querySelectorAll(".sentence-textarea").forEach(tx => {
+    tx.readOnly = isReadOnly;
+  });
+  document.querySelectorAll(".btn-save-sentence").forEach(btn => {
+    btn.disabled = isReadOnly;
+  });
 
-  // Listening
+  // 2. Reading
+  const transTextarea = document.getElementById("translation-textarea");
+  if (transTextarea) transTextarea.readOnly = isReadOnly;
+  const summaryTextarea = document.getElementById("summary-textarea");
+  if (summaryTextarea) summaryTextarea.readOnly = isReadOnly;
+  const evalTransBtn = document.getElementById("btn-evaluate-translation");
+  if (evalTransBtn) evalTransBtn.disabled = isReadOnly;
+  const evalSummBtn = document.getElementById("btn-evaluate-summary");
+  if (evalSummBtn) evalSummBtn.disabled = isReadOnly;
+  const timerToggle = document.getElementById("btn-timer-toggle");
+  if (timerToggle) timerToggle.disabled = isReadOnly;
+  const timerReset = document.getElementById("btn-timer-reset");
+  if (timerReset) timerReset.disabled = isReadOnly;
+
+  // 3. Listening
   const dictInp = document.getElementById("listening-dictation-input");
   if (dictInp) dictInp.readOnly = isReadOnly;
   const verifyBtn = document.getElementById("btn-verify-listening");
-  if (verifyBtn) {
-    verifyBtn.disabled = isReadOnly;
-    verifyBtn.style.opacity = isReadOnly ? "0.45" : "1";
-    verifyBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
-  }
+  if (verifyBtn) verifyBtn.disabled = isReadOnly;
+  const stopwatchToggle = document.getElementById("btn-stopwatch-toggle");
+  if (stopwatchToggle) stopwatchToggle.disabled = isReadOnly;
 
-  // Shadowing
-  const shadRecBtn = document.getElementById("shadowing-record-btn");
-  if (shadRecBtn) {
-    shadRecBtn.disabled = isReadOnly;
-    shadRecBtn.style.opacity = isReadOnly ? "0.45" : "1";
-  }
-  const shadSaveBtn = document.getElementById("shadowing-save-btn");
-  if (shadSaveBtn) {
-    shadSaveBtn.disabled = isReadOnly;
-    shadSaveBtn.style.opacity = isReadOnly ? "0.45" : "1";
-  }
+  // 4. Shadowing
+  const recMicBtn = document.getElementById("btn-record-mic");
+  if (recMicBtn) recMicBtn.disabled = isReadOnly;
+  const auditShadBtn = document.getElementById("btn-audit-shadowing");
+  if (auditShadBtn) auditShadBtn.disabled = isReadOnly;
+  document.querySelectorAll('button[onclick*="markShadowingDone"]').forEach(b => {
+    b.disabled = isReadOnly;
+  });
 
-  // Speaking
-  const spkRecBtn = document.getElementById("speaking-record-btn");
-  if (spkRecBtn) {
-    spkRecBtn.disabled = isReadOnly;
-    spkRecBtn.style.opacity = isReadOnly ? "0.45" : "1";
-  }
-  const spkDoneBtn = document.getElementById("btn-complete-speaking-manual");
-  if (spkDoneBtn) {
-    spkDoneBtn.disabled = isReadOnly;
-    spkDoneBtn.style.opacity = isReadOnly ? "0.45" : "1";
-  }
+  // 5. Speaking
+  const recSpkBtn = document.getElementById("btn-record-speaking");
+  if (recSpkBtn) recSpkBtn.disabled = isReadOnly;
+  const auditSpkBtn = document.getElementById("btn-audit-speaking");
+  if (auditSpkBtn) auditSpkBtn.disabled = isReadOnly;
+  const compSpkBtn = document.getElementById("btn-complete-speaking");
+  if (compSpkBtn) compSpkBtn.disabled = isReadOnly;
 }
 
 function updatePillarBadge(name, isDone) {
@@ -765,6 +765,7 @@ function showPillar(tabName) {
     panel.classList.toggle("active", panel.id === `panel-${tabName}`);
   });
   loadCurrentPillarData();
+  setTimeout(() => applyReadOnlyLocks(state.isReadOnly), 50);
 }
 
 function loadCurrentPillarData() {

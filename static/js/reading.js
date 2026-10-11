@@ -229,6 +229,9 @@ async function loadReadingById(readingId) {
     // Sync active phase view
     switchReadingPhase(document.getElementById("tab-phase-summary")?.classList.contains("active") ? "summary" : "translation");
 
+    if (typeof applyReadOnlyLocks === "function") {
+      applyReadOnlyLocks(state.isReadOnly);
+    }
   } catch (err) {
     console.error("Error loading reading:", err);
   }
