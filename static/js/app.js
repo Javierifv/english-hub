@@ -539,7 +539,7 @@ async function submitRegister() {
       localStorage.setItem('duohub_auth_user', JSON.stringify(data.user));
       localStorage.setItem('duohub_active_user_id', data.user.id);
       closeAuthModal();
-      speakEnglish(`Welcome to DuoHub, ${data.user.display_name}!`, 1.0);
+      speakEnglish(`Welcome to EnglishHub, ${data.user.display_name}!`, 1.0);
       alert(`🎉 ¡Cuenta creada con éxito! Bienvenido al grupo de estudio, ${data.user.display_name}.`);
       await fetchUsersAndStatus();
     } else {

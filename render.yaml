@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: english-duo-hub
+    name: english-hub
     env: python
     buildCommand: pip install -r requirements.txt && python database.py
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app

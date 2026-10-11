@@ -1,7 +1,7 @@
 {
-  "name": "DuoHub — English Mastery System",
-  "short_name": "DuoHub",
-  "description": "Sistema integral de entrenamiento y dominio de inglés para parejas",
+  "name": "EnglishHub — English Mastery System",
+  "short_name": "EnglishHub",
+  "description": "Sistema integral de entrenamiento diario y dominio de inglés",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",
