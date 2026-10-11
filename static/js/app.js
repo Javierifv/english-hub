@@ -6,7 +6,7 @@ const state = {
   authUserId: null,
   authUser: null,
   isReadOnly: false,
-  currentUser: 1, // 1: Javier, 4: Alessandro
+  currentUser: 1,
   currentDate: getTodayDateString(),
   currentDay: 1,
   maxDays: 107,

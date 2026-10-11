@@ -231,6 +231,14 @@ def init_db():
     if "source" not in existing_l_cols:
         cursor.execute("ALTER TABLE listening_shadowing ADD COLUMN source TEXT")
 
+    # Ensure Alessandro is removed so he can test registration fresh
+    cursor.execute("DELETE FROM users WHERE LOWER(username) LIKE '%alessandro%' OR LOWER(display_name) LIKE '%alessandro%'")
+    cursor.execute("DELETE FROM user_word_progress WHERE user_id NOT IN (SELECT id FROM users)")
+    cursor.execute("DELETE FROM user_reading_progress WHERE user_id NOT IN (SELECT id FROM users)")
+    cursor.execute("DELETE FROM user_listening_progress WHERE user_id NOT IN (SELECT id FROM users)")
+    cursor.execute("DELETE FROM user_shadowing_progress WHERE user_id NOT IN (SELECT id FROM users)")
+    cursor.execute("DELETE FROM daily_logs WHERE user_id NOT IN (SELECT id FROM users)")
+
     # Seed Default Users
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
