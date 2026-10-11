@@ -23,7 +23,7 @@ Haz doble clic en:
 ```
 iniciar_hub.bat
 ```
-El script creará automáticamente el entorno virtual, instalará las dependencias necesarias (`Flask`, `pypdf`), verificará la base de datos SQLite y abrirá la plataforma en tu navegador predeterminado en `http://localhost:5000`.
+El script creará automáticamente el entorno virtual, instalará las dependencias necesarias (`Flask`, `pypdf`), verificará la base de datos SQLite y abrirá la plataforma en tu navegador predeterminado en `http://localhost:5005`.
 
 ---
 

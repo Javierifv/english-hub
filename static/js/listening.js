@@ -122,15 +122,16 @@ async function selectListeningLevel(lvl, loadFirst = true) {
   if (activeBtn) activeBtn.classList.add("active");
 
   try {
-    const listRes = await fetch(`/api/listening/list?level=${lvl}`);
+    const listRes = await fetch(`/api/listening/list?level=${lvl}&user_id=${state.currentUser}`);
     listeningTracksList = await listRes.json();
 
     const select = document.getElementById("listening-track-select");
     if (select && listeningTracksList.length > 0) {
-      // Clean display without level brackets or extra noise, allowing full title display
-      select.innerHTML = listeningTracksList.map((t) => `
-        <option value="${t.id}">${t.title}</option>
-      `).join("");
+      // Clean display with completion checkmark
+      select.innerHTML = listeningTracksList.map((t) => {
+        const prefix = t.is_completed ? '✅ ' : '🎧 ';
+        return `<option value="${t.id}">${prefix}${t.title}</option>`;
+      }).join("");
 
       // Check if user had a saved track
       const savedTrackId = parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
@@ -149,6 +150,22 @@ async function selectListeningLevel(lvl, loadFirst = true) {
   } catch (err) {
     console.error("Error loading listening track list:", err);
   }
+}
+
+async function refreshListeningTrackDropdown(keepClipId) {
+  try {
+    const lvl = state.listeningLevel || 'A1';
+    const listRes = await fetch(`/api/listening/list?level=${lvl}&user_id=${state.currentUser}`);
+    listeningTracksList = await listRes.json();
+    const select = document.getElementById("listening-track-select");
+    if (select && listeningTracksList.length > 0) {
+      select.innerHTML = listeningTracksList.map((t) => {
+        const prefix = t.is_completed ? '✅ ' : '🎧 ';
+        return `<option value="${t.id}">${prefix}${t.title}</option>`;
+      }).join("");
+      if (keepClipId) select.value = keepClipId;
+    }
+  } catch (e) {}
 }
 
 async function navListeningTrack(delta) {
@@ -174,7 +191,7 @@ async function onListeningTrackDropdownChange(clipId) {
 
 async function loadListeningById(clipId) {
   try {
-    const res = await fetch(`/api/listening?id=${clipId}`);
+    const res = await fetch(`/api/listening?id=${clipId}&user_id=${state.currentUser}`);
     const clip = await res.json();
     currentListeningClip = clip;
 
@@ -234,39 +251,36 @@ async function loadListeningById(clipId) {
       }
     }
 
-    // Update completion pill & status banner
+    // Update completion pill & status banner based on THIS clip's progress
     const compPill = document.getElementById("listening-completion-pill");
     const statusBanner = document.getElementById("listening-status-banner");
     const statusText = document.getElementById("listening-status-banner-text");
+    const input = document.getElementById("listening-dictation-input");
+    const diffResults = document.getElementById("listening-diff-results");
 
-    if (state.todayLog && state.todayLog.listening_done) {
+    if (clip.user_progress && clip.user_progress.is_completed) {
+      const prog = clip.user_progress;
       if (compPill) compPill.style.display = "inline-block";
       if (statusBanner) {
         statusBanner.style.display = "flex";
         if (statusText) {
-          const acc = state.todayLog.listening_accuracy || 0;
-          const secs = state.todayLog.listening_time_seconds || 0;
-          statusText.textContent = `Dictado completado (${acc}% de coincidencia en ${secs}s)`;
+          const compDate = prog.date || 'Anterior';
+          statusText.textContent = `Dictado completado (${prog.accuracy}% de coincidencia en ${prog.time_seconds}s) · ${compDate}`;
         }
       }
+      if (input) input.value = prog.user_text || "";
+      listeningStopwatchSeconds = prog.time_seconds || 0;
+      updateStopwatchDisplay();
+      updateStopwatchStatus("paused");
+
+      // Render saved diff results and AI audit without re-calling API!
+      renderDiffResults(prog.accuracy, prog.diff_tokens, clip.transcript, prog.time_seconds, prog.ai_audit, prog.user_text);
     } else {
+      // Uncompleted clip: clean empty state
       if (compPill) compPill.style.display = "none";
       if (statusBanner) statusBanner.style.display = "none";
-    }
-
-    // Set existing attempt & time if already done
-    const input = document.getElementById("listening-dictation-input");
-    if (state.todayLog && state.todayLog.listening_attempt) {
-      input.value = state.todayLog.listening_attempt;
-      if (state.todayLog.listening_time_seconds) {
-        listeningStopwatchSeconds = state.todayLog.listening_time_seconds;
-        updateStopwatchDisplay();
-        updateStopwatchStatus("paused");
-      }
-    } else {
-      input.value = "";
+      if (input) input.value = "";
       resetListeningStopwatch();
-      const diffResults = document.getElementById("listening-diff-results");
       if (diffResults) diffResults.style.display = "none";
     }
 
@@ -426,6 +440,7 @@ async function verifyListeningDiff(isSilent = false) {
         speakEnglish(`Accuracy: ${data.accuracy} percent`, 1.0);
       }
       fetchStatusAndRefresh();
+      await refreshListeningTrackDropdown(currentListeningClip ? currentListeningClip.id : null);
     } else if (!isSilent) {
       alert(data.error || "No se pudo realizar la comparación.");
     }

@@ -8,7 +8,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/style.css?v=2.4">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0B72E7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DuoHub">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5">
 </head>
 <body>
 
@@ -32,7 +39,7 @@
             <span id="calendar-day-name" class="date-weekday">Cargando...</span>
             <span id="calendar-full-date" class="date-formatted">Fecha</span>
           </div>
-          <input type="date" id="calendar-date-input" class="calendar-hidden-input" onchange="onDateInputChange(this.value)">
+          <input type="date" id="calendar-date-input" min="2026-10-05" class="calendar-hidden-input" onchange="onDateInputChange(this.value)">
         </div>
         <button id="btn-next-day" class="btn-icon btn-nav-date" title="Día siguiente">▶</button>
         <button id="btn-today" class="btn-today-pill" onclick="goToTodayDate()" title="Volver al día de hoy">Hoy</button>
@@ -790,16 +797,16 @@
               ✨ Auditar Mi Pronunciación & Cadencia con IA
             </button>
 
-            <!-- Shadowing AI Audit Results -->
-            <div id="shadowing-ai-audit-container" class="shadowing-ai-audit-card" style="display: none; margin-bottom: 0.85rem;">
-              <!-- Populated by JS -->
-            </div>
-
             <button class="btn btn-success btn-lg btn-block" onclick="markShadowingDone()">
               ✓ Guardar y Marcar Shadowing Completado
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Shadowing AI Audit Results (Full-Width Station Below Both Blocks) -->
+      <div id="shadowing-ai-audit-container" class="card shadowing-ai-audit-card full-width-audit" style="display: none; margin-top: 1.5rem;">
+        <!-- Populated by JS -->
       </div>
     </section>
 
@@ -809,25 +816,25 @@
     <section id="panel-speaking" class="pillar-panel">
       <div class="panel-header">
         <div>
-          <h2>Paso 5: Reto de Speaking Oral (1 a 5 Minutos)</h2>
+          <h2>Paso 5: Práctica de Speaking Oral (1 a 5 Minutos)</h2>
           <p class="section-desc">
-            Graba tu respuesta oral directamente en DuoHub respondiendo a la pregunta del día. ¡Intenta incluir las palabras del vocabulario de hoy y audítate con IA!
+            Práctica libre y espontánea. Graba tu voz expresándote sobre lo que desees (tu día, proyectos o ideas). La IA auditará de manera 100% técnica tu pronunciación, gramática, fluidez y ritmo sin juzgar el tema elegido.
           </p>
         </div>
       </div>
 
       <div class="speaking-split-layout">
-        <!-- Left: Prompt & Guidelines -->
+        <!-- Left: Free Prompt Inspiration & Target Words -->
         <div class="card speaking-prompt-card">
           <div class="prompt-badge-row">
-            <span class="badge badge-accent">Tema de Conversación</span>
-            <span id="speaking-topic-name" class="topic-name">Rutina Diaria</span>
+            <span class="badge badge-accent">🎙️ Práctica Oral Libre</span>
+            <span id="speaking-topic-name" class="topic-name">Tema Libre</span>
           </div>
 
-          <h3 id="speaking-question" class="speaking-question-title">Cargando tema...</h3>
+          <h3 id="speaking-question" class="speaking-question-title">¿De qué te gustaría hablar hoy?</h3>
 
           <div class="prompt-guidelines">
-            <h4>Guía de Estructura Sugerida:</h4>
+            <h4>💡 Ideas Opcionales de Inspiración:</h4>
             <div id="speaking-guidelines-content" class="guidelines-text">
               <!-- Injected by JS -->
             </div>
@@ -835,18 +842,18 @@
 
           <!-- Target Words to force in speech -->
           <div style="margin-top: 1.25rem;">
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-bottom: 0.5rem;">🎯 Palabras Objetivo a Incluir en tu Audio:</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0F172A; margin-bottom: 0.5rem;">🎯 Palabras Clave del Día (Práctica opcional):</h4>
             <div id="speaking-target-words-list" class="target-words-checklist">
               <!-- Injected by JS -->
             </div>
           </div>
         </div>
 
-        <!-- Right: In-App Recording Studio & AI Audit -->
+        <!-- Right: In-App Recording Studio -->
         <div class="card speaking-recorder-card">
           <div class="recorder-card-header">
             <h3>🎙️ Estudio de Grabación Oral</h3>
-            <span class="recorder-sub">Habla entre 1 y 5 minutos contando tu respuesta</span>
+            <span class="recorder-sub">Habla entre 1 y 5 minutos contando tu respuesta libre</span>
           </div>
 
           <!-- Live Mic VU Meter for Speaking -->
@@ -888,16 +895,16 @@
               ✨ Auditar Mi Speaking con IA
             </button>
 
-            <!-- Speaking AI Audit Results -->
-            <div id="speaking-ai-audit-container" class="speaking-ai-audit-card" style="display: none; margin-bottom: 1rem;">
-              <!-- Injected by JS -->
-            </div>
-
             <button id="btn-complete-speaking" class="btn btn-success btn-lg btn-block" onclick="saveAndFinishSpeaking()">
               ✓ Guardar y Marcar Reto de Speaking Completado
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Speaking AI Audit Results (Spans Full Width Below Both Blocks) -->
+      <div id="speaking-ai-audit-container" class="card speaking-ai-audit-card full-width-audit" style="display: none; margin-top: 1.5rem;">
+        <!-- Injected by JS -->
       </div>
     </section>
 

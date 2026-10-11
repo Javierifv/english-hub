@@ -1151,6 +1151,7 @@ def get_listening():
     clip_id = request.args.get("id", type=int)
     level = request.args.get("level")
     day_number = request.args.get("day", type=int)
+    user_id = request.args.get("user_id", default=1, type=int)
 
     conn = get_db()
     cursor = conn.cursor()
@@ -1181,6 +1182,46 @@ def get_listening():
     level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM listening_shadowing GROUP BY level ORDER BY level ASC").fetchall()
     levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
 
+    # Check user listening progress for this clip
+    user_prog = None
+    shadowing_prog = None
+    if clip and user_id:
+        prog_row = cursor.execute("""
+            SELECT id, user_id, clip_id, date, day_number, user_text, accuracy, time_seconds, diff_tokens, ai_audit, completed_at
+            FROM user_listening_progress
+            WHERE user_id = ? AND clip_id = ?
+        """, (user_id, clip["id"])).fetchone()
+        if prog_row:
+            p_dict = dict(prog_row)
+            try:
+                if p_dict.get("diff_tokens"):
+                    p_dict["diff_tokens"] = json.loads(p_dict["diff_tokens"])
+            except Exception:
+                pass
+            try:
+                if p_dict.get("ai_audit"):
+                    p_dict["ai_audit"] = json.loads(p_dict["ai_audit"])
+            except Exception:
+                pass
+            p_dict["is_completed"] = bool(p_dict.get("user_text"))
+            user_prog = p_dict
+
+        # Also check shadowing progress
+        shad_row = cursor.execute("""
+            SELECT id, user_id, clip_id, date, day_number, audio_url, ai_feedback, completed_at
+            FROM user_shadowing_progress
+            WHERE user_id = ? AND clip_id = ?
+        """, (user_id, clip["id"])).fetchone()
+        if shad_row:
+            s_dict = dict(shad_row)
+            try:
+                if s_dict.get("ai_feedback"):
+                    s_dict["ai_feedback"] = json.loads(s_dict["ai_feedback"])
+            except Exception:
+                pass
+            s_dict["is_completed"] = bool(s_dict.get("audio_url"))
+            shadowing_prog = s_dict
+
     conn.close()
     if clip:
         c_dict = dict(clip)
@@ -1190,18 +1231,31 @@ def get_listening():
             except Exception:
                 pass
         c_dict["available_levels"] = levels_summary
+        c_dict["user_progress"] = user_prog
+        c_dict["shadowing_progress"] = shadowing_prog
         return jsonify(c_dict)
     return jsonify({"error": "Clip not found"}), 404
 
 @app.route("/api/listening/list", methods=["GET"])
 def get_listening_list():
     level = request.args.get("level")
+    user_id = request.args.get("user_id", default=1, type=int)
     conn = get_db()
     cursor = conn.cursor()
+    query = """
+        SELECT ls.id, ls.day_number, ls.title, ls.level, ls.duration_seconds, ls.audio_url, ls.source,
+               CASE WHEN ulp.id IS NOT NULL AND ulp.user_text IS NOT NULL AND ulp.user_text != '' THEN 1 ELSE 0 END as is_completed,
+               ulp.accuracy, ulp.time_seconds
+        FROM listening_shadowing ls
+        LEFT JOIN user_listening_progress ulp ON ulp.clip_id = ls.id AND ulp.user_id = ?
+    """
+    params = [user_id]
     if level and level != "all":
-        rows = cursor.execute("SELECT id, day_number, title, level, duration_seconds, audio_url, source FROM listening_shadowing WHERE level = ? ORDER BY day_number ASC", (level,)).fetchall()
+        query += " WHERE ls.level = ? ORDER BY ls.day_number ASC, ls.id ASC"
+        params.append(level)
     else:
-        rows = cursor.execute("SELECT id, day_number, title, level, duration_seconds, audio_url, source FROM listening_shadowing ORDER BY id ASC").fetchall()
+        query += " ORDER BY ls.id ASC"
+    rows = cursor.execute(query, params).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -1332,6 +1386,22 @@ Provide your pedagogical audit as a JSON object with this EXACT structure:
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ? AND date = ?
     """, (user_text, accuracy, time_seconds, day_number, user_id, today_str))
+
+    actual_clip_id = clip["id"]
+    cursor.execute("""
+        INSERT INTO user_listening_progress (user_id, clip_id, date, day_number, user_text, accuracy, time_seconds, diff_tokens, ai_audit, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, clip_id) DO UPDATE SET
+            user_text = excluded.user_text,
+            accuracy = excluded.accuracy,
+            time_seconds = excluded.time_seconds,
+            diff_tokens = excluded.diff_tokens,
+            ai_audit = excluded.ai_audit,
+            date = excluded.date,
+            day_number = excluded.day_number,
+            completed_at = CURRENT_TIMESTAMP
+    """, (user_id, actual_clip_id, today_str, day_number, user_text, accuracy, time_seconds,
+          json.dumps(diff_tokens, ensure_ascii=False), json.dumps(ai_audit, ensure_ascii=False)))
     conn.commit()
     conn.close()
 
@@ -1426,6 +1496,18 @@ Provide your evaluation as a JSON object with this EXACT structure:
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ? AND date = ?
     """, (relative_audio_url, json.dumps(feedback, ensure_ascii=False), day_number, user_id, today_str))
+
+    actual_shad_clip_id = clip["id"] if clip else (clip_id or 1)
+    cursor.execute("""
+        INSERT INTO user_shadowing_progress (user_id, clip_id, date, day_number, audio_url, ai_feedback, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, clip_id) DO UPDATE SET
+            audio_url = excluded.audio_url,
+            ai_feedback = excluded.ai_feedback,
+            date = excluded.date,
+            day_number = excluded.day_number,
+            completed_at = CURRENT_TIMESTAMP
+    """, (user_id, actual_shad_clip_id, today_str, day_number, relative_audio_url, json.dumps(feedback, ensure_ascii=False)))
     conn.commit()
     conn.close()
 
@@ -1461,6 +1543,7 @@ def complete_shadowing():
 def get_speaking():
     day_number = request.args.get("day", default=1, type=int)
     user_id = request.args.get("user_id", default=1, type=int)
+    date_str = request.args.get("date")
 
     conn = get_db()
     cursor = conn.cursor()
@@ -1493,10 +1576,23 @@ def get_speaking():
         """
         words = cursor.execute(words_query, (count, offset)).fetchall()
 
+    daily_log = None
+    if date_str:
+        log_row = cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? AND date = ?", (user_id, date_str)).fetchone()
+        if log_row:
+            l_dict = dict(log_row)
+            try:
+                if l_dict.get("speaking_ai_feedback"):
+                    l_dict["speaking_ai_feedback"] = json.loads(l_dict["speaking_ai_feedback"])
+            except Exception:
+                pass
+            daily_log = l_dict
+
     conn.close()
 
     p_dict = dict(prompt) if prompt else {}
     p_dict["target_words"] = [dict(w) for w in words]
+    p_dict["daily_log"] = daily_log
     return jsonify(p_dict)
 
 @app.route("/api/speaking/record", methods=["POST"])
@@ -1524,22 +1620,29 @@ def record_speaking():
     prompt_q = prompt["prompt_question"] if prompt else "Daily Speaking Challenge"
     
     ai_prompt = f"""
-You are a senior Cambridge English speaking examiner evaluating an ESL student's spoken response.
-Prompt Question: "{prompt_q}"
-Target Vocabulary Assigned for Today: {used_words}
+You are an expert Cambridge English speaking coach and pronunciation examiner.
+The student is practicing FREE SPEAKING oral expression.
+Target Vocabulary Words Available Today (Optional practice): {used_words}
 Recording Duration: {duration_seconds} seconds
 
-Listen to the student's spoken audio response.
+CRITICAL INSTRUCTION:
+This is a FREE SPEAKING exercise. Do NOT evaluate, criticize, or penalize topic relevance or adherence to any specific subject. The student has 100% freedom to talk about any topic, their personal thoughts, work, or daily life.
+Evaluate ONLY technical and linguistic aspects:
+1. Spoken clarity, phonetics, and pronunciation.
+2. Grammar accuracy, tense consistency, and sentence structures.
+3. Length and pacing (whether audio is adequate, too short, or well-paced).
+4. Natural usage of words and transition connectors.
+
 Provide your evaluation as a JSON object with this EXACT structure:
 {{
-  "overall_verdict": "<2-3 sentences in Spanish assessing their spoken fluency, coherence, and communicative confidence>",
+  "overall_verdict": "<2-3 sentences in Spanish assessing their spoken clarity, fluency, communicative flow, confidence, and pacing>",
   "estimated_cefr": "A1 or A2 or B1 or B2 or C1",
   "transcription_snippet": "<the first 1-2 sentences transcribed in English of what the student said>",
   "grammar_observations": [
-    "<bullet point in Spanish with constructive feedback on tense consistency, prepositions, or sentence structure>"
+    "<constructive bullet point in Spanish on grammar, verb tenses, prepositions, or sentence structure>"
   ],
-  "vocab_usage_feedback": "<comment in Spanish on how well they incorporated words or spoke naturally>",
-  "fluency_coaching_tip": "<1 key advice in Spanish for their next speaking session>"
+  "vocab_usage_feedback": "<comment in Spanish on how well they articulated words or used natural expressions>",
+  "fluency_coaching_tip": "<1 actionable coaching advice in Spanish for their next oral practice>"
 }}
 """
     ai_raw = call_gemini_api(ai_prompt, response_mime_type="application/json", audio_bytes=audio_bytes, audio_mime="audio/webm")
@@ -1602,4 +1705,6 @@ def complete_speaking():
     return jsonify({"success": True})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5005))
+    host = os.environ.get("HOST", "0.0.0.0")
+    app.run(host=host, port=port, debug=True)

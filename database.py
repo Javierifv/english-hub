@@ -96,6 +96,43 @@ def init_db():
     );
     """)
 
+    # 3c. User Listening Progress (Per-Track Dictation Tracking & Audit History)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_listening_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        clip_id INTEGER NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date TEXT NOT NULL,
+        day_number INTEGER DEFAULT 1,
+        user_text TEXT,
+        accuracy REAL DEFAULT 0,
+        time_seconds INTEGER DEFAULT 0,
+        diff_tokens TEXT,
+        ai_audit TEXT,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (clip_id) REFERENCES listening_shadowing (id),
+        UNIQUE(user_id, clip_id)
+    );
+    """)
+
+    # 3d. User Shadowing Progress (Per-Track Shadowing Recording & Audit History)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_shadowing_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        clip_id INTEGER NOT NULL,
+        completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        date TEXT NOT NULL,
+        day_number INTEGER DEFAULT 1,
+        audio_url TEXT,
+        ai_feedback TEXT,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (clip_id) REFERENCES listening_shadowing (id),
+        UNIQUE(user_id, clip_id)
+    );
+    """)
+
     # 4. Listening & Shadowing table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS listening_shadowing (

@@ -468,37 +468,24 @@ function loadSavedTranslation() {
   const resultsBox = document.getElementById("translation-evaluation-results");
   if (!textarea) return;
 
-  const chapterId = currentReadingData ? currentReadingData.id : 'default';
-  const savedLocal = localStorage.getItem(`duohub_trans_ch_${chapterId}_u${state.currentUser}`);
-  
   if (currentReadingData && currentReadingData.user_progress && currentReadingData.user_progress.translation_text) {
     textarea.value = currentReadingData.user_progress.translation_text;
-  } else if (savedLocal) {
-    textarea.value = savedLocal;
-  } else if (state.todayLog && state.todayLog.reading_translation) {
-    textarea.value = state.todayLog.reading_translation;
+    if (currentReadingData.user_progress.translation_feedback) {
+      renderTranslationFeedback(currentReadingData.user_progress.translation_feedback);
+    } else if (resultsBox) {
+      resultsBox.style.display = "none";
+      resultsBox.innerHTML = "";
+    }
   } else {
+    // Brand new / uncompleted chapter: clean empty state
     textarea.value = "";
+    if (resultsBox) {
+      resultsBox.style.display = "none";
+      resultsBox.innerHTML = "";
+    }
   }
 
   updateTranslationWordCount();
-
-  // Load saved evaluation feedback if any
-  const savedFbLocal = localStorage.getItem(`duohub_trans_fb_ch_${chapterId}_u${state.currentUser}`);
-  if (currentReadingData && currentReadingData.user_progress && currentReadingData.user_progress.translation_feedback) {
-    renderTranslationFeedback(currentReadingData.user_progress.translation_feedback);
-  } else if (savedFbLocal) {
-    try {
-      renderTranslationFeedback(JSON.parse(savedFbLocal));
-    } catch (e) {}
-  } else if (state.todayLog && state.todayLog.reading_translation_feedback) {
-    try {
-      renderTranslationFeedback(JSON.parse(state.todayLog.reading_translation_feedback));
-    } catch (e) {}
-  } else if (resultsBox) {
-    resultsBox.style.display = "none";
-    resultsBox.innerHTML = "";
-  }
 }
 
 function updateTranslationWordCount() {
@@ -691,20 +678,16 @@ function loadSavedSummary() {
       renderSummaryFeedback(currentReadingData.user_progress.summary_feedback);
     } else if (resultsBox) {
       resultsBox.style.display = "none";
-    }
-  } else if (state.todayLog && state.todayLog.reading_summary) {
-    summaryTextarea.value = state.todayLog.reading_summary;
-    updateWordCount();
-    if (state.todayLog.reading_feedback) {
-      try {
-        const feedback = JSON.parse(state.todayLog.reading_feedback);
-        renderSummaryFeedback(feedback);
-      } catch (e) {}
+      resultsBox.innerHTML = "";
     }
   } else {
+    // Brand new / uncompleted chapter: clean empty state
     summaryTextarea.value = "";
     updateWordCount();
-    if (resultsBox) resultsBox.style.display = "none";
+    if (resultsBox) {
+      resultsBox.style.display = "none";
+      resultsBox.innerHTML = "";
+    }
   }
 }
 

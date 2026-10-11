@@ -71,6 +71,8 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchUsersAndStatus();
 });
 
+const MIN_ALLOWED_DATE = "2026-10-05"; // Launch / Construction baseline date
+
 function initDateControls() {
   const prevBtn = document.getElementById("btn-prev-day");
   if (prevBtn) {
@@ -84,6 +86,7 @@ function initDateControls() {
 
   const dateInput = document.getElementById("calendar-date-input");
   if (dateInput) {
+    dateInput.min = MIN_ALLOWED_DATE;
     dateInput.value = state.currentDate;
   }
 
@@ -94,6 +97,7 @@ function initDateControls() {
 function openDatePicker() {
   const dateInput = document.getElementById("calendar-date-input");
   if (dateInput) {
+    dateInput.min = MIN_ALLOWED_DATE;
     if (typeof dateInput.showPicker === 'function') {
       dateInput.showPicker();
     } else {
@@ -104,6 +108,7 @@ function openDatePicker() {
 
 function onDateInputChange(val) {
   if (val) {
+    if (val < MIN_ALLOWED_DATE) val = MIN_ALLOWED_DATE;
     setDate(val);
   }
 }
@@ -115,10 +120,17 @@ function shiftDate(deltaDays) {
   const year = cur.getFullYear();
   const month = String(cur.getMonth() + 1).padStart(2, '0');
   const day = String(cur.getDate()).padStart(2, '0');
-  setDate(`${year}-${month}-${day}`);
+  let targetDate = `${year}-${month}-${day}`;
+  if (targetDate < MIN_ALLOWED_DATE) {
+    targetDate = MIN_ALLOWED_DATE;
+  }
+  setDate(targetDate);
 }
 
 function setDate(dateStr, triggerRefresh = true) {
+  if (dateStr < MIN_ALLOWED_DATE) {
+    dateStr = MIN_ALLOWED_DATE;
+  }
   state.currentDate = dateStr;
   const anchor = new Date(2026, 9, 1); // Baseline: Oct 1, 2026
   const parts = dateStr.split("-").map(Number);
@@ -127,7 +139,10 @@ function setDate(dateStr, triggerRefresh = true) {
   state.currentDay = Math.max(1, diffDays + 1);
 
   const dateInput = document.getElementById("calendar-date-input");
-  if (dateInput) dateInput.value = dateStr;
+  if (dateInput) {
+    dateInput.min = MIN_ALLOWED_DATE;
+    dateInput.value = dateStr;
+  }
 
   renderDateDisplay();
 
@@ -162,6 +177,14 @@ function renderDateDisplay() {
   const todayBtn = document.getElementById("btn-today");
   if (todayBtn) {
     todayBtn.classList.toggle("active-today", isToday);
+  }
+
+  const prevBtn = document.getElementById("btn-prev-day");
+  if (prevBtn) {
+    const isAtMin = state.currentDate <= MIN_ALLOWED_DATE;
+    prevBtn.disabled = isAtMin;
+    prevBtn.style.opacity = isAtMin ? "0.35" : "1";
+    prevBtn.style.cursor = isAtMin ? "not-allowed" : "pointer";
   }
 }
 

@@ -69,7 +69,7 @@ async function loadShadowingData(day) {
       : parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
 
     const lvl = state.listeningLevel || (state.currentUser === 1 ? 'A1' : 'A2');
-    const url = clipId ? `/api/listening?id=${clipId}` : `/api/listening?level=${lvl}`;
+    const url = clipId ? `/api/listening?id=${clipId}&user_id=${state.currentUser}` : `/api/listening?level=${lvl}&user_id=${state.currentUser}`;
     
     const res = await fetch(url);
     const clip = await res.json();
@@ -135,28 +135,32 @@ async function loadShadowingData(day) {
     // 4. Render Complete Transcript (Hidden by default for pure ear training)
     renderShadowingTranscript(clip.transcript);
 
-    // 5. Check if user already completed shadowing for this date
-    if (state.todayLog && state.todayLog.shadowing_done) {
+    // 5. Check if user already completed shadowing for THIS track
+    if (clip.shadowing_progress && clip.shadowing_progress.is_completed) {
+      const sp = clip.shadowing_progress;
       const recDot = document.getElementById("rec-status-dot");
       if (recDot) recDot.classList.add("done");
 
-      if (state.todayLog.shadowing_audio_path) {
+      if (sp.audio_url) {
         const player = document.getElementById("user-audio-player");
-        if (player) player.src = state.todayLog.shadowing_audio_path;
+        if (player) player.src = sp.audio_url;
         const playbackRow = document.getElementById("recording-playback-row");
         if (playbackRow) playbackRow.style.display = "block";
       }
 
-      if (state.todayLog.shadowing_ai_feedback) {
-        try {
-          const feedback = typeof state.todayLog.shadowing_ai_feedback === "string"
-            ? JSON.parse(state.todayLog.shadowing_ai_feedback)
-            : state.todayLog.shadowing_ai_feedback;
-          renderShadowingAiAudit(feedback);
-        } catch (e) {
-          console.warn("Could not parse saved shadowing AI feedback:", e);
-        }
+      if (sp.ai_feedback) {
+        renderShadowingAiAudit(sp.ai_feedback);
       }
+    } else {
+      // Uncompleted clip: clean empty state
+      const recDot = document.getElementById("rec-status-dot");
+      if (recDot) recDot.classList.remove("done");
+      const player = document.getElementById("user-audio-player");
+      if (player) { player.pause(); player.src = ""; }
+      const playbackRow = document.getElementById("recording-playback-row");
+      if (playbackRow) playbackRow.style.display = "none";
+      const auditBox = document.getElementById("shadowing-ai-audit-container");
+      if (auditBox) { auditBox.style.display = "none"; auditBox.innerHTML = ""; }
     }
 
   } catch (err) {

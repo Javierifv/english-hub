@@ -22,12 +22,21 @@ let speakingAnimFrame = null;
 
 async function loadSpeakingData(day) {
   try {
-    const res = await fetch(`/api/speaking?day=${day}&user_id=${state.currentUser}`);
+    const res = await fetch(`/api/speaking?day=${day}&date=${state.currentDate}&user_id=${state.currentUser}`);
     const data = await res.json();
 
-    document.getElementById("speaking-topic-name").textContent = data.topic || "General";
-    document.getElementById("speaking-question").textContent = `"${data.prompt_question || ''}"`;
-    document.getElementById("speaking-guidelines-content").textContent = data.suggested_guidelines || '';
+    const topicEl = document.getElementById("speaking-topic-name");
+    if (topicEl) topicEl.textContent = "Práctica Libre";
+    
+    const questionEl = document.getElementById("speaking-question");
+    if (questionEl) {
+      questionEl.textContent = data.prompt_question ? `"${data.prompt_question}"` : `"Habla con libertad sobre tu día, proyectos o ideas."`;
+    }
+    
+    const guidelinesEl = document.getElementById("speaking-guidelines-content");
+    if (guidelinesEl) {
+      guidelinesEl.textContent = data.suggested_guidelines || 'Sugerencia opcional: puedes contar lo que hiciste hoy, tus planes para la semana o practicar estructurando una historia sencilla con conectores.';
+    }
 
     // Render Target Words Checklist
     const list = document.getElementById("speaking-target-words-list");
@@ -45,25 +54,40 @@ async function loadSpeakingData(day) {
       list.innerHTML = `<div class="empty-state">No hay palabras asignadas para hoy.</div>`;
     }
 
-    // Check if user already recorded or completed speaking today
-    if (state.todayLog && state.todayLog.speaking_done) {
-      const playbackStation = document.getElementById("speaking-playback-station");
+    const playbackStation = document.getElementById("speaking-playback-station");
+    const player = document.getElementById("speaking-user-audio-player");
+    const auditContainer = document.getElementById("speaking-ai-audit-container");
+
+    // Check if user already recorded or completed speaking for THIS SELECTED DATE
+    const log = data.daily_log;
+    if (log && log.speaking_done) {
       if (playbackStation) playbackStation.style.display = "block";
-
-      if (state.todayLog.speaking_audio_path) {
-        const player = document.getElementById("speaking-user-audio-player");
-        if (player) player.src = state.todayLog.speaking_audio_path;
+      if (player) {
+        player.src = log.speaking_audio_path || "";
       }
-
-      if (state.todayLog.speaking_ai_feedback) {
+      if (log.speaking_ai_feedback) {
         try {
-          const feedback = typeof state.todayLog.speaking_ai_feedback === "string"
-            ? JSON.parse(state.todayLog.speaking_ai_feedback)
-            : state.todayLog.speaking_ai_feedback;
+          const feedback = typeof log.speaking_ai_feedback === "string"
+            ? JSON.parse(log.speaking_ai_feedback)
+            : log.speaking_ai_feedback;
           renderSpeakingAiAudit(feedback);
         } catch (e) {
           console.warn("Could not parse saved speaking AI feedback:", e);
         }
+      } else if (auditContainer) {
+        auditContainer.style.display = "none";
+        auditContainer.innerHTML = "";
+      }
+    } else {
+      // Date has no speaking: clean empty state
+      if (playbackStation) playbackStation.style.display = "none";
+      if (player) {
+        player.pause();
+        player.src = "";
+      }
+      if (auditContainer) {
+        auditContainer.style.display = "none";
+        auditContainer.innerHTML = "";
       }
     }
 
@@ -307,11 +331,21 @@ function renderSpeakingAiAudit(feedback) {
     `;
   }
 
+  let tipsHtml = "";
+  if (feedback.pronunciation_and_vocab_tips && feedback.pronunciation_and_vocab_tips.length > 0) {
+    tipsHtml = `
+      <div class="audit-section-subtitle">🗣️ Puntos de Pronunciación & Expresión a Pulir:</div>
+      <ul class="audit-missed-list">
+        ${feedback.pronunciation_and_vocab_tips.map(t => `<li>${escapeHtml(t)}</li>`).join('')}
+      </ul>
+    `;
+  }
+
   const cefr = feedback.estimated_cefr || "A2";
 
   container.innerHTML = `
     <div class="audit-header">
-      <div class="audit-title">🗣️ Auditoría IA de Speaking Oral</div>
+      <div class="audit-title">🗣️ Auditoría Técnica de Speaking Oral</div>
       <div style="display: flex; align-items: center; gap: 0.5rem;">
         <span class="audit-source-tag">${escapeHtml(feedback.source || 'Auditoría IA')}</span>
         <span class="badge badge-accent" style="font-weight: 800;">Nivel Detectado: ${escapeHtml(cefr)}</span>
@@ -320,9 +354,14 @@ function renderSpeakingAiAudit(feedback) {
     <p class="audit-verdict-p">${escapeHtml(feedback.overall_verdict || '')}</p>
     ${snippetHtml}
     ${grammarHtml}
+    ${tipsHtml}
     ${vocabHtml}
     ${coachingHtml}
   `;
+
+  setTimeout(() => {
+    container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
 }
 
 async function saveAndFinishSpeaking() {
