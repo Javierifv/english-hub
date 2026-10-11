@@ -672,7 +672,11 @@ function updateHeaderUI() {
 
   // Update Pillar checkmarks
   const tLog = state.todayLog || {};
-  updatePillarBadge("vocab", tLog.vocab_done);
+  const currentWords = window.currentDayWords || [];
+  const hasIncompleteWords = currentWords.length > 0 && currentWords.some(w => (w.user_mastery || 1) < 5);
+  const vocabDone = (tLog.vocab_done === 1) && !hasIncompleteWords;
+
+  updatePillarBadge("vocab", vocabDone ? 1 : 0);
   updatePillarBadge("reading", tLog.reading_done);
   updatePillarBadge("listening", tLog.listening_done);
   updatePillarBadge("shadowing", tLog.shadowing_done);

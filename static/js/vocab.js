@@ -44,16 +44,16 @@ function updateVocabStatusPill(words) {
   const text = document.getElementById("vocab-status-text");
   if (!pill || !text) return;
 
-  const isDone = state.todayLog && state.todayLog.vocab_done === 1;
   const list = words || currentDayWords || [];
   const fiveStars = list.filter(w => (w.user_mastery || 1) >= 5).length;
   const total = list.length || 5;
+  const isDone = Boolean(state.todayLog && state.todayLog.vocab_done === 1 && fiveStars >= total && total > 0);
 
   if (isDone) {
     pill.classList.add("completed");
     if (icon) icon.textContent = "✓";
     text.textContent = `Dominio Total (5★) · ${fiveStars}/${total} Palabras`;
-    pill.title = "¡Vocabulario completado! Has alcanzado 5 estrellas en las palabras del día superando las Rondas 1 y 2.";
+    pill.title = "¡Vocabulario completado! Has alcanzado 5 estrellas en todas las palabras del día superando las Rondas 1 y 2.";
   } else {
     pill.classList.remove("completed");
     if (icon) icon.textContent = "⏳";
@@ -68,6 +68,7 @@ async function loadVocabData(day) {
     const res = await fetch(`/api/vocab?day=${day}&user_id=${state.currentUser}`);
     const words = await res.json();
     currentDayWords = words;
+    window.currentDayWords = words;
 
     if (!words || words.length === 0) {
       container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
@@ -82,6 +83,16 @@ async function loadVocabData(day) {
     container.innerHTML = words.map(w => renderVocabCard(w)).join("");
 
     updateVocabStatusPill(words);
+
+    // Safeguard: if words are not all 5 stars, prevent false positive in header
+    const fiveStars = words.filter(w => (w.user_mastery || 1) >= 5).length;
+    if (fiveStars < words.length && state.todayLog && state.todayLog.vocab_done === 1) {
+      state.todayLog.vocab_done = 0;
+      if (typeof updatePillarBadge === 'function') {
+        updatePillarBadge('vocab', 0);
+      }
+    }
+
     if (typeof applyReadOnlyLocks === 'function') {
       applyReadOnlyLocks(state.isReadOnly);
     }

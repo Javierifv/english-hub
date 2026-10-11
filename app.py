@@ -342,6 +342,43 @@ def update_profile():
     conn.close()
     return jsonify({"success": True})
 
+def get_day_word_ids(cursor, user_id, day_number):
+    cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
+    u_row = cursor.fetchone()
+    count = u_row["words_per_day"] if u_row else 5
+    mode = u_row["selection_mode"] if u_row else "progressive"
+
+    if mode == "random":
+        offset_seed = (day_number * 37) % 500
+        words_query = """
+            SELECT id FROM vocabulary
+            ORDER BY ((id * 31 + ?) % 534) ASC
+            LIMIT ?
+        """
+        rows = cursor.execute(words_query, (offset_seed, count)).fetchall()
+    else:
+        offset = max(0, (day_number - 1) * count)
+        words_query = """
+            SELECT id FROM vocabulary
+            ORDER BY id ASC
+            LIMIT ? OFFSET ?
+        """
+        rows = cursor.execute(words_query, (count, offset)).fetchall()
+
+    return [r["id"] for r in rows]
+
+def is_vocab_fully_mastered(cursor, user_id, day_number):
+    target_ids = get_day_word_ids(cursor, user_id, day_number)
+    if not target_ids:
+        return False
+    placeholders = ",".join("?" for _ in target_ids)
+    cursor.execute(f"""
+        SELECT COUNT(*) FROM user_word_progress 
+        WHERE user_id = ? AND word_id IN ({placeholders}) AND mastery_level >= 5
+    """, [user_id] + target_ids)
+    mastered_count = cursor.fetchone()[0]
+    return mastered_count >= len(target_ids)
+
 @app.route("/api/status", methods=["GET"])
 def get_status():
     user_id = request.args.get("user_id", default=1, type=int)
@@ -368,12 +405,57 @@ def get_status():
         cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? AND date = ?", (user_id, today_str))
         log = cursor.fetchone()
 
+    # Reconcile vocab_done with actual word mastery (must have 5 stars in all of the day's words)
+    actual_mastered = is_vocab_fully_mastered(cursor, user_id, log["day_number"])
+    current_vocab_done = log["vocab_done"] or 0
+    expected_vocab_done = 1 if actual_mastered else 0
+
+    if current_vocab_done != expected_vocab_done:
+        cursor.execute("""
+            UPDATE daily_logs 
+            SET vocab_done = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ? AND date = ?
+        """, (expected_vocab_done, user_id, today_str))
+
+        cursor.execute("""
+            SELECT vocab_done, reading_done, listening_done, shadowing_done, speaking_done 
+            FROM daily_logs WHERE user_id = ? AND date = ?
+        """, (user_id, today_str))
+        l_row = cursor.fetchone()
+        c_count = sum([l_row["vocab_done"] or 0, l_row["reading_done"] or 0, 
+                       l_row["listening_done"] or 0, l_row["shadowing_done"] or 0, 
+                       l_row["speaking_done"] or 0])
+        cursor.execute("UPDATE daily_logs SET completed_count = ? WHERE user_id = ? AND date = ?", (c_count, user_id, today_str))
+        conn.commit()
+
+        cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? AND date = ?", (user_id, today_str))
+        log = cursor.fetchone()
+
     # Get partner's status for accountability & read-only preview
     cursor.execute("SELECT id, display_name FROM users WHERE id != ?", (user_id,))
     partner = cursor.fetchone()
 
     partner_status = None
     if partner:
+        p_date_log = cursor.execute("SELECT day_number, vocab_done FROM daily_logs WHERE user_id = ? AND date = ?", (partner["id"], today_str)).fetchone()
+        if p_date_log:
+            p_actual_mastered = is_vocab_fully_mastered(cursor, partner["id"], p_date_log["day_number"])
+            p_current_vocab_done = p_date_log["vocab_done"] or 0
+            p_expected_vocab_done = 1 if p_actual_mastered else 0
+            if p_current_vocab_done != p_expected_vocab_done:
+                cursor.execute("UPDATE daily_logs SET vocab_done = ? WHERE user_id = ? AND date = ?", (p_expected_vocab_done, partner["id"], today_str))
+                cursor.execute("""
+                    SELECT vocab_done, reading_done, listening_done, shadowing_done, speaking_done 
+                    FROM daily_logs WHERE user_id = ? AND date = ?
+                """, (partner["id"], today_str))
+                p_l_row = cursor.fetchone()
+                p_c_count = sum([p_l_row["vocab_done"] or 0, p_l_row["reading_done"] or 0, 
+                                 p_l_row["listening_done"] or 0, p_l_row["shadowing_done"] or 0, 
+                                 p_l_row["speaking_done"] or 0])
+                cursor.execute("UPDATE daily_logs SET completed_count = ? WHERE user_id = ? AND date = ?", (p_c_count, partner["id"], today_str))
+                conn.commit()
+
         cursor.execute("""
             SELECT completed_count, vocab_done, reading_done, reading_summary, reading_feedback, 
                    listening_done, shadowing_done, speaking_done 
@@ -727,18 +809,7 @@ def submit_quiz_results():
         }
 
     # Check if all words assigned for this day have reached level 5 (5 stars)
-    cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
-    u_row = cursor.fetchone()
-    w_limit = u_row["words_per_day"] if u_row else 5
-    sel_mode = u_row["selection_mode"] if u_row else "progressive"
-
-    if sel_mode == "random":
-        cursor.execute("SELECT id FROM vocabulary WHERE day_number = ? ORDER BY id ASC LIMIT ?", (day_number, w_limit))
-    else:
-        cursor.execute("SELECT id FROM vocabulary ORDER BY id ASC LIMIT ? OFFSET ?", (w_limit, (day_number - 1) * w_limit))
-
-    target_words = cursor.fetchall()
-    target_ids = [tw["id"] for tw in target_words]
+    target_ids = get_day_word_ids(cursor, user_id, day_number)
 
     is_fully_mastered = False
     mastered_count = 0
@@ -753,13 +824,13 @@ def submit_quiz_results():
         if round_num >= 2 and mastered_count >= len(target_ids):
             is_fully_mastered = True
 
-    if is_fully_mastered:
-        cursor.execute("""
-            INSERT INTO daily_logs (user_id, date, day_number, vocab_done)
-            VALUES (?, ?, ?, 1)
-            ON CONFLICT(user_id, date) DO UPDATE SET
-                vocab_done = 1
-        """, (user_id, date_str, day_number))
+    new_vocab_done = 1 if is_fully_mastered else 0
+    cursor.execute("""
+        INSERT INTO daily_logs (user_id, date, day_number, vocab_done)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_id, date) DO UPDATE SET
+            vocab_done = excluded.vocab_done
+    """, (user_id, date_str, day_number, new_vocab_done))
 
     # Recalculate completed_count in daily_logs
     cursor.execute("""
@@ -838,6 +909,15 @@ def complete_vocab():
 
     conn = get_db()
     cursor = conn.cursor()
+
+    # Vocab completion requires 5-star mastery across all assigned words
+    if not is_vocab_fully_mastered(cursor, user_id, day_number):
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "El vocabulario no se puede marcar manualmente: debes superar las Rondas 1 y 2 del Test de Dominio hasta alcanzar 5 estrellas en todas las palabras del día."
+        }), 400
+
     cursor.execute("""
         UPDATE daily_logs
         SET vocab_done = 1, vocab_notes = ?, day_number = ?,

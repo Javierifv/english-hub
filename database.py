@@ -239,6 +239,38 @@ def init_db():
     cursor.execute("DELETE FROM user_shadowing_progress WHERE user_id NOT IN (SELECT id FROM users)")
     cursor.execute("DELETE FROM daily_logs WHERE user_id NOT IN (SELECT id FROM users)")
 
+    # Reconcile any stale daily_logs where vocab_done was marked 1 without 5-star mastery
+    try:
+        cursor.execute("SELECT id, user_id, day_number FROM daily_logs WHERE vocab_done = 1")
+        stale_logs = cursor.fetchall()
+        for slog in stale_logs:
+            s_id = slog[0]
+            s_uid = slog[1]
+            s_day = slog[2]
+            cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (s_uid,))
+            s_u = cursor.fetchone()
+            s_count = s_u[0] if s_u else 5
+            s_mode = s_u[1] if s_u else "progressive"
+            if s_mode == "random":
+                s_seed = (s_day * 37) % 500
+                s_rows = cursor.execute("SELECT id FROM vocabulary ORDER BY ((id * 31 + ?) % 534) ASC LIMIT ?", (s_seed, s_count)).fetchall()
+            else:
+                s_offset = max(0, (s_day - 1) * s_count)
+                s_rows = cursor.execute("SELECT id FROM vocabulary ORDER BY id ASC LIMIT ? OFFSET ?", (s_count, s_offset)).fetchall()
+            s_ids = [r[0] for r in s_rows]
+            if s_ids:
+                s_phs = ",".join("?" for _ in s_ids)
+                m_cnt = cursor.execute(f"SELECT COUNT(*) FROM user_word_progress WHERE user_id = ? AND word_id IN ({s_phs}) AND mastery_level >= 5", [s_uid] + s_ids).fetchone()[0]
+                if m_cnt < len(s_ids):
+                    cursor.execute("UPDATE daily_logs SET vocab_done = 0 WHERE id = ?", (s_id,))
+                    cursor.execute("""
+                        UPDATE daily_logs 
+                        SET completed_count = (vocab_done + reading_done + listening_done + shadowing_done + speaking_done)
+                        WHERE id = ?
+                    """, (s_id,))
+    except Exception as e:
+        print("Warning during daily_logs reconciliation:", e)
+
     # Seed Default Users
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
