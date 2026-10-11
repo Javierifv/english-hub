@@ -503,6 +503,10 @@ function updateTranslationWordCount() {
 }
 
 async function submitTranslationForEvaluation() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const textarea = document.getElementById("translation-textarea");
   const translationText = (textarea?.value || "").trim();
 
@@ -708,6 +712,10 @@ function updateWordCount() {
 }
 
 async function submitSummaryForEvaluation() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const textarea = document.getElementById("summary-textarea");
   const summaryText = (textarea.value || "").trim();
 

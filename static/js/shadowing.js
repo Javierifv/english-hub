@@ -402,6 +402,10 @@ async function toggleRecording() {
 }
 
 async function auditShadowingWithAI() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   if (!recordedChunks || recordedChunks.length === 0) {
     alert("Primero graba tu toma de Shadowing antes de solicitar la auditoría con IA.");
     return;
@@ -510,6 +514,10 @@ function renderShadowingAiAudit(feedback) {
 }
 
 async function markShadowingDone() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   try {
     const res = await fetch("/api/shadowing/complete", {
       method: "POST",

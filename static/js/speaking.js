@@ -239,6 +239,10 @@ async function toggleSpeakingRecording() {
 
 // Multimodal AI Speaking Audit
 async function auditSpeakingWithAI() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   if (!speakingRecordedChunks || speakingRecordedChunks.length === 0) {
     alert("Primero graba tu respuesta de speaking antes de auditarla con IA.");
     return;
@@ -365,6 +369,10 @@ function renderSpeakingAiAudit(feedback) {
 }
 
 async function saveAndFinishSpeaking() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const checkedWords = Array.from(document.querySelectorAll(".target-word-item.checked .target-word-name"))
     .map(el => el.textContent.trim());
 

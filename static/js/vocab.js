@@ -141,6 +141,10 @@ function escapeHtml(str) {
 
 /* --- SAVE PERSONAL EXAMPLE SENTENCE --- */
 async function savePersonalSentence(wordId) {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const input = document.getElementById(`sentence-input-${wordId}`);
   const sentence = (input.value || "").trim();
 
@@ -854,6 +858,10 @@ function checkVocabPractice() {
 }
 
 async function markVocabDone() {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   try {
     const res = await fetch("/api/vocab/complete", {
       method: "POST",

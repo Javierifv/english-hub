@@ -73,7 +73,7 @@
               <div class="dropdown-current-level" id="dropdown-current-level">Nivel A1 · Meta: 5 palabras/día</div>
             </div>
 
-            <div class="dropdown-section-title">👥 Cambiar de Estudiante en este Grupo:</div>
+            <div class="dropdown-section-title">👥 Ver Progreso de Compañero (Solo Lectura):</div>
             <div class="dropdown-users-list" id="dropdown-users-list">
               <!-- Dynamically populated by JS -->
             </div>
@@ -81,14 +81,17 @@
             <div class="dropdown-divider"></div>
 
             <div class="dropdown-actions-list">
-              <button type="button" class="dropdown-action-btn" onclick="openAuthModal('register')">
-                ➕ Registrar Nuevo Estudiante
+              <button type="button" class="dropdown-action-btn" onclick="openSettingsModal()">
+                ⚙️ Mi Perfil y Nivel Objetivo
               </button>
               <button type="button" class="dropdown-action-btn" onclick="openAuthModal('login')">
                 🔐 Iniciar Sesión con otra Cuenta
               </button>
-              <button type="button" class="dropdown-action-btn" onclick="openSettingsModal()">
-                ⚙️ Ajustar Preferencias de Estudio
+              <button type="button" class="dropdown-action-btn" onclick="openAuthModal('register')">
+                ➕ Registrar Nuevo Estudiante
+              </button>
+              <button type="button" class="dropdown-action-btn" style="color: #EF4444;" onclick="logoutUser()">
+                🚪 Cerrar Sesión
               </button>
             </div>
           </div>
@@ -119,6 +122,21 @@
           <div id="daily-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
         </div>
         <span id="daily-progress-text" class="progress-percent">0/5 Completado</span>
+      </div>
+    </div>
+
+    <!-- Read-Only Partner Inspector Banner -->
+    <div id="read-only-banner" class="read-only-banner" style="display: none;">
+      <div class="read-only-banner-inner">
+        <div class="read-only-banner-left">
+          <span class="read-only-icon">👁️</span>
+          <div class="read-only-text">
+            Estás revisando el progreso de <strong id="read-only-partner-name">Compañero</strong> en <strong>Modo Solo Lectura</strong>. No puedes modificar sus datos ni completar sus tareas.
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-return-account" onclick="exitReadOnlyMode()">
+          🔙 Volver a Mi Cuenta (<span id="read-only-auth-user-name">Mi Perfil</span>)
+        </button>
       </div>
     </div>
 
@@ -161,7 +179,7 @@
           <p class="section-desc">Aprende el vocabulario diario, redacta tu oración de contexto y supera los Tests de Dominio (Ronda 1 y 2) para subir automáticamente tu nivel de retención Tobo (1 a 5).</p>
         </div>
         <div class="panel-header-actions">
-          <button class="btn btn-secondary btn-sm" onclick="openSettingsModal()">
+          <button class="btn btn-secondary btn-sm" onclick="openVocabSettingsModal()">
             ⚙️ Ajustar Cantidad y Modo
           </button>
           <button id="btn-complete-vocab" class="btn btn-primary" onclick="markVocabDone()">
@@ -922,17 +940,23 @@
             ➕ Registrar Nuevo Estudiante
           </button>
         </div>
-        <button class="btn-close-modal" onclick="closeAuthModal()">✕</button>
+        <button id="btn-close-auth-modal" class="btn-close-modal" onclick="closeAuthModal()">✕</button>
       </div>
 
       <div class="auth-modal-body">
         <!-- LOGIN VIEW -->
         <div id="auth-view-login" class="auth-subview">
-          <p class="auth-subtitle">Ingresa con tu nombre de usuario para cargar tu progreso individual, palabras y racha.</p>
+          <p class="auth-subtitle">Ingresa con tu cuenta personal para estudiar, registrar tus prácticas y sincronizar tu racha.</p>
+
+          <!-- Quick User Selector -->
+          <div id="auth-quick-users" class="auth-quick-users" style="display: none;">
+            <div class="auth-quick-label">Selecciona tu perfil en este grupo:</div>
+            <div id="auth-quick-list" class="auth-quick-grid"></div>
+          </div>
 
           <div class="form-group">
-            <label>Nombre de Usuario o Nombre Completo:</label>
-            <input type="text" id="login-username" class="form-control" placeholder="ej. javier, carlos, maria..." onkeydown="if(event.key==='Enter') submitLogin()">
+            <label>Nombre de Usuario:</label>
+            <input type="text" id="login-username" class="form-control" placeholder="ej. javier, alessandro..." onkeydown="if(event.key==='Enter') submitLogin()">
           </div>
 
           <div class="form-group">
@@ -1001,11 +1025,11 @@
     </div>
   </div>
 
-  <!-- Settings Modal (Configurable Words & Mode) -->
+  <!-- Settings Modal (General User Profile Settings) -->
   <div id="settings-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card modal-settings">
       <div class="modal-header-row">
-        <h3>⚙️ Configuración de Estudio</h3>
+        <h3>⚙️ Mi Perfil de Estudio</h3>
         <button class="btn-close-modal" onclick="closeSettingsModal()">✕</button>
       </div>
 
@@ -1016,35 +1040,19 @@
         </div>
 
         <div class="form-group">
-          <label>Palabras de Vocabulario por Día:</label>
-          <div class="pill-selector" id="setting-words-per-day-pills">
-            <button type="button" class="pill-opt" data-val="3" onclick="selectWordsPerDay(3)">3</button>
-            <button type="button" class="pill-opt active" data-val="5" onclick="selectWordsPerDay(5)">5 (Recomendado)</button>
-            <button type="button" class="pill-opt" data-val="7" onclick="selectWordsPerDay(7)">7</button>
-            <button type="button" class="pill-opt" data-val="10" onclick="selectWordsPerDay(10)">10</button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Modo de Selección de Palabras:</label>
-          <div class="pill-selector" id="setting-selection-mode-pills">
-            <button type="button" class="pill-opt active" data-val="progressive" onclick="selectSelectionMode('progressive')">
-              📘 Progresivo (Orden del Libro)
-            </button>
-            <button type="button" class="pill-opt" data-val="random" onclick="selectSelectionMode('random')">
-              🎲 Al Azar (Sincronizado)
-            </button>
-          </div>
+          <label>PIN de Acceso / Contraseña (4 dígitos):</label>
+          <input type="password" id="setting-pin" class="form-control" placeholder="1234" maxlength="10">
+          <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 0.25rem;">Usa este PIN para iniciar sesión de forma protegida en tu cuenta personal.</small>
         </div>
 
         <div class="form-group">
           <label>Tu Nivel Objetivo (MCER / CEFR):</label>
           <div class="pill-selector" id="setting-preferred-level-pills">
             <button type="button" class="pill-opt" data-val="A1" onclick="selectPreferredLevel('A1')">
-              📗 A1 (Principiante / Básico - Javier)
+              📗 A1 (Principiante / Básico)
             </button>
             <button type="button" class="pill-opt" data-val="A2" onclick="selectPreferredLevel('A2')">
-              🔵 A2 (Pre-Intermedio - Compañero)
+              🔵 A2 (Pre-Intermedio)
             </button>
             <button type="button" class="pill-opt" data-val="B1" onclick="selectPreferredLevel('B1')">
               📘 B1 (Intermedio)
@@ -1053,11 +1061,52 @@
               📙 B2 (Intermedio Alto)
             </button>
           </div>
+          <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 0.35rem;">Afecta los textos de lectura por defecto, pistas de audio en listening y la escala de evaluación de la IA.</small>
         </div>
 
         <div class="settings-actions">
           <button class="btn btn-primary btn-block" onclick="saveUserSettings()">
             Guardar Configuración
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Vocabulary Settings Modal -->
+  <div id="vocab-settings-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card modal-settings">
+      <div class="modal-header-row">
+        <h3>📚 Configuración de Vocabulario Diario</h3>
+        <button class="btn-close-modal" onclick="closeVocabSettingsModal()">✕</button>
+      </div>
+
+      <div class="settings-form">
+        <div class="form-group">
+          <label>Palabras de Vocabulario por Día:</label>
+          <div class="pill-selector" id="vocab-words-per-day-pills">
+            <button type="button" class="pill-opt" data-val="3" onclick="selectVocabWordsPerDay(3)">3</button>
+            <button type="button" class="pill-opt active" data-val="5" onclick="selectVocabWordsPerDay(5)">5 (Recomendado)</button>
+            <button type="button" class="pill-opt" data-val="7" onclick="selectVocabWordsPerDay(7)">7</button>
+            <button type="button" class="pill-opt" data-val="10" onclick="selectVocabWordsPerDay(10)">10</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Modo de Selección de Palabras:</label>
+          <div class="pill-selector" id="vocab-selection-mode-pills">
+            <button type="button" class="pill-opt active" data-val="progressive" onclick="selectVocabSelectionMode('progressive')">
+              📘 Progresivo (Orden del Libro)
+            </button>
+            <button type="button" class="pill-opt" data-val="random" onclick="selectVocabSelectionMode('random')">
+              🎲 Al Azar (Sincronizado)
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button class="btn btn-primary btn-block" onclick="saveVocabSettings()">
+            Guardar Configuración de Vocabulario
           </button>
         </div>
       </div>

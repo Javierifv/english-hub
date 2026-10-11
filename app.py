@@ -5,7 +5,7 @@ import sqlite3
 import random
 import urllib.request
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session
 from database import get_db, init_db
 
 # Load environment variables from .env
@@ -198,6 +198,23 @@ def get_users():
     conn.close()
     return jsonify([dict(u) for u in users])
 
+def check_write_permission(target_user_id):
+    """
+    Verifica que el usuario autenticado tenga permiso para modificar los registros de target_user_id.
+    Si se detecta que un usuario intenta modificar los datos de otro estudiante, retorna False.
+    """
+    auth_id = session.get("user_id")
+    header_auth = request.headers.get("X-Auth-User-Id")
+    if header_auth:
+        try:
+            auth_id = int(header_auth)
+        except (ValueError, TypeError):
+            pass
+            
+    if auth_id is not None and int(auth_id) != int(target_user_id):
+        return False
+    return True
+
 @app.route("/api/auth/register", methods=["POST"])
 def auth_register():
     data = request.json or {}
@@ -235,10 +252,11 @@ def auth_register():
     new_user_id = cursor.lastrowid
     conn.commit()
 
-    cursor.execute("SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, preferred_level FROM users WHERE id = ?", (new_user_id,))
+    cursor.execute("SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level FROM users WHERE id = ?", (new_user_id,))
     new_user = dict(cursor.fetchone() or {})
     conn.close()
 
+    session["user_id"] = new_user_id
     return jsonify({"success": True, "user": new_user})
 
 @app.route("/api/auth/login", methods=["POST"])
@@ -265,37 +283,61 @@ def auth_login():
         return jsonify({"error": f"No se encontró ninguna cuenta con el usuario '{identifier}'."}), 404
 
     user = dict(user_row)
-    if pin and user.get("pin") and user["pin"] != pin:
+    if pin and user.get("pin") and str(user["pin"]) != pin:
         conn.close()
         return jsonify({"error": "PIN o contraseña incorrecta."}), 401
 
     conn.close()
+    session["user_id"] = user["id"]
     return jsonify({"success": True, "user": user})
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.clear()
+    return jsonify({"success": True})
+
+@app.route("/api/auth/me", methods=["GET"])
+def auth_me():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"authenticated": False}), 200
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        session.clear()
+        return jsonify({"authenticated": False}), 200
+    return jsonify({"authenticated": True, "user": dict(row)})
 
 @app.route("/api/users/profile", methods=["POST"])
 def update_profile():
     data = request.json or {}
     user_id = data.get("user_id", 1)
-    display_name = (data.get("display_name") or "").strip()
-    words_per_day = int(data.get("words_per_day", 5))
-    selection_mode = data.get("selection_mode", "progressive")
-    pin = data.get("pin", "1234")
-    preferred_level = data.get("preferred_level", "A1")
+
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar el perfil de tu compañero sin iniciar sesión con su cuenta."}), 403
 
     conn = get_db()
     cursor = conn.cursor()
-    if display_name:
-        cursor.execute("""
-            UPDATE users 
-            SET display_name = ?, words_per_day = ?, selection_mode = ?, pin = ?, preferred_level = ?
-            WHERE id = ?
-        """, (display_name, words_per_day, selection_mode, pin, preferred_level, user_id))
-    else:
-        cursor.execute("""
-            UPDATE users 
-            SET words_per_day = ?, selection_mode = ?, preferred_level = ?
-            WHERE id = ?
-        """, (words_per_day, selection_mode, preferred_level, user_id))
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    current = cursor.fetchone()
+    if not current:
+        conn.close()
+        return jsonify({"error": "Usuario no encontrado."}), 404
+
+    display_name = data.get("display_name", current["display_name"]).strip()
+    words_per_day = int(data.get("words_per_day", current["words_per_day"]))
+    selection_mode = data.get("selection_mode", current["selection_mode"])
+    pin = str(data.get("pin", current["pin"])).strip()
+    preferred_level = data.get("preferred_level", current["preferred_level"])
+
+    cursor.execute("""
+        UPDATE users 
+        SET display_name = ?, words_per_day = ?, selection_mode = ?, pin = ?, preferred_level = ?
+        WHERE id = ?
+    """, (display_name, words_per_day, selection_mode, pin, preferred_level, user_id))
     conn.commit()
     conn.close()
     return jsonify({"success": True})
@@ -439,6 +481,9 @@ def get_vocab():
 def rate_mastery():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     word_id = data.get("word_id")
     rating = max(1, min(5, int(data.get("rating", 1))))
 
@@ -460,6 +505,9 @@ def rate_mastery():
 def save_sentence():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     word_id = data.get("word_id")
     sentence = (data.get("sentence") or "").strip()
 
@@ -623,6 +671,9 @@ def get_vocab_quiz():
 def submit_quiz_results():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     round_num = int(data.get("round", 1))
     word_results = data.get("word_results", {})  # { "word_id": true/false }
     date_str = data.get("date") or date.today().isoformat()
@@ -748,6 +799,9 @@ def get_srs_stats():
 def complete_vocab():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
     notes = data.get("notes", "")
@@ -889,6 +943,9 @@ def get_reading_list():
 def evaluate_reading():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
     summary_text = (data.get("summary_text") or "").strip()
@@ -1024,6 +1081,9 @@ Analyze the student's text carefully and return a JSON object with this EXACT st
 def evaluate_reading_translation():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
     reading_id = data.get("reading_id")
@@ -1303,6 +1363,9 @@ def calculate_word_diff(user_text, real_text):
 def verify_listening():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
     clip_id = data.get("clip_id")
@@ -1419,6 +1482,9 @@ Provide your pedagogical audit as a JSON object with this EXACT structure:
 @app.route("/api/shadowing/evaluate", methods=["POST"])
 def evaluate_shadowing():
     user_id = request.form.get("user_id", default=1, type=int)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = request.form.get("date", default=date.today().isoformat())
     day_number = request.form.get("day", default=1, type=int)
     clip_id = request.form.get("clip_id", type=int)
@@ -1521,6 +1587,9 @@ Provide your evaluation as a JSON object with this EXACT structure:
 def complete_shadowing():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
 
@@ -1598,6 +1667,9 @@ def get_speaking():
 @app.route("/api/speaking/record", methods=["POST"])
 def record_speaking():
     user_id = request.form.get("user_id", default=1, type=int)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = request.form.get("date", default=date.today().isoformat())
     day_number = request.form.get("day", default=1, type=int)
     used_words = request.form.get("used_words", "")
@@ -1687,6 +1759,9 @@ Provide your evaluation as a JSON object with this EXACT structure:
 def complete_speaking():
     data = request.json or {}
     user_id = data.get("user_id", 1)
+    if not check_write_permission(user_id):
+        return jsonify({"error": "Modo Solo Lectura: No puedes modificar registros de tu compañero."}), 403
+
     today_str = data.get("date", date.today().isoformat())
     day_number = data.get("day", 1)
     notes = data.get("notes", "")

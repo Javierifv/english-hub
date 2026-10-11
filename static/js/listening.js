@@ -388,6 +388,10 @@ function listeningForward(seconds = 5) {
 
 // Visual Diff Calculation & Verification
 async function verifyListeningDiff(isSilent = false) {
+  if (typeof isReadOnlyMode === 'function' && isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const input = document.getElementById("listening-dictation-input");
   const userText = (input?.value || "").trim();
 

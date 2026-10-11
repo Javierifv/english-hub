@@ -3,7 +3,10 @@
  */
 
 const state = {
-  currentUser: 1, // 1: Javier, 2: Compañero
+  authUserId: null,
+  authUser: null,
+  isReadOnly: false,
+  currentUser: 1, // 1: Javier, 4: Alessandro
   currentDate: getTodayDateString(),
   currentDay: 1,
   maxDays: 107,
@@ -24,6 +27,24 @@ const state = {
   listeningLevelSetByUser: false,
   listeningTrack: 1
 };
+
+function getStoredAuthUser() {
+  try {
+    const raw = localStorage.getItem('duohub_auth_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function isReadOnlyMode() {
+  if (!state.authUserId) return true;
+  return state.currentUser !== state.authUserId;
+}
+
+function showReadOnlyToast() {
+  alert("⚠️ Modo Solo Lectura: Estás viendo el progreso de tu compañero. Para realizar tareas o guardar cambios, regresa a tu cuenta personal.");
+}
 
 function getTodayDateString() {
   const d = new Date();
@@ -68,6 +89,13 @@ function speakEnglish(text, rate = 1.0) {
 // Initialize App
 document.addEventListener("DOMContentLoaded", () => {
   initDateControls();
+  const stored = getStoredAuthUser();
+  if (stored && stored.id) {
+    state.authUserId = stored.id;
+    state.authUser = stored;
+    state.currentUser = stored.id;
+    state.isReadOnly = false;
+  }
   fetchUsersAndStatus();
 });
 
@@ -194,19 +222,58 @@ async function fetchUsersAndStatus() {
     const users = await res.json();
     state.usersList = users;
     
-    // Ensure current user is valid
-    const savedUserId = parseInt(localStorage.getItem('duohub_active_user_id'));
-    if (savedUserId && users.some(u => u.id === savedUserId)) {
-      state.currentUser = savedUserId;
-    } else if (users.length > 0 && !users.some(u => u.id === state.currentUser)) {
-      state.currentUser = users[0].id;
-      localStorage.setItem('duohub_active_user_id', state.currentUser);
+    // Check if authenticated user exists
+    const stored = getStoredAuthUser();
+    if (!stored || !users.some(u => u.id === stored.id)) {
+      // Must log in first!
+      openAuthModal('login', true);
+      renderAuthQuickUsers(users);
+      return;
+    } else {
+      state.authUserId = stored.id;
+      state.authUser = stored;
+      if (!state.currentUser) {
+        state.currentUser = stored.id;
+      }
+      state.isReadOnly = (state.currentUser !== state.authUserId);
     }
 
     renderUserDropdownUI();
+    renderAuthQuickUsers(users);
     await fetchStatusAndRefresh();
   } catch (err) {
     console.error("Error fetching users:", err);
+  }
+}
+
+function renderAuthQuickUsers(users) {
+  const container = document.getElementById("auth-quick-users");
+  const listEl = document.getElementById("auth-quick-list");
+  if (!container || !listEl) return;
+
+  if (!users || users.length === 0) {
+    container.style.display = "none";
+    return;
+  }
+
+  container.style.display = "block";
+  listEl.innerHTML = users.map(u => `
+    <button type="button" class="auth-quick-user-btn" onclick="quickFillLogin('${escapeHtml(u.username)}')">
+      <span class="auth-quick-avatar" style="background-color: ${u.avatar_color || '#0B72E7'};">
+        ${escapeHtml(u.display_name ? u.display_name.charAt(0).toUpperCase() : '👤')}
+      </span>
+      <span>${escapeHtml(u.display_name)}</span>
+    </button>
+  `).join("");
+}
+
+function quickFillLogin(username) {
+  const input = document.getElementById("login-username");
+  const pinInput = document.getElementById("login-pin");
+  if (input) input.value = username;
+  if (pinInput) {
+    pinInput.focus();
+    pinInput.select();
   }
 }
 
@@ -214,26 +281,35 @@ function renderUserDropdownUI() {
   if (!state.usersList || state.usersList.length === 0) return;
 
   const activeUser = state.usersList.find(u => u.id === state.currentUser) || state.usersList[0];
-  
+  const isViewingPartner = state.isReadOnly;
+
   // Update navbar trigger
   const nameEl = document.getElementById("header-user-name");
   const statsEl = document.getElementById("header-user-stats");
   const badgeEl = document.getElementById("header-avatar-badge");
 
-  if (nameEl) nameEl.textContent = activeUser.display_name;
+  if (nameEl) {
+    nameEl.textContent = isViewingPartner 
+      ? `${activeUser.display_name} (👁️ Solo Lectura)` 
+      : activeUser.display_name;
+  }
   const compCount = (state.todayLog && state.todayLog.completed_count !== undefined) 
     ? state.todayLog.completed_count 
     : (activeUser.today_completed || 0);
   if (statsEl) statsEl.textContent = `${compCount}/5`;
   if (badgeEl) {
     badgeEl.textContent = activeUser.display_name ? activeUser.display_name.charAt(0).toUpperCase() : '👤';
-    badgeEl.style.backgroundColor = activeUser.avatar_color || 'var(--busuu-blue)';
+    badgeEl.style.backgroundColor = isViewingPartner ? '#D97706' : (activeUser.avatar_color || 'var(--busuu-blue)');
   }
 
   // Inside dropdown
   const dropName = document.getElementById("dropdown-current-name");
   const dropLevel = document.getElementById("dropdown-current-level");
-  if (dropName) dropName.textContent = activeUser.display_name;
+  if (dropName) {
+    dropName.textContent = isViewingPartner 
+      ? `${activeUser.display_name} (Modo Espectador)` 
+      : activeUser.display_name;
+  }
   if (dropLevel) dropLevel.textContent = `Nivel ${activeUser.preferred_level || 'A1'} · Meta: ${activeUser.words_per_day || 5} palabras/día`;
 
   // Render other group members list
@@ -243,19 +319,24 @@ function renderUserDropdownUI() {
     if (otherUsers.length === 0) {
       usersListEl.innerHTML = `
         <div style="font-size: 0.78rem; color: var(--text-muted); padding: 0.45rem 0.65rem; background: #F8FAFC; border-radius: var(--radius-sm);">
-          No hay otros compañeros en este grupo aún. ¡Usa el botón de abajo para registrar uno!
+          No hay otros compañeros en este grupo aún.
         </div>
       `;
     } else {
-      usersListEl.innerHTML = otherUsers.map(u => `
-        <div class="dropdown-user-item" onclick="selectUserFromDropdown(${u.id})">
-          <div class="dropdown-user-item-left">
-            <span class="dropdown-user-dot" style="background-color: ${u.avatar_color || '#0B72E7'};"></span>
-            <span class="dropdown-user-item-name">${escapeHtml(u.display_name)}</span>
+      usersListEl.innerHTML = otherUsers.map(u => {
+        const isMyAccount = state.authUserId && u.id === state.authUserId;
+        return `
+          <div class="dropdown-user-item" onclick="${isMyAccount ? 'exitReadOnlyMode()' : `viewPartnerAsReadOnly(${u.id})`}">
+            <div class="dropdown-user-item-left">
+              <span class="dropdown-user-dot" style="background-color: ${u.avatar_color || '#0B72E7'};"></span>
+              <span class="dropdown-user-item-name">
+                ${isMyAccount ? `🔙 Mi Cuenta (${escapeHtml(u.display_name)})` : `👁️ ${escapeHtml(u.display_name)}`}
+              </span>
+            </div>
+            <span class="dropdown-user-item-stat">${u.today_completed || 0}/5</span>
           </div>
-          <span class="dropdown-user-item-stat">${u.today_completed || 0}/5</span>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
   }
 }
@@ -276,27 +357,54 @@ document.addEventListener("click", (e) => {
   }
 });
 
-function selectUserFromDropdown(userId) {
-  state.currentUser = userId;
-  localStorage.setItem('duohub_active_user_id', userId);
+function viewPartnerAsReadOnly(partnerId) {
+  state.currentUser = partnerId;
+  state.isReadOnly = (state.currentUser !== state.authUserId);
   
   const menu = document.getElementById("user-dropdown-menu");
   if (menu) menu.style.display = "none";
+
+  state.readingLevelSetByUser = false;
+  state.listeningLevelSetByUser = false;
 
   renderUserDropdownUI();
   fetchStatusAndRefresh();
 }
 
+function exitReadOnlyMode() {
+  if (state.authUserId) {
+    state.currentUser = state.authUserId;
+    state.isReadOnly = false;
+    state.readingLevelSetByUser = false;
+    state.listeningLevelSetByUser = false;
+
+    const menu = document.getElementById("user-dropdown-menu");
+    if (menu) menu.style.display = "none";
+
+    renderUserDropdownUI();
+    fetchStatusAndRefresh();
+  }
+}
+
+function selectUserFromDropdown(userId) {
+  viewPartnerAsReadOnly(userId);
+}
+
 function switchUser(userId) {
-  selectUserFromDropdown(userId);
+  viewPartnerAsReadOnly(userId);
 }
 
 /* --- AUTH MODAL CONTROLLER (LOGIN & REGISTER) --- */
-function openAuthModal(tab = 'login') {
+function openAuthModal(tab = 'login', forced = false) {
   const menu = document.getElementById("user-dropdown-menu");
   if (menu) menu.style.display = "none";
 
   const modal = document.getElementById("auth-modal");
+  const closeBtn = document.getElementById("btn-close-auth-modal");
+  if (closeBtn) {
+    closeBtn.style.display = forced ? "none" : "block";
+  }
+
   if (modal) {
     modal.style.display = "flex";
     switchAuthTab(tab);
@@ -304,6 +412,10 @@ function openAuthModal(tab = 'login') {
 }
 
 function closeAuthModal() {
+  if (!state.authUserId) {
+    alert("Por favor inicia sesión con tu cuenta o regístrate para comenzar a estudiar.");
+    return;
+  }
   const modal = document.getElementById("auth-modal");
   if (modal) modal.style.display = "none";
   
@@ -359,7 +471,11 @@ async function submitLogin() {
     const data = await res.json();
 
     if (data.success && data.user) {
+      state.authUserId = data.user.id;
+      state.authUser = data.user;
       state.currentUser = data.user.id;
+      state.isReadOnly = false;
+      localStorage.setItem('duohub_auth_user', JSON.stringify(data.user));
       localStorage.setItem('duohub_active_user_id', data.user.id);
       closeAuthModal();
       speakEnglish(`Welcome back, ${data.user.display_name}!`, 1.0);
@@ -416,7 +532,11 @@ async function submitRegister() {
     const data = await res.json();
 
     if (data.success && data.user) {
+      state.authUserId = data.user.id;
+      state.authUser = data.user;
       state.currentUser = data.user.id;
+      state.isReadOnly = false;
+      localStorage.setItem('duohub_auth_user', JSON.stringify(data.user));
       localStorage.setItem('duohub_active_user_id', data.user.id);
       closeAuthModal();
       speakEnglish(`Welcome to DuoHub, ${data.user.display_name}!`, 1.0);
@@ -435,6 +555,21 @@ async function submitRegister() {
       errBox.style.display = "block";
     }
   }
+}
+
+async function logoutUser() {
+  localStorage.removeItem('duohub_auth_user');
+  state.authUserId = null;
+  state.authUser = null;
+  state.isReadOnly = false;
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch (e) {}
+
+  const menu = document.getElementById("user-dropdown-menu");
+  if (menu) menu.style.display = "none";
+
+  openAuthModal('login', true);
 }
 
 async function fetchStatusAndRefresh() {
@@ -474,7 +609,12 @@ function updateHeaderUI() {
   // Active user greeting
   const activeName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : 'Estudiante';
   const userLvl = state.preferredLevel || 'A1';
-  document.getElementById("active-user-greeting").textContent = `Entrenando como ${activeName} (${userLvl})`;
+  const greetingEl = document.getElementById("active-user-greeting");
+  if (greetingEl) {
+    greetingEl.textContent = state.isReadOnly 
+      ? `👁️ Viendo progreso de ${activeName} (${userLvl}) · SOLO LECTURA`
+      : `Entrenando como ${activeName} (${userLvl})`;
+  }
 
   // Update tabs label
   const wCount = state.userInfo ? state.userInfo.words_per_day : 5;
@@ -494,6 +634,25 @@ function updateHeaderUI() {
     }
   }
 
+  // Read-Only Inspector Banner Toggle
+  const roBanner = document.getElementById("read-only-banner");
+  if (roBanner) {
+    if (state.isReadOnly) {
+      roBanner.style.display = "block";
+      const partnerName = (state.userInfo && state.userInfo.display_name) ? state.userInfo.display_name : "Compañero";
+      const authName = (state.authUser && state.authUser.display_name) ? state.authUser.display_name : "Mi Cuenta";
+      const pEl = document.getElementById("read-only-partner-name");
+      const aEl = document.getElementById("read-only-auth-user-name");
+      if (pEl) pEl.textContent = partnerName;
+      if (aEl) aEl.textContent = authName;
+    } else {
+      roBanner.style.display = "none";
+    }
+  }
+
+  // Apply visual locks to all interactive elements
+  applyReadOnlyLocks(state.isReadOnly);
+
   // Render User Dropdown Pill
   renderUserDropdownUI();
 
@@ -511,9 +670,75 @@ function updateHeaderUI() {
   updatePillarBadge("speaking", state.todayLog.speaking_done);
 
   // Check for 5/5 celebration
-  if (count === 5 && !sessionStorage.getItem(`celebrated_day_${state.currentDay}_u_${state.currentUser}`)) {
+  if (count === 5 && !state.isReadOnly && !sessionStorage.getItem(`celebrated_day_${state.currentDay}_u_${state.currentUser}`)) {
     sessionStorage.setItem(`celebrated_day_${state.currentDay}_u_${state.currentUser}`, "true");
     showCelebrationModal();
+  }
+}
+
+function applyReadOnlyLocks(isReadOnly) {
+  // Vocabulary
+  const vocabBtn = document.getElementById("btn-complete-vocab");
+  if (vocabBtn) {
+    vocabBtn.disabled = isReadOnly;
+    vocabBtn.title = isReadOnly ? "Modo Solo Lectura: Viendo a tu compañero" : "";
+    vocabBtn.style.opacity = isReadOnly ? "0.45" : "1";
+    vocabBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+  }
+  const practiceInp = document.getElementById("vocab-practice-input");
+  if (practiceInp) practiceInp.disabled = isReadOnly;
+
+  // Reading
+  const evalBtn = document.getElementById("btn-evaluate-reading");
+  if (evalBtn) {
+    evalBtn.disabled = isReadOnly;
+    evalBtn.title = isReadOnly ? "Modo Solo Lectura: Viendo a tu compañero" : "";
+    evalBtn.style.opacity = isReadOnly ? "0.45" : "1";
+    evalBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+  }
+  const summaryInp = document.getElementById("summary-text");
+  if (summaryInp) summaryInp.readOnly = isReadOnly;
+  const transInp = document.getElementById("reading-translation-input");
+  if (transInp) transInp.readOnly = isReadOnly;
+  const transBtn = document.getElementById("btn-eval-translation");
+  if (transBtn) {
+    transBtn.disabled = isReadOnly;
+    transBtn.style.opacity = isReadOnly ? "0.45" : "1";
+    transBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+  }
+
+  // Listening
+  const dictInp = document.getElementById("listening-dictation-input");
+  if (dictInp) dictInp.readOnly = isReadOnly;
+  const verifyBtn = document.getElementById("btn-verify-listening");
+  if (verifyBtn) {
+    verifyBtn.disabled = isReadOnly;
+    verifyBtn.style.opacity = isReadOnly ? "0.45" : "1";
+    verifyBtn.style.cursor = isReadOnly ? "not-allowed" : "pointer";
+  }
+
+  // Shadowing
+  const shadRecBtn = document.getElementById("shadowing-record-btn");
+  if (shadRecBtn) {
+    shadRecBtn.disabled = isReadOnly;
+    shadRecBtn.style.opacity = isReadOnly ? "0.45" : "1";
+  }
+  const shadSaveBtn = document.getElementById("shadowing-save-btn");
+  if (shadSaveBtn) {
+    shadSaveBtn.disabled = isReadOnly;
+    shadSaveBtn.style.opacity = isReadOnly ? "0.45" : "1";
+  }
+
+  // Speaking
+  const spkRecBtn = document.getElementById("speaking-record-btn");
+  if (spkRecBtn) {
+    spkRecBtn.disabled = isReadOnly;
+    spkRecBtn.style.opacity = isReadOnly ? "0.45" : "1";
+  }
+  const spkDoneBtn = document.getElementById("btn-complete-speaking-manual");
+  if (spkDoneBtn) {
+    spkDoneBtn.disabled = isReadOnly;
+    spkDoneBtn.style.opacity = isReadOnly ? "0.45" : "1";
   }
 }
 
@@ -562,33 +787,25 @@ function loadCurrentPillarData() {
   }
 }
 
-/* --- SETTINGS MODAL --- */
+/* --- USER PROFILE SETTINGS MODAL --- */
 function openSettingsModal() {
-  if (state.userInfo) {
-    document.getElementById("setting-display-name").value = state.userInfo.display_name || "";
-    selectWordsPerDay(state.userInfo.words_per_day || 5);
-    selectSelectionMode(state.userInfo.selection_mode || "progressive");
-    selectPreferredLevel(state.userInfo.preferred_level || (state.currentUser === 1 ? 'A1' : 'A2'));
+  if (isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
+  const user = state.usersList.find(u => u.id === state.currentUser) || state.userInfo;
+  if (user) {
+    const nameInput = document.getElementById("setting-display-name");
+    const pinInput = document.getElementById("setting-pin");
+    if (nameInput) nameInput.value = user.display_name || "";
+    if (pinInput) pinInput.value = user.pin || "1234";
+    selectPreferredLevel(user.preferred_level || 'A1');
   }
   document.getElementById("settings-modal").style.display = "flex";
 }
 
 function closeSettingsModal() {
   document.getElementById("settings-modal").style.display = "none";
-}
-
-function selectWordsPerDay(num) {
-  state.selectedWordsPerDay = num;
-  document.querySelectorAll("#setting-words-per-day-pills .pill-opt").forEach(btn => {
-    btn.classList.toggle("active", parseInt(btn.dataset.val) === num);
-  });
-}
-
-function selectSelectionMode(mode) {
-  state.selectedSelectionMode = mode;
-  document.querySelectorAll("#setting-selection-mode-pills .pill-opt").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.val === mode);
-  });
 }
 
 function selectPreferredLevel(lvl) {
@@ -599,28 +816,113 @@ function selectPreferredLevel(lvl) {
 }
 
 async function saveUserSettings() {
+  if (isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
   const newName = (document.getElementById("setting-display-name").value || "").trim();
+  const newPin = (document.getElementById("setting-pin").value || "1234").trim();
+
+  if (!newName) {
+    alert("Por favor ingresa un nombre para tu perfil.");
+    return;
+  }
+
   try {
     const res = await fetch("/api/users/profile", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Auth-User-Id": state.authUserId ? String(state.authUserId) : ""
+      },
       body: JSON.stringify({
         user_id: state.currentUser,
         display_name: newName,
-        words_per_day: state.selectedWordsPerDay,
-        selection_mode: state.selectedSelectionMode,
+        pin: newPin,
         preferred_level: state.selectedPreferredLevel
       })
     });
     const data = await res.json();
     if (data.success) {
       closeSettingsModal();
+      if (state.authUser) {
+        state.authUser.display_name = newName;
+        state.authUser.preferred_level = state.selectedPreferredLevel;
+        localStorage.setItem('duohub_auth_user', JSON.stringify(state.authUser));
+      }
       state.readingLevelSetByUser = false;
       state.listeningLevelSetByUser = false;
       await fetchUsersAndStatus();
+    } else {
+      alert(data.error || "Error al guardar perfil.");
     }
   } catch (err) {
-    console.error("Error saving settings:", err);
+    console.error("Error saving profile settings:", err);
+  }
+}
+
+/* --- VOCABULARY DEDICATED SETTINGS MODAL --- */
+function openVocabSettingsModal() {
+  if (isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
+  const user = state.usersList.find(u => u.id === state.currentUser) || state.userInfo;
+  if (user) {
+    selectVocabWordsPerDay(user.words_per_day || 5);
+    selectVocabSelectionMode(user.selection_mode || "progressive");
+  }
+  document.getElementById("vocab-settings-modal").style.display = "flex";
+}
+
+function closeVocabSettingsModal() {
+  document.getElementById("vocab-settings-modal").style.display = "none";
+}
+
+function selectVocabWordsPerDay(num) {
+  state.selectedWordsPerDay = num;
+  document.querySelectorAll("#vocab-words-per-day-pills .pill-opt").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.val) === num);
+  });
+}
+
+function selectVocabSelectionMode(mode) {
+  state.selectedSelectionMode = mode;
+  document.querySelectorAll("#vocab-selection-mode-pills .pill-opt").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.val === mode);
+  });
+}
+
+async function saveVocabSettings() {
+  if (isReadOnlyMode()) {
+    showReadOnlyToast();
+    return;
+  }
+  try {
+    const res = await fetch("/api/users/profile", {
+      method: "POST",
+      headers: { 
+        "Content-Type": "application/json",
+        "X-Auth-User-Id": state.authUserId ? String(state.authUserId) : ""
+      },
+      body: JSON.stringify({
+        user_id: state.currentUser,
+        words_per_day: state.selectedWordsPerDay,
+        selection_mode: state.selectedSelectionMode
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeVocabSettingsModal();
+      await fetchUsersAndStatus();
+      if (typeof loadVocabData === 'function') {
+        loadVocabData(state.currentDay);
+      }
+    } else {
+      alert(data.error || "Error al guardar configuración de vocabulario.");
+    }
+  } catch (err) {
+    console.error("Error saving vocab settings:", err);
   }
 }
 
