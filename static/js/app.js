@@ -174,6 +174,8 @@ function setDate(dateStr, triggerRefresh = true) {
 
   renderDateDisplay();
 
+  window.currentDayWords = [];
+
   if (typeof invalidatePillarCache === 'function') {
     invalidatePillarCache();
   }
@@ -684,9 +686,7 @@ function updateHeaderUI() {
 
   // Update Pillar checkmarks
   const tLog = state.todayLog || {};
-  const currentWords = window.currentDayWords || [];
-  const hasIncompleteWords = currentWords.length > 0 && currentWords.some(w => (w.user_mastery || 1) < 5);
-  const vocabDone = (tLog.vocab_done === 1) && !hasIncompleteWords;
+  const vocabDone = tLog.vocab_done === 1;
 
   updatePillarBadge("vocab", vocabDone ? 1 : 0);
   updatePillarBadge("reading", tLog.reading_done);

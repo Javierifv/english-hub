@@ -166,18 +166,9 @@
           <h2>Paso 1: Vocabulario Esencial (English Path)</h2>
           <p class="section-desc">Aprende el vocabulario diario, redacta tu oración de contexto y supera el test de conocimiento para consolidar tu nivel de dominio (1 a 5★).</p>
         </div>
-        <div class="panel-header-actions">
-          <button class="btn btn-secondary btn-sm" onclick="openVocabSettingsModal()">
-            ⚙️ Ajustar Cantidad y Modo
-          </button>
-          <div id="vocab-status-pill" class="vocab-status-pill" title="El vocabulario se completa automáticamente al superar la Ronda 1 y Ronda 2 alcanzando 5 estrellas (5★)">
-            <span id="vocab-status-icon">⏳</span>
-            <span id="vocab-status-text">Pendiente: Rondas 1 &amp; 2 (5★)</span>
-          </div>
-        </div>
       </div>
 
-      <!-- Vocab Sub-navigation (Full-width symmetrical grid) -->
+      <!-- Vocab Sub-navigation (Full-width symmetrical grid: 4 columns) -->
       <div class="vocab-subnav">
         <button class="subnav-btn active" id="subnav-cards" onclick="switchVocabView('cards')">
           <span class="subnav-icon">📖</span>
@@ -185,11 +176,15 @@
         </button>
         <button class="subnav-btn" id="subnav-quiz" onclick="switchVocabView('quiz')">
           <span class="subnav-icon">🎯</span>
-          <span class="subnav-label">Test de Conocimiento</span>
+          <span class="subnav-label">Test de Conocimiento (<span id="vocab-quiz-badge">5</span>)</span>
         </button>
         <button class="subnav-btn" id="subnav-srs" onclick="switchVocabView('srs')">
           <span class="subnav-icon">🧠</span>
-          <span class="subnav-label">Banco de Repaso</span>
+          <span class="subnav-label">Banco de Repaso (<span id="vocab-srs-badge">0</span>)</span>
+        </button>
+        <button class="subnav-btn" id="subnav-settings" onclick="openVocabSettingsModal()">
+          <span class="subnav-icon">⚙️</span>
+          <span class="subnav-label">Configuración</span>
         </button>
       </div>
 

@@ -43,28 +43,50 @@ function renderMasteryStars(lvl) {
   }).join("");
 }
 
-function updateVocabStatusPill(words) {
-  const pill = document.getElementById("vocab-status-pill");
-  const icon = document.getElementById("vocab-status-icon");
-  const text = document.getElementById("vocab-status-text");
-  if (!pill || !text) return;
-
+async function updateVocabSubnavBadges(words) {
   const list = words || currentDayWords || [];
-  const fiveStars = list.filter(w => (w.user_mastery || 1) >= 5).length;
   const total = list.length || 5;
-  const isDone = Boolean(state.todayLog && state.todayLog.vocab_done === 1 && fiveStars >= total && total > 0);
+  const fiveStars = list.filter(w => (w.user_mastery || 1) >= 5).length;
+  const pendingTest = Math.max(0, total - fiveStars);
 
-  if (isDone) {
-    pill.classList.add("completed");
-    if (icon) icon.textContent = "✓";
-    text.textContent = `Dominio Total (5★) · ${fiveStars}/${total} Palabras`;
-    pill.title = "¡Vocabulario completado! Has alcanzado 5 estrellas en todas las palabras del día superando las Rondas 1 y 2.";
-  } else {
-    pill.classList.remove("completed");
-    if (icon) icon.textContent = "⏳";
-    text.textContent = `Rondas 1 & 2: ${fiveStars}/${total} en 5★`;
-    pill.title = "Supera la Ronda 1 y Ronda 2 alcanzando 5 estrellas (5★) en todas las palabras para marcar automáticamente este pilar.";
+  // 1. Badge for Palabras del Día
+  const countBadge = document.getElementById("vocab-count-badge");
+  if (countBadge) countBadge.textContent = total;
+
+  // 2. Badge for Test de Conocimiento
+  const quizBadge = document.getElementById("vocab-quiz-badge");
+  if (quizBadge) {
+    if (pendingTest === 0 && total > 0) {
+      quizBadge.textContent = "✓";
+      quizBadge.className = "subnav-badge completed";
+      quizBadge.title = "Todas las palabras del día dominadas al 100% (5★)";
+    } else {
+      quizBadge.textContent = pendingTest;
+      quizBadge.className = "subnav-badge pending";
+      quizBadge.title = `${pendingTest} palabras pendientes de evaluar o dominar`;
+    }
   }
+
+  // 3. Badge for Banco de Repaso (due SRS words)
+  const srsBadge = document.getElementById("vocab-srs-badge");
+  if (srsBadge) {
+    try {
+      if (window.srsStatsData && window.srsStatsData.stats) {
+        srsBadge.textContent = window.srsStatsData.stats.needs_review || 0;
+      } else {
+        const res = await fetch(`/api/vocab/srs?user_id=${state.currentUser}`);
+        const sData = await res.json();
+        window.srsStatsData = sData;
+        srsBadge.textContent = sData.stats?.needs_review || 0;
+      }
+    } catch (e) {
+      srsBadge.textContent = 0;
+    }
+  }
+}
+
+function updateVocabStatusPill(words) {
+  updateVocabSubnavBadges(words);
 }
 
 async function loadVocabData(day, forceRefresh = false) {
@@ -98,21 +120,22 @@ function renderVocabCardsGrid(words, container) {
 
   if (!words || words.length === 0) {
     container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
-    updateVocabStatusPill([]);
+    updateVocabSubnavBadges([]);
     return;
   }
 
-  // Update count badge
-  const badge = document.getElementById("vocab-count-badge");
-  if (badge) badge.textContent = words.length;
-
   container.innerHTML = words.map(w => renderVocabCard(w)).join("");
 
-  updateVocabStatusPill(words);
+  updateVocabSubnavBadges(words);
 
-  // Safeguard: if words are not all 5 stars, prevent false positive in header
+  // Synchronize pillar checkmark accurately
   const fiveStars = words.filter(w => (w.user_mastery || 1) >= 5).length;
-  if (fiveStars < words.length && state.todayLog && state.todayLog.vocab_done === 1) {
+  const isMastered = fiveStars >= words.length && words.length > 0;
+  if (isMastered && state.todayLog && state.todayLog.vocab_done === 1) {
+    if (typeof updatePillarBadge === 'function') {
+      updatePillarBadge('vocab', 1);
+    }
+  } else if (!isMastered && state.todayLog && state.todayLog.vocab_done === 1) {
     state.todayLog.vocab_done = 0;
     if (typeof updatePillarBadge === 'function') {
       updatePillarBadge('vocab', 0);
@@ -139,7 +162,10 @@ function renderVocabCard(w) {
       <div class="vocab-card-header">
         <div>
           <div class="vocab-word-title">${escapeHtml(w.word)}</div>
-          <div class="vocab-ipa">${w.ipa || ''}</div>
+          <div class="vocab-ipa-row">
+            <span class="vocab-ipa">${w.ipa || ''}</span>
+            <span class="vocab-stars-inline" title="Dominio: ${lvl}/5★">${renderMasteryStars(lvl)}</span>
+          </div>
         </div>
         <button class="btn-speak-word" onclick="speakEnglish('${escapeQuotes(w.word)}', 0.9)" title="Escuchar pronunciación nativa">
           🔊
@@ -152,24 +178,6 @@ function renderVocabCard(w) {
       <div class="vocab-example-box">
         <div class="vocab-example-en">"${escapeHtml(w.example_en || '')}"</div>
         <div class="vocab-example-es">${escapeHtml(w.example_es || '')}</div>
-      </div>
-
-      <!-- Automated Mastery Display (Calibrated 1 to 5) -->
-      <div class="mastery-system-box" title="Calificación calculada automáticamente por el sistema tras rendir los Tests de Conocimiento">
-        <div class="mastery-title-row">
-          <span class="mastery-system-label">
-            <span class="tobo-tag">Retención</span> Nivel:
-          </span>
-          <span class="mastery-badge badge-lvl-${lvl}">
-            ${getMasteryBadge(lvl)}
-          </span>
-        </div>
-        <div class="mastery-stars-bar">
-          ${renderMasteryStars(lvl)}
-        </div>
-        <div class="mastery-system-hint">
-          ${getMasteryHint(lvl)}
-        </div>
       </div>
 
       <!-- Personal Sentence & Partner Quote -->

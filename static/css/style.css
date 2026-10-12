@@ -761,9 +761,11 @@ body {
 }
 
 .section-desc {
-  font-size: 0.92rem;
-  color: var(--text-muted);
-  margin-top: 0.2rem;
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: #334155;
+  line-height: 1.55;
+  margin-top: 0.35rem;
 }
 
 /* =========================================================
@@ -959,8 +961,8 @@ body.read-only-mode .target-word-item {
    ========================================================= */
 .vocab-subnav {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.85rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
   width: 100%;
   margin-bottom: 1.5rem;
   border-bottom: 1.5px solid var(--border-subtle);
@@ -976,18 +978,18 @@ body.read-only-mode .target-word-item {
   background: #FFFFFF;
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.85rem;
   color: var(--text-muted);
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: var(--transition-fast);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .subnav-btn .subnav-icon {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   line-height: 1;
 }
 
@@ -995,6 +997,46 @@ body.read-only-mode .target-word-item {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.subnav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border-radius: 999px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  line-height: 1;
+}
+
+.subnav-badge.pending {
+  background: #EFF6FF;
+  color: var(--busuu-blue);
+  border: 1px solid #BFDBFE;
+}
+
+.subnav-btn.active .subnav-badge.pending {
+  background: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.subnav-badge.completed {
+  background: #ECFDF5;
+  color: #059669;
+  border: 1px solid #A7F3D0;
+}
+
+.subnav-btn.active .subnav-badge.completed {
+  background: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .subnav-btn:hover {
@@ -1011,22 +1053,30 @@ body.read-only-mode .target-word-item {
   box-shadow: 0 3px 0 var(--busuu-blue-shadow);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 960px) {
+  .vocab-subnav {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 520px) {
   .vocab-subnav {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
   .subnav-btn {
-    padding: 0.65rem 0.85rem;
-    font-size: 0.88rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
   }
 }
 
-/* Vocab Grid & Cards */
+/* Vocab Grid & Compact Equal-Height Cards */
 .vocab-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 1.35rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.15rem;
+  align-items: stretch;
   margin-bottom: 1.5rem;
 }
 
@@ -1034,9 +1084,11 @@ body.read-only-mode .target-word-item {
   background: #FFFFFF;
   border: 1.5px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  padding: 1.35rem;
+  padding: 1.15rem;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
   transition: var(--transition-fast);
   box-shadow: var(--shadow-card);
   box-sizing: border-box;
@@ -1054,20 +1106,45 @@ body.read-only-mode .target-word-item {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 0.6rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .vocab-word-title {
   font-family: var(--font-heading);
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: #0F172A;
+  line-height: 1.2;
+}
+
+.vocab-ipa-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+  flex-wrap: wrap;
 }
 
 .vocab-ipa {
   font-family: var(--font-mono);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--busuu-blue);
+}
+
+.vocab-stars-inline {
+  display: inline-flex;
+  gap: 0.15rem;
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.vocab-stars-inline .mastery-star-filled {
+  color: #F59E0B;
+}
+
+.vocab-stars-inline .mastery-star-empty {
+  color: #CBD5E1;
 }
 
 .btn-speak-word {
