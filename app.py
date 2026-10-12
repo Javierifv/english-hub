@@ -6,6 +6,7 @@ import random
 import urllib.request
 from datetime import datetime, date, timedelta
 from flask import Flask, render_template, request, jsonify, send_from_directory, session
+import gzip
 from database import get_db, init_db
 
 # Load environment variables from .env
@@ -23,6 +24,32 @@ load_env()
 
 app = Flask(__name__)
 app.secret_key = "duohub-english-training-key"
+
+@app.after_request
+def add_performance_headers(response):
+    # Static assets cache headers (1 day for css/js/images)
+    if request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=86400"
+
+    # Skip compression on direct passthrough responses (like audio streaming or file sends)
+    if getattr(response, "direct_passthrough", False):
+        return response
+
+    # Enable gzip compression for API responses larger than 1KB if client supports it
+    accept_encoding = request.headers.get("Accept-Encoding", "")
+    if (
+        "gzip" in accept_encoding
+        and response.status_code < 300
+        and not response.headers.get("Content-Encoding")
+    ):
+        data = response.get_data()
+        if len(data) > 1024:
+            response.set_data(gzip.compress(data))
+            response.headers["Content-Encoding"] = "gzip"
+            response.headers["Content-Length"] = len(response.get_data())
+            response.headers["Vary"] = "Accept-Encoding"
+
+    return response
 
 # Ensure DB initialized
 init_db()

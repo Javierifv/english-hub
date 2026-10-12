@@ -6,8 +6,12 @@ from datetime import datetime
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "duohub.db")
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=20.0)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA cache_size = -64000")  # 64MB cache
+    conn.execute("PRAGMA temp_store = MEMORY")
     return conn
 
 def init_db():
@@ -275,6 +279,15 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level) VALUES ('javier', 'Javier Flores', '#0B72E7', 5, 'progressive', '1234', 'A1')")
+
+    # High-Performance Query Indexes
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs (user_id, date)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_word_prog_lookup ON user_word_progress (user_id, word_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_word_prog_lvl ON user_word_progress (user_id, mastery_level)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocabulary_day ON vocabulary (day_number)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_readings_day_lvl ON readings (day_number, level)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_reading_prog ON user_reading_progress (user_id, reading_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_listening_day ON listening_shadowing (day_number)")
 
     conn.commit()
     seed_initial_curriculum(conn)

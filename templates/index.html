@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <title>EnglishHub — English Mastery Hub</title>
-  <!-- Google Fonts: Outfit & Inter -->
+  <!-- Google Fonts: Outfit & Inter optimized -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#0B72E7">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -164,7 +164,7 @@
       <div class="panel-header">
         <div>
           <h2>Paso 1: Vocabulario Esencial (English Path)</h2>
-          <p class="section-desc">Aprende el vocabulario diario, redacta tu oración de contexto y supera los Tests de Dominio (Ronda 1 y 2) para subir automáticamente tu nivel de retención Tobo (1 a 5).</p>
+          <p class="section-desc">Aprende el vocabulario diario, redacta tu oración de contexto y supera el test de conocimiento para consolidar tu nivel de dominio (1 a 5★).</p>
         </div>
         <div class="panel-header-actions">
           <button class="btn btn-secondary btn-sm" onclick="openVocabSettingsModal()">
@@ -177,16 +177,19 @@
         </div>
       </div>
 
-      <!-- Vocab Sub-navigation (Cards vs Quiz vs SRS) -->
+      <!-- Vocab Sub-navigation (Full-width symmetrical grid) -->
       <div class="vocab-subnav">
         <button class="subnav-btn active" id="subnav-cards" onclick="switchVocabView('cards')">
-          🗂️ Tarjetas del Día (<span id="vocab-count-badge">5</span>)
+          <span class="subnav-icon">📖</span>
+          <span class="subnav-label">Palabras del Día (<span id="vocab-count-badge">5</span>)</span>
         </button>
         <button class="subnav-btn" id="subnav-quiz" onclick="switchVocabView('quiz')">
-          🎮 Test de Dominio (Rondas 1 &amp; 2)
+          <span class="subnav-icon">🎯</span>
+          <span class="subnav-label">Test de Conocimiento</span>
         </button>
         <button class="subnav-btn" id="subnav-srs" onclick="switchVocabView('srs')">
-          🧠 Banco de Repaso Espaciado (SRS)
+          <span class="subnav-icon">🧠</span>
+          <span class="subnav-label">Banco de Repaso</span>
         </button>
       </div>
 
@@ -943,43 +946,46 @@
             <div id="auth-quick-list" class="auth-quick-grid"></div>
           </div>
 
-          <div class="form-group">
-            <label>Nombre de Usuario:</label>
-            <input type="text" id="login-username" class="form-control" placeholder="ej. javier, alessandro..." onkeydown="if(event.key==='Enter') submitLogin()">
-          </div>
+          <form id="login-form" autocomplete="off" onsubmit="event.preventDefault(); submitLogin();">
+            <div class="form-group">
+              <label for="login-username">Nombre de Usuario:</label>
+              <input type="text" id="login-username" name="login_username" class="form-control" placeholder="ej. javier, alessandro..." autocomplete="off">
+            </div>
 
-          <div class="form-group">
-            <label>PIN de Acceso / Contraseña (por defecto 1234):</label>
-            <input type="password" id="login-pin" class="form-control" placeholder="1234" value="1234" onkeydown="if(event.key==='Enter') submitLogin()">
-          </div>
+            <div class="form-group">
+              <label for="login-pin">PIN de Acceso (por defecto 1234):</label>
+              <input type="password" id="login-pin" name="login_pin" class="form-control" placeholder="PIN de 4 dígitos" autocomplete="current-password">
+            </div>
 
-          <div id="login-error-msg" class="auth-error-alert" style="display: none;"></div>
+            <div id="login-error-msg" class="auth-error-alert" style="display: none;"></div>
 
-          <div style="margin-top: 1.25rem;">
-            <button type="button" class="btn btn-primary btn-block" onclick="submitLogin()">
-              🚀 Ingresar a Mi Panel
-            </button>
-          </div>
+            <div style="margin-top: 1.25rem;">
+              <button type="submit" class="btn btn-primary btn-block">
+                🚀 Ingresar a Mi Panel
+              </button>
+            </div>
+          </form>
         </div>
 
         <!-- REGISTER VIEW -->
         <div id="auth-view-register" class="auth-subview" style="display: none;">
           <p class="auth-subtitle">Crea tu cuenta individual para unirte al grupo de estudio con tus propias metas.</p>
 
-          <div class="form-group">
-            <label>Nombre Completo:</label>
-            <input type="text" id="reg-fullname" class="form-control" placeholder="ej. Carlos Gómez, María Valenzuela...">
-          </div>
+          <form id="reg-form" autocomplete="off" onsubmit="event.preventDefault(); submitRegister();">
+            <div class="form-group">
+              <label for="reg-fullname">Nombre Completo:</label>
+              <input type="text" id="reg-fullname" name="reg_fullname" class="form-control" placeholder="ej. Carlos Gómez, María Valenzuela..." autocomplete="off">
+            </div>
 
-          <div class="form-group">
-            <label>Nombre de Usuario (sin espacios):</label>
-            <input type="text" id="reg-username" class="form-control" placeholder="ej. carlos, maria_v...">
-          </div>
+            <div class="form-group">
+              <label for="reg-username">Nombre de Usuario (sin espacios):</label>
+              <input type="text" id="reg-username" name="reg_username" class="form-control" placeholder="ej. carlos, maria_v..." autocomplete="off">
+            </div>
 
-          <div class="form-group">
-            <label>PIN de 4 dígitos o Contraseña:</label>
-            <input type="password" id="reg-pin" class="form-control" placeholder="1234" value="1234">
-          </div>
+            <div class="form-group">
+              <label for="reg-pin">PIN de 4 dígitos o Contraseña:</label>
+              <input type="password" id="reg-pin" name="reg_pin" class="form-control" placeholder="PIN de 4 dígitos" autocomplete="new-password">
+            </div>
 
           <div class="form-row" style="display: flex; gap: 0.75rem;">
             <div class="form-group" style="flex: 1;">
@@ -1005,10 +1011,11 @@
           <div id="register-error-msg" class="auth-error-alert" style="display: none;"></div>
 
           <div style="margin-top: 1.25rem;">
-            <button type="button" class="btn btn-success btn-block" onclick="submitRegister()">
+            <button type="submit" class="btn btn-success btn-block">
               🎉 Crear Cuenta y Empezar a Estudiar
             </button>
           </div>
+        </form>
         </div>
       </div>
     </div>
@@ -1025,12 +1032,12 @@
       <div class="settings-form">
         <div class="form-group">
           <label>Tu Nombre de Perfil:</label>
-          <input type="text" id="setting-display-name" class="form-control" placeholder="Tu nombre">
+          <input type="text" id="setting-display-name" class="form-control" placeholder="Tu nombre" autocomplete="off">
         </div>
 
         <div class="form-group">
-          <label>PIN de Acceso / Contraseña (4 dígitos):</label>
-          <input type="password" id="setting-pin" class="form-control" placeholder="1234" maxlength="10">
+          <label>PIN de Acceso (4 dígitos):</label>
+          <input type="password" id="setting-pin" class="form-control" placeholder="PIN de 4 dígitos" maxlength="10" autocomplete="new-password">
           <small style="color: var(--text-muted); font-size: 0.76rem; display: block; margin-top: 0.25rem;">Usa este PIN para iniciar sesión de forma protegida en tu cuenta personal.</small>
         </div>
 
@@ -1125,12 +1132,12 @@
     </div>
   </div>
 
-  <!-- Scripts -->
-  <script src="/static/js/app.js?v=2.6"></script>
-  <script src="/static/js/vocab.js?v=2.6"></script>
-  <script src="/static/js/reading.js?v=2.6"></script>
-  <script src="/static/js/listening.js?v=2.6"></script>
-  <script src="/static/js/shadowing.js?v=2.6"></script>
-  <script src="/static/js/speaking.js?v=2.6"></script>
+  <!-- Scripts (Deferred for instant HTML rendering) -->
+  <script src="/static/js/app.js?v=2.8" defer></script>
+  <script src="/static/js/vocab.js?v=2.8" defer></script>
+  <script src="/static/js/reading.js?v=2.8" defer></script>
+  <script src="/static/js/listening.js?v=2.8" defer></script>
+  <script src="/static/js/shadowing.js?v=2.8" defer></script>
+  <script src="/static/js/speaking.js?v=2.8" defer></script>
 </body>
 </html>

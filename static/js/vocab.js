@@ -3,11 +3,16 @@
  */
 
 let currentDayWords = [];
+let vocabCache = {}; // key: `${userId}_${day}`
 let currentQuizRound = 1;
 let quizQuestions = [];
 let currentQuizIdx = 0;
 let quizScore = 0;
 let quizWordResults = {}; // { [wordId]: boolean }
+
+function clearVocabCache() {
+  vocabCache = {};
+}
 
 function getMasteryBadge(lvl) {
   switch (lvl) {
@@ -62,44 +67,60 @@ function updateVocabStatusPill(words) {
   }
 }
 
-async function loadVocabData(day) {
+async function loadVocabData(day, forceRefresh = false) {
   const container = document.getElementById("vocab-cards-grid");
+  const cacheKey = `${state.currentUser}_${day}`;
+
+  if (!forceRefresh && vocabCache[cacheKey]) {
+    const cachedWords = vocabCache[cacheKey];
+    currentDayWords = cachedWords;
+    window.currentDayWords = cachedWords;
+    renderVocabCardsGrid(cachedWords, container);
+    return;
+  }
+
   try {
     const res = await fetch(`/api/vocab?day=${day}&user_id=${state.currentUser}`);
     const words = await res.json();
+    vocabCache[cacheKey] = words;
     currentDayWords = words;
     window.currentDayWords = words;
-
-    if (!words || words.length === 0) {
-      container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
-      updateVocabStatusPill([]);
-      return;
-    }
-
-    // Update count badge
-    const badge = document.getElementById("vocab-count-badge");
-    if (badge) badge.textContent = words.length;
-
-    container.innerHTML = words.map(w => renderVocabCard(w)).join("");
-
-    updateVocabStatusPill(words);
-
-    // Safeguard: if words are not all 5 stars, prevent false positive in header
-    const fiveStars = words.filter(w => (w.user_mastery || 1) >= 5).length;
-    if (fiveStars < words.length && state.todayLog && state.todayLog.vocab_done === 1) {
-      state.todayLog.vocab_done = 0;
-      if (typeof updatePillarBadge === 'function') {
-        updatePillarBadge('vocab', 0);
-      }
-    }
-
-    if (typeof applyReadOnlyLocks === 'function') {
-      applyReadOnlyLocks(state.isReadOnly);
-    }
-
+    renderVocabCardsGrid(words, container);
   } catch (err) {
     console.error("Error loading vocab:", err);
     container.innerHTML = `<div class="error-state">Error al cargar vocabulario.</div>`;
+  }
+}
+
+function renderVocabCardsGrid(words, container) {
+  if (!container) container = document.getElementById("vocab-cards-grid");
+  if (!container) return;
+
+  if (!words || words.length === 0) {
+    container.innerHTML = `<div class="empty-state">No hay palabras disponibles para esta fecha.</div>`;
+    updateVocabStatusPill([]);
+    return;
+  }
+
+  // Update count badge
+  const badge = document.getElementById("vocab-count-badge");
+  if (badge) badge.textContent = words.length;
+
+  container.innerHTML = words.map(w => renderVocabCard(w)).join("");
+
+  updateVocabStatusPill(words);
+
+  // Safeguard: if words are not all 5 stars, prevent false positive in header
+  const fiveStars = words.filter(w => (w.user_mastery || 1) >= 5).length;
+  if (fiveStars < words.length && state.todayLog && state.todayLog.vocab_done === 1) {
+    state.todayLog.vocab_done = 0;
+    if (typeof updatePillarBadge === 'function') {
+      updatePillarBadge('vocab', 0);
+    }
+  }
+
+  if (typeof applyReadOnlyLocks === 'function') {
+    applyReadOnlyLocks(state.isReadOnly);
   }
 }
 
@@ -133,11 +154,11 @@ function renderVocabCard(w) {
         <div class="vocab-example-es">${escapeHtml(w.example_es || '')}</div>
       </div>
 
-      <!-- Automated Tobo Mastery (System Calibrated 1 to 5) -->
-      <div class="mastery-system-box" title="Calificación calculada automáticamente por el sistema tras rendir los Tests de Dominio">
+      <!-- Automated Mastery Display (Calibrated 1 to 5) -->
+      <div class="mastery-system-box" title="Calificación calculada automáticamente por el sistema tras rendir los Tests de Conocimiento">
         <div class="mastery-title-row">
           <span class="mastery-system-label">
-            <span class="tobo-tag">TOBO SRS</span> Retención:
+            <span class="tobo-tag">Retención</span> Nivel:
           </span>
           <span class="mastery-badge badge-lvl-${lvl}">
             ${getMasteryBadge(lvl)}
@@ -456,9 +477,10 @@ function initSpellingKeyboardPuzzle(q) {
 
       <!-- Typing Display / Input Box (Accessible for physical keyboard & virtual keyboard) -->
       <div class="spelling-input-box-wrap">
-        <input type="text" id="spelling-active-input" class="spelling-input-field" 
+        <input type="text" id="spelling-active-input" name="spelling_answer" class="spelling-input-field" 
                placeholder="Escribe la traducción aquí..." 
                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+               data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                onkeydown="handleSpellingInputKeydown(event)">
       </div>
 
@@ -670,6 +692,7 @@ async function finishQuiz() {
   }
 
   // Refresh status & badges across the app
+  clearVocabCache();
   if (typeof fetchStatusAndRefresh === "function") {
     await fetchStatusAndRefresh();
   }
@@ -687,7 +710,7 @@ async function finishQuiz() {
         Obtuviste <strong>${quizScore}</strong> de <strong>${total}</strong> aciertos. Has alcanzado <strong>Nivel 3/5</strong> en ${wordLabelText}.
       </div>
       <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin: 1.25rem auto 0; max-width: 520px; color: #1E40AF; font-size: 0.88rem; text-align: left; line-height: 1.45;">
-        💡 <strong>Sistema Tobo SRS:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong> y completar este pilar, rinde la <strong>Ronda 2</strong> (deletreo activo y traducción).
+        💡 <strong>Sistema de Aprendizaje Activo:</strong> Has superado el test de reconocimiento inicial. Para desbloquear el <strong>Nivel 5/5 (Dominio Total 🏆)</strong> y completar este pilar, rinde la <strong>Ronda 2</strong> (deletreo activo y traducción).
       </div>
     `;
 

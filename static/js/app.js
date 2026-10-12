@@ -174,6 +174,10 @@ function setDate(dateStr, triggerRefresh = true) {
 
   renderDateDisplay();
 
+  if (typeof invalidatePillarCache === 'function') {
+    invalidatePillarCache();
+  }
+
   if (triggerRefresh) {
     fetchStatusAndRefresh();
   }
@@ -367,6 +371,10 @@ function viewPartnerAsReadOnly(partnerId) {
   state.readingLevelSetByUser = false;
   state.listeningLevelSetByUser = false;
 
+  if (typeof invalidatePillarCache === 'function') {
+    invalidatePillarCache();
+  }
+
   renderUserDropdownUI();
   fetchStatusAndRefresh();
 }
@@ -380,6 +388,10 @@ function exitReadOnlyMode() {
 
     const menu = document.getElementById("user-dropdown-menu");
     if (menu) menu.style.display = "none";
+
+    if (typeof invalidatePillarCache === 'function') {
+      invalidatePillarCache();
+    }
 
     renderUserDropdownUI();
     fetchStatusAndRefresh();
@@ -769,13 +781,30 @@ function showPillar(tabName) {
     panel.classList.toggle("active", panel.id === `panel-${tabName}`);
   });
   loadCurrentPillarData();
-  setTimeout(() => applyReadOnlyLocks(state.isReadOnly), 50);
+  setTimeout(() => applyReadOnlyLocks(state.isReadOnly), 20);
 }
 
-function loadCurrentPillarData() {
+const loadedPillarsMap = {};
+
+function invalidatePillarCache(pillarName) {
+  if (pillarName) {
+    delete loadedPillarsMap[pillarName];
+  } else {
+    for (let k in loadedPillarsMap) delete loadedPillarsMap[k];
+  }
+}
+
+function loadCurrentPillarData(force = false) {
+  const cacheKey = `${state.currentUser}_${state.currentDay}`;
+  if (!force && loadedPillarsMap[state.activeTab] === cacheKey) {
+    // Already populated for this user & day: instantaneous 0ms display
+    return;
+  }
+  loadedPillarsMap[state.activeTab] = cacheKey;
+
   switch (state.activeTab) {
     case 'vocab':
-      loadVocabData(state.currentDay);
+      loadVocabData(state.currentDay, force);
       break;
     case 'reading':
       loadReadingData(state.currentDay);
