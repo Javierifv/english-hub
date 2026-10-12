@@ -131,14 +131,47 @@ function renderVocabCardsGrid(words, container) {
   // Synchronize pillar checkmark accurately
   const fiveStars = words.filter(w => (w.user_mastery || 1) >= 5).length;
   const isMastered = fiveStars >= words.length && words.length > 0;
-  if (isMastered && state.todayLog && state.todayLog.vocab_done === 1) {
+  if (isMastered) {
     if (typeof updatePillarBadge === 'function') {
       updatePillarBadge('vocab', 1);
     }
-  } else if (!isMastered && state.todayLog && state.todayLog.vocab_done === 1) {
-    state.todayLog.vocab_done = 0;
+    if (state.todayLog && state.todayLog.vocab_done !== 1) {
+      state.todayLog.vocab_done = 1;
+      const count = [
+        state.todayLog.vocab_done || 0,
+        state.todayLog.reading_done || 0,
+        state.todayLog.listening_done || 0,
+        state.todayLog.shadowing_done || 0,
+        state.todayLog.speaking_done || 0
+      ].reduce((a, b) => a + b, 0);
+      state.todayLog.completed_count = count;
+      const pb = document.getElementById("daily-progress-bar");
+      if (pb) pb.style.width = `${Math.round((count / 5) * 100)}%`;
+      const pt = document.getElementById("daily-progress-text");
+      if (pt) pt.textContent = `${count}/5 Completado`;
+      const headerStats = document.getElementById("header-user-stats");
+      if (headerStats) headerStats.textContent = `${count}/5`;
+    }
+  } else {
     if (typeof updatePillarBadge === 'function') {
       updatePillarBadge('vocab', 0);
+    }
+    if (state.todayLog && state.todayLog.vocab_done === 1) {
+      state.todayLog.vocab_done = 0;
+      const count = [
+        state.todayLog.vocab_done || 0,
+        state.todayLog.reading_done || 0,
+        state.todayLog.listening_done || 0,
+        state.todayLog.shadowing_done || 0,
+        state.todayLog.speaking_done || 0
+      ].reduce((a, b) => a + b, 0);
+      state.todayLog.completed_count = count;
+      const pb = document.getElementById("daily-progress-bar");
+      if (pb) pb.style.width = `${Math.round((count / 5) * 100)}%`;
+      const pt = document.getElementById("daily-progress-text");
+      if (pt) pt.textContent = `${count}/5 Completado`;
+      const headerStats = document.getElementById("header-user-stats");
+      if (headerStats) headerStats.textContent = `${count}/5`;
     }
   }
 
@@ -752,6 +785,12 @@ async function finishQuiz() {
 
     if (isMastered) {
       speakEnglish("Vocabulary fully mastered! Five stars achieved.", 1.0);
+      if (typeof updatePillarBadge === 'function') {
+        updatePillarBadge('vocab', 1);
+      }
+      if (state.todayLog) {
+        state.todayLog.vocab_done = 1;
+      }
     }
 
     promptBox.innerHTML = `

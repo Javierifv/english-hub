@@ -27,9 +27,11 @@ app.secret_key = "duohub-english-training-key"
 
 @app.after_request
 def add_performance_headers(response):
-    # Static assets cache headers (1 day for css/js/images)
+    # Ensure static assets and app pages always revalidate so design & logic updates apply instantly
     if request.path.startswith("/static/"):
-        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    elif request.path == "/" or request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
 
     # Skip compression on direct passthrough responses (like audio streaming or file sends)
     if getattr(response, "direct_passthrough", False):
@@ -433,17 +435,19 @@ def get_status():
         log = cursor.fetchone()
 
     # Reconcile vocab_done with actual word mastery (must have 5 stars in all of the day's words)
-    actual_mastered = is_vocab_fully_mastered(cursor, user_id, log["day_number"])
+    target_day = day_number if day_number is not None else (log["day_number"] if log else 1)
+    actual_mastered = is_vocab_fully_mastered(cursor, user_id, target_day)
     current_vocab_done = log["vocab_done"] or 0
     expected_vocab_done = 1 if actual_mastered else 0
 
-    if current_vocab_done != expected_vocab_done:
+    if current_vocab_done != expected_vocab_done or log["day_number"] != target_day:
         cursor.execute("""
             UPDATE daily_logs 
             SET vocab_done = ?,
+                day_number = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE user_id = ? AND date = ?
-        """, (expected_vocab_done, user_id, today_str))
+        """, (expected_vocab_done, target_day, user_id, today_str))
 
         cursor.execute("""
             SELECT vocab_done, reading_done, listening_done, shadowing_done, speaking_done 
