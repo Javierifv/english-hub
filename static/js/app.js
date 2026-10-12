@@ -960,53 +960,7 @@ async function saveVocabSettings() {
   }
 }
 
-/* --- PARTNER SUMMARY READ-ONLY MODAL --- */
-function openPartnerSummaryModal() {
-  const modal = document.getElementById("partner-summary-modal");
-  const title = document.getElementById("partner-summary-modal-title");
-  const body = document.getElementById("partner-summary-modal-body");
-
-  const partnerName = state.partnerStatus ? state.partnerStatus.name : "Compañero";
-  title.textContent = `Resumen Escrito de ${partnerName}`;
-
-  if (!state.partnerStatus || !state.partnerStatus.tasks || !state.partnerStatus.tasks.reading_summary) {
-    body.innerHTML = `
-      <div class="empty-state" style="text-align: center; padding: 2rem;">
-        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">⏳</span>
-        <strong style="color: #FFF; font-size: 1.1rem;">Tu compañero aún no ha completado el resumen de hoy.</strong>
-        <p style="color: var(--text-muted); margin-top: 0.5rem;">Cuando guarde y evalúe su texto con IA, podrás leer su redacción y ver sus correcciones aquí.</p>
-      </div>
-    `;
-  } else {
-    const pTasks = state.partnerStatus.tasks;
-    let feedbackHtml = "";
-    if (pTasks.reading_feedback) {
-      try {
-        const fb = JSON.parse(pTasks.reading_feedback);
-        feedbackHtml = `
-          <div style="margin-top: 1.25rem; background: rgba(0,0,0,0.3); border-radius: var(--radius-sm); padding: 1rem; border: 1px solid var(--border-subtle);">
-            <strong style="color: #38BDF8; font-size: 0.88rem;">Feedback de Gemini para ${partnerName}:</strong>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.35rem;">Nivel estimado: <span class="badge badge-accent">${fb.estimated_cefr || 'B1'}</span></p>
-            <p style="color: #FEF08A; font-size: 0.85rem; margin-top: 0.5rem; font-style: italic;">"${fb.native_phrasing_tip || ''}"</p>
-          </div>
-        `;
-      } catch (e) {}
-    }
-
-    body.innerHTML = `
-      <div style="background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 1.25rem; border: 1px solid var(--border-subtle);">
-        <p style="font-size: 1rem; line-height: 1.7; color: #F1F5F9; white-space: pre-wrap;">${pTasks.reading_summary}</p>
-      </div>
-      ${feedbackHtml}
-    `;
-  }
-
-  modal.style.display = "flex";
-}
-
-function closePartnerSummaryModal() {
-  document.getElementById("partner-summary-modal").style.display = "none";
-}
+/* --- CELEBRATION MODAL --- */
 
 function showCelebrationModal() {
   document.getElementById("celebration-modal").style.display = "flex";

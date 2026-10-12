@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="EnglishHub">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=3.2">
+  <link rel="stylesheet" href="/static/css/style.css?v=3.4">
 </head>
 <body>
 
@@ -288,9 +288,6 @@
           <h2>Paso 2: Reading, Translation & Summary</h2>
           <p class="section-desc">Lee con atención durante 15 minutos. Graduado por nivel MCER con resaltador interactivo y evaluación profunda con IA.</p>
         </div>
-        <button class="btn btn-secondary btn-sm" id="btn-view-partner-summary" onclick="openPartnerSummaryModal()">
-          👥 Ver Resumen de Mi Compañero
-        </button>
       </div>
 
       <!-- Reading CEFR Level & Chapter Navigator Toolbar -->
@@ -638,9 +635,6 @@
           <p class="section-desc">
             Técnica del Prof. Argüelles: Escucha el mismo audio de tu lección de Listening y habla al unísono como un eco, imitando ritmo, entonación y acento nativo.
           </p>
-        </div>
-        <div class="shadowing-active-track-tag">
-          <span class="pulse-indicator">●</span> Audio Activo: <strong id="shadowing-active-track-name">Cargando pista...</strong>
         </div>
       </div>
 
@@ -1104,19 +1098,6 @@
     </div>
   </div>
 
-  <!-- Partner Summary Modal (Read-Only Preview) -->
-  <div id="partner-summary-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-card modal-large">
-      <div class="modal-header-row">
-        <h3 id="partner-summary-modal-title">Resumen de Mi Compañero</h3>
-        <button class="btn-close-modal" onclick="closePartnerSummaryModal()">✕</button>
-      </div>
-      <div id="partner-summary-modal-body" class="partner-summary-content">
-        <!-- Injected by JS -->
-      </div>
-    </div>
-  </div>
-
   <!-- Celebration Modal (When 5/5 tasks completed) -->
   <div id="celebration-modal" class="modal-overlay" style="display: none;">
     <div class="modal-card">
@@ -1128,11 +1109,11 @@
   </div>
 
   <!-- Scripts (Deferred for instant HTML rendering) -->
-  <script src="/static/js/app.js?v=3.2" defer></script>
-  <script src="/static/js/vocab.js?v=3.2" defer></script>
-  <script src="/static/js/reading.js?v=3.2" defer></script>
-  <script src="/static/js/listening.js?v=3.2" defer></script>
-  <script src="/static/js/shadowing.js?v=3.2" defer></script>
-  <script src="/static/js/speaking.js?v=3.2" defer></script>
+  <script src="/static/js/app.js?v=3.4" defer></script>
+  <script src="/static/js/vocab.js?v=3.4" defer></script>
+  <script src="/static/js/reading.js?v=3.4" defer></script>
+  <script src="/static/js/listening.js?v=3.4" defer></script>
+  <script src="/static/js/shadowing.js?v=3.4" defer></script>
+  <script src="/static/js/speaking.js?v=3.4" defer></script>
 </body>
 </html>

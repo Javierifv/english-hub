@@ -76,15 +76,20 @@ async function loadShadowingData(day) {
     currentShadowingClip = clip;
 
     if (clip.error) {
-      document.getElementById("shadowing-active-track-name").textContent = "Sin pista activa";
-      document.getElementById("shadowing-track-title").textContent = "Selecciona una pista en Listening";
+      const activeTag = document.getElementById("shadowing-active-track-name");
+      if (activeTag) activeTag.textContent = "Sin pista activa";
+      const trackTitle = document.getElementById("shadowing-track-title");
+      if (trackTitle) trackTitle.textContent = "Selecciona una pista en Listening";
       return;
     }
 
     // 2. Update track badges and title
-    document.getElementById("shadowing-active-track-name").textContent = `${clip.title} (${clip.level})`;
-    document.getElementById("shadowing-track-title").textContent = clip.title;
-    document.getElementById("shadowing-level-badge").textContent = `${clip.level} Level`;
+    const activeTag = document.getElementById("shadowing-active-track-name");
+    if (activeTag) activeTag.textContent = `${clip.title} (${clip.level})`;
+    const trackTitle = document.getElementById("shadowing-track-title");
+    if (trackTitle) trackTitle.textContent = clip.title;
+    const lvlBadge = document.getElementById("shadowing-level-badge");
+    if (lvlBadge) lvlBadge.textContent = `${clip.level} Level`;
 
     // 3. Set up Master Model Audio Player & Scrubber
     const masterAudio = document.getElementById("shadowing-master-audio");
