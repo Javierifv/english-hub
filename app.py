@@ -5,7 +5,7 @@ import sqlite3
 import random
 import urllib.request
 from datetime import datetime, date, timedelta
-from flask import Flask, render_template, request, jsonify, send_from_directory, session
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, g
 import gzip
 from database import get_db, init_db
 
@@ -25,6 +25,17 @@ load_env()
 app = Flask(__name__)
 app.secret_key = "duohub-english-training-key"
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
+
+@app.teardown_appcontext
+def teardown_db(exception=None):
+    conn_wrap = getattr(g, "_pg_db_conn", None)
+    if conn_wrap is not None:
+        if exception:
+            try:
+                conn_wrap.rollback()
+            except Exception:
+                pass
+        conn_wrap.release()
 
 @app.after_request
 def add_performance_headers(response):
@@ -178,16 +189,17 @@ def call_gemini_api(prompt_text, response_mime_type="application/json", audio_by
 
     return None
 
-def calculate_streak(user_id, today_str):
-    conn = get_db()
-    cursor = conn.cursor()
+def calculate_streak(user_id, today_str, cursor=None):
+    if cursor is None:
+        conn = get_db()
+        cursor = conn.cursor()
+
     cursor.execute("""
         SELECT date, completed_count FROM daily_logs
         WHERE user_id = ? AND completed_count >= 3
         ORDER BY date DESC
     """, (user_id,))
     rows = cursor.fetchall()
-    conn.close()
 
     if not rows:
         return 0
@@ -379,11 +391,29 @@ def update_profile():
     conn.close()
     return jsonify({"success": True})
 
-def get_day_word_ids(cursor, user_id, day_number):
-    cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
-    u_row = cursor.fetchone()
-    count = u_row["words_per_day"] if u_row else 5
-    mode = u_row["selection_mode"] if u_row else "progressive"
+_VOCAB_STATS_CACHE = None
+_DAY_WORD_IDS_CACHE = {}
+
+def get_vocab_stats(cursor):
+    global _VOCAB_STATS_CACHE
+    if _VOCAB_STATS_CACHE is None:
+        row = cursor.execute("SELECT COUNT(*), MAX(day_number) FROM vocabulary").fetchone()
+        _VOCAB_STATS_CACHE = (row[0] if row else 792, row[1] if row else 100)
+    return _VOCAB_STATS_CACHE
+
+def get_day_word_ids(cursor, user_id, day_number, user_row=None):
+    cache_key = (user_id, day_number)
+    if cache_key in _DAY_WORD_IDS_CACHE:
+        return _DAY_WORD_IDS_CACHE[cache_key]
+
+    if user_row:
+        count = user_row.get("words_per_day", 5)
+        mode = user_row.get("selection_mode", "progressive")
+    else:
+        cursor.execute("SELECT words_per_day, selection_mode FROM users WHERE id = ?", (user_id,))
+        u_row = cursor.fetchone()
+        count = u_row["words_per_day"] if u_row else 5
+        mode = u_row["selection_mode"] if u_row else "progressive"
 
     if mode == "random":
         offset_seed = (day_number * 37) % 500
@@ -402,10 +432,12 @@ def get_day_word_ids(cursor, user_id, day_number):
         """
         rows = cursor.execute(words_query, (count, offset)).fetchall()
 
-    return [r["id"] for r in rows]
+    word_ids = [r["id"] for r in rows]
+    _DAY_WORD_IDS_CACHE[cache_key] = word_ids
+    return word_ids
 
-def is_vocab_fully_mastered(cursor, user_id, day_number):
-    target_ids = get_day_word_ids(cursor, user_id, day_number)
+def is_vocab_fully_mastered(cursor, user_id, day_number, user_row=None):
+    target_ids = get_day_word_ids(cursor, user_id, day_number, user_row=user_row)
     if not target_ids:
         return False
     placeholders = ",".join("?" for _ in target_ids)
@@ -413,7 +445,8 @@ def is_vocab_fully_mastered(cursor, user_id, day_number):
         SELECT COUNT(*) FROM user_word_progress 
         WHERE user_id = ? AND word_id IN ({placeholders}) AND mastery_level >= 5
     """, [user_id] + target_ids)
-    mastered_count = cursor.fetchone()[0]
+    row = cursor.fetchone()
+    mastered_count = row[0] if row else 0
     return mastered_count >= len(target_ids)
 
 @app.route("/api/status", methods=["GET"])
@@ -444,7 +477,7 @@ def get_status():
 
     # Reconcile vocab_done with actual word mastery (must have 5 stars in all of the day's words)
     target_day = day_number if day_number is not None else (log["day_number"] if log else 1)
-    actual_mastered = is_vocab_fully_mastered(cursor, user_id, target_day)
+    actual_mastered = is_vocab_fully_mastered(cursor, user_id, target_day, user_row=active_user)
     current_vocab_done = log["vocab_done"] or 0
     expected_vocab_done = 1 if actual_mastered else 0
 
@@ -510,11 +543,10 @@ def get_status():
             }
         }
 
-    streak = calculate_streak(user_id, today_str)
+    streak = calculate_streak(user_id, today_str, cursor=cursor)
 
-    # Get total vocabulary count & max days
-    cursor.execute("SELECT COUNT(*), MAX(day_number) FROM vocabulary")
-    total_words, max_days = cursor.fetchone()
+    # Get total vocabulary count & max days from cache
+    total_words, max_days = get_vocab_stats(cursor)
 
     conn.close()
     return jsonify({
@@ -578,22 +610,28 @@ def get_vocab():
         words = cursor.execute(words_query, (count, offset)).fetchall()
 
     results = []
-    for w in words:
-        w_dict = dict(w)
-        # Fetch current user mastery and custom sentence
-        cursor.execute("SELECT mastery_level, personal_sentence, review_count FROM user_word_progress WHERE user_id = ? AND word_id = ?", (user_id, w["id"]))
-        u_prog = cursor.fetchone()
-        w_dict["user_mastery"] = u_prog["mastery_level"] if u_prog else 1
-        w_dict["user_sentence"] = u_prog["personal_sentence"] if u_prog else ""
-        w_dict["review_count"] = u_prog["review_count"] if u_prog else 0
+    if words:
+        word_ids = [w["id"] for w in words]
+        w_placeholders = ",".join("?" for _ in word_ids)
+        prog_rows = cursor.execute(f"""
+            SELECT user_id, word_id, mastery_level, personal_sentence, review_count 
+            FROM user_word_progress 
+            WHERE user_id IN (?, ?) AND word_id IN ({w_placeholders})
+        """, [user_id, partner_id] + word_ids).fetchall()
 
-        # Fetch partner's custom sentence
-        cursor.execute("SELECT personal_sentence FROM user_word_progress WHERE user_id = ? AND word_id = ?", (partner_id, w["id"]))
-        p_prog = cursor.fetchone()
-        w_dict["partner_sentence"] = p_prog["personal_sentence"] if p_prog and p_prog["personal_sentence"] else ""
-        w_dict["partner_name"] = partner_name
+        prog_map = {(r["user_id"], r["word_id"]): r for r in prog_rows}
 
-        results.append(w_dict)
+        for w in words:
+            w_dict = dict(w)
+            u_prog = prog_map.get((user_id, w["id"]))
+            p_prog = prog_map.get((partner_id, w["id"]))
+
+            w_dict["user_mastery"] = u_prog["mastery_level"] if u_prog else 1
+            w_dict["user_sentence"] = u_prog["personal_sentence"] if u_prog else ""
+            w_dict["review_count"] = u_prog["review_count"] if u_prog else 0
+            w_dict["partner_sentence"] = p_prog["personal_sentence"] if p_prog and p_prog["personal_sentence"] else ""
+            w_dict["partner_name"] = partner_name
+            results.append(w_dict)
 
     conn.close()
     return jsonify(results)
@@ -901,18 +939,6 @@ def get_srs_stats():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT 
-            COUNT(*) as total_studied,
-            SUM(CASE WHEN p.mastery_level = 5 THEN 1 ELSE 0 END) as mastered,
-            SUM(CASE WHEN p.mastery_level IN (3, 4) THEN 1 ELSE 0 END) as in_progress,
-            SUM(CASE WHEN p.mastery_level IN (1, 2) THEN 1 ELSE 0 END) as needs_review
-        FROM user_word_progress p
-        JOIN vocabulary v ON p.word_id = v.id
-        WHERE p.user_id = ?
-    """, (user_id,))
-    stats = dict(cursor.fetchone() or {})
-
-    cursor.execute("""
         SELECT v.id, v.word, v.translation, v.example_en, v.example_es, v.ipa, v.category,
                p.mastery_level, p.personal_sentence, p.review_count, p.last_reviewed_at
         FROM user_word_progress p
@@ -921,15 +947,20 @@ def get_srs_stats():
         ORDER BY p.mastery_level ASC, p.last_reviewed_at DESC, v.word ASC
     """, (user_id,))
     all_studied = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    total_studied = len(all_studied)
+    mastered = sum(1 for w in all_studied if (w.get("mastery_level") or 1) >= 5)
+    in_progress = sum(1 for w in all_studied if (w.get("mastery_level") or 1) in (3, 4))
+    needs_review = sum(1 for w in all_studied if (w.get("mastery_level") or 1) in (1, 2))
     review_queue = [w for w in all_studied if (w.get("mastery_level") or 1) < 5]
 
-    conn.close()
     return jsonify({
         "stats": {
-            "total_studied": stats.get("total_studied") or 0,
-            "mastered": stats.get("mastered") or 0,
-            "in_progress": stats.get("in_progress") or 0,
-            "needs_review": stats.get("needs_review") or 0
+            "total_studied": total_studied,
+            "mastered": mastered,
+            "in_progress": in_progress,
+            "needs_review": needs_review
         },
         "all_studied": all_studied,
         "review_queue": review_queue
@@ -968,6 +999,45 @@ def complete_vocab():
     conn.close()
     return jsonify({"success": True})
 
+_READING_LEVELS_CACHE = None
+_READINGS_CACHE = None
+
+def get_all_readings(cursor):
+    global _READINGS_CACHE
+    if _READINGS_CACHE is None:
+        rows = cursor.execute("SELECT * FROM readings ORDER BY id ASC").fetchall()
+        _READINGS_CACHE = [dict(r) for r in rows]
+    return _READINGS_CACHE
+
+def find_reading(cursor, reading_id=None, level=None, day_number=None, chapter_num=None):
+    readings = get_all_readings(cursor)
+    if reading_id:
+        for r in readings:
+            if r["id"] == reading_id:
+                return r
+    filtered = readings
+    if level and level != "all":
+        filtered = [r for r in filtered if r.get("level") == level]
+    target_day = chapter_num or day_number
+    if target_day:
+        for r in filtered:
+            if r.get("day_number") == target_day:
+                return r
+    if filtered:
+        return filtered[0]
+    return readings[0] if readings else None
+
+def get_reading_levels(cursor):
+    global _READING_LEVELS_CACHE
+    if _READING_LEVELS_CACHE is None:
+        readings = get_all_readings(cursor)
+        counts = {}
+        for r in readings:
+            lvl = r.get("level", "B1")
+            counts[lvl] = counts.get(lvl, 0) + 1
+        _READING_LEVELS_CACHE = [{"level": k, "count": counts[k]} for k in sorted(counts.keys())]
+    return _READING_LEVELS_CACHE
+
 # --- API: Module 2 - Reading & Summary Evaluator with Gemini AI ---
 
 @app.route("/api/reading", methods=["GET"])
@@ -981,36 +1051,8 @@ def get_reading():
     conn = get_db()
     cursor = conn.cursor()
 
-    query = "SELECT * FROM readings WHERE 1=1"
-    params = []
-
-    if reading_id:
-        query += " AND id = ?"
-        params.append(reading_id)
-    else:
-        if level and level != "all":
-            query += " AND level = ?"
-            params.append(level)
-        if chapter_num:
-            query += " AND day_number = ?"
-            params.append(chapter_num)
-        elif day_number:
-            query += " AND day_number = ?"
-            params.append(day_number)
-
-    query += " ORDER BY id ASC LIMIT 1"
-    reading = cursor.execute(query, params).fetchone()
-
-    # Fallback if specific chapter not found for that level
-    if not reading and level and level != "all":
-        reading = cursor.execute("SELECT * FROM readings WHERE level = ? ORDER BY id ASC LIMIT 1", (level,)).fetchone()
-
-    if not reading:
-        reading = cursor.execute("SELECT * FROM readings ORDER BY id ASC LIMIT 1").fetchone()
-
-    # Get level breakdown
-    level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM readings GROUP BY level ORDER BY level ASC").fetchall()
-    levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
+    reading = find_reading(cursor, reading_id, level, day_number, chapter_num)
+    levels_summary = get_reading_levels(cursor)
 
     # Check user reading progress
     user_prog = None
@@ -1355,6 +1397,44 @@ Return a valid JSON object with this EXACT structure:
 
 # --- API: Module 3 - Listening & Dictation Diff ---
 
+_LISTENING_LEVELS_CACHE = None
+_LISTENING_CACHE = None
+
+def get_all_listening(cursor):
+    global _LISTENING_CACHE
+    if _LISTENING_CACHE is None:
+        rows = cursor.execute("SELECT * FROM listening_shadowing ORDER BY id ASC").fetchall()
+        _LISTENING_CACHE = [dict(r) for r in rows]
+    return _LISTENING_CACHE
+
+def find_listening(cursor, clip_id=None, level=None, day_number=None):
+    clips = get_all_listening(cursor)
+    if clip_id:
+        for c in clips:
+            if c["id"] == clip_id:
+                return c
+    filtered = clips
+    if level and level != "all":
+        filtered = [c for c in filtered if c.get("level") == level]
+    if day_number:
+        for c in filtered:
+            if c.get("day_number") == day_number:
+                return c
+    if filtered:
+        return filtered[0]
+    return clips[0] if clips else None
+
+def get_listening_levels(cursor):
+    global _LISTENING_LEVELS_CACHE
+    if _LISTENING_LEVELS_CACHE is None:
+        clips = get_all_listening(cursor)
+        counts = {}
+        for c in clips:
+            lvl = c.get("level", "A1")
+            counts[lvl] = counts.get(lvl, 0) + 1
+        _LISTENING_LEVELS_CACHE = [{"level": k, "count": counts[k]} for k in sorted(counts.keys())]
+    return _LISTENING_LEVELS_CACHE
+
 @app.route("/api/listening", methods=["GET"])
 def get_listening():
     clip_id = request.args.get("id", type=int)
@@ -1365,31 +1445,8 @@ def get_listening():
     conn = get_db()
     cursor = conn.cursor()
 
-    query = "SELECT * FROM listening_shadowing WHERE 1=1"
-    params = []
-
-    if clip_id:
-        query += " AND id = ?"
-        params.append(clip_id)
-    else:
-        if level and level != "all":
-            query += " AND level = ?"
-            params.append(level)
-        if day_number:
-            query += " AND day_number = ?"
-            params.append(day_number)
-
-    query += " ORDER BY id ASC LIMIT 1"
-    clip = cursor.execute(query, params).fetchone()
-
-    if not clip and level and level != "all":
-        clip = cursor.execute("SELECT * FROM listening_shadowing WHERE level = ? ORDER BY id ASC LIMIT 1", (level,)).fetchone()
-
-    if not clip:
-        clip = cursor.execute("SELECT * FROM listening_shadowing ORDER BY id ASC LIMIT 1").fetchone()
-
-    level_counts = cursor.execute("SELECT level, COUNT(*) as count FROM listening_shadowing GROUP BY level ORDER BY level ASC").fetchall()
-    levels_summary = [{"level": lc["level"], "count": lc["count"]} for lc in level_counts]
+    clip = find_listening(cursor, clip_id, level, day_number)
+    levels_summary = get_listening_levels(cursor)
 
     # Check user listening progress for this clip
     user_prog = None

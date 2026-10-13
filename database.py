@@ -35,7 +35,21 @@ def convert_placeholders(sql):
 
 if DATABASE_URL:
     import psycopg2
+    import psycopg2.pool
     from psycopg2.extras import DictCursor
+
+    _pg_pool = None
+
+    def _get_pg_pool():
+        global _pg_pool
+        if _pg_pool is None:
+            _pg_pool = psycopg2.pool.ThreadedConnectionPool(
+                minconn=2,
+                maxconn=10,
+                dsn=DATABASE_URL,
+                sslmode="require"
+            )
+        return _pg_pool
 
     class PostgresCursorWrapper:
         def __init__(self, cur):
@@ -79,14 +93,19 @@ if DATABASE_URL:
             return self._cur.description
 
         def close(self):
-            return self._cur.close()
+            try:
+                return self._cur.close()
+            except Exception:
+                pass
 
         def __iter__(self):
             return iter(self._cur)
 
     class PostgresConnectionWrapper:
-        def __init__(self, conn):
+        def __init__(self, conn, pool=None):
             self._conn = conn
+            self._pool = pool
+            self._released = False
             self.row_factory = None
 
         def cursor(self):
@@ -98,17 +117,86 @@ if DATABASE_URL:
             return cur
 
         def commit(self):
-            return self._conn.commit()
+            if not self._released and self._conn and self._conn.closed == 0:
+                return self._conn.commit()
 
         def rollback(self):
-            return self._conn.rollback()
+            if not self._released and self._conn and self._conn.closed == 0:
+                return self._conn.rollback()
 
         def close(self):
-            return self._conn.close()
+            # If inside Flask request context, commit transaction and keep connection alive
+            # for subsequent helpers in this request. It will be released back to the pool on teardown.
+            try:
+                from flask import has_request_context
+                if has_request_context():
+                    self.commit()
+                    return
+            except Exception:
+                pass
+            self.release()
+
+        def release(self):
+            if self._released:
+                return
+            self._released = True
+            if self._conn and self._conn.closed == 0:
+                try:
+                    self._conn.commit()
+                except Exception:
+                    try:
+                        self._conn.rollback()
+                    except Exception:
+                        pass
+                if self._pool:
+                    try:
+                        self._pool.putconn(self._conn)
+                        return
+                    except Exception:
+                        pass
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
 
     def get_db():
-        raw_conn = psycopg2.connect(DATABASE_URL, sslmode="require")
-        return PostgresConnectionWrapper(raw_conn)
+        try:
+            from flask import g, has_request_context
+            if has_request_context():
+                conn_wrap = getattr(g, "_pg_db_conn", None)
+                if conn_wrap is not None and not conn_wrap._released:
+                    return conn_wrap
+        except Exception:
+            pass
+
+        pool = _get_pg_pool()
+        raw_conn = None
+        for _ in range(2):
+            try:
+                raw_conn = pool.getconn()
+                if raw_conn.closed != 0:
+                    try:
+                        pool.putconn(raw_conn, close=True)
+                    except Exception:
+                        pass
+                    raw_conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+                break
+            except Exception:
+                pass
+
+        if raw_conn is None:
+            raw_conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+
+        wrapper = PostgresConnectionWrapper(raw_conn, pool=pool)
+
+        try:
+            from flask import g, has_request_context
+            if has_request_context():
+                g._pg_db_conn = wrapper
+        except Exception:
+            pass
+
+        return wrapper
 
     def init_postgres(conn):
         cursor = conn.cursor()
