@@ -5,6 +5,8 @@
  * Features: Pure Audition Mode (collapsible transcript), Master Audio Scrubber, Live Mic VU Meter.
  */
 
+let shadowingTracksList = [];
+let currentShadowingTrackIndex = 0;
 let currentShadowingClip = null;
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -25,6 +27,118 @@ function formatShadowingTime(seconds) {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = Math.floor(seconds % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
+}
+
+function shadowingRewind(seconds) {
+  const masterAudio = document.getElementById("shadowing-master-audio");
+  if (masterAudio) {
+    masterAudio.currentTime = Math.max(0, masterAudio.currentTime - (seconds || 5));
+    const slider = document.getElementById("shadowing-audio-slider");
+    if (slider) slider.value = masterAudio.currentTime;
+    const curTime = document.getElementById("shadowing-time-current");
+    if (curTime) curTime.textContent = formatShadowingTime(masterAudio.currentTime);
+  }
+}
+
+function shadowingForward(seconds) {
+  const masterAudio = document.getElementById("shadowing-master-audio");
+  if (masterAudio) {
+    masterAudio.currentTime = Math.min(masterAudio.duration || 9999, masterAudio.currentTime + (seconds || 5));
+    const slider = document.getElementById("shadowing-audio-slider");
+    if (slider) slider.value = masterAudio.currentTime;
+    const curTime = document.getElementById("shadowing-time-current");
+    if (curTime) curTime.textContent = formatShadowingTime(masterAudio.currentTime);
+  }
+}
+
+function updateShadowingLevelPills(lvl) {
+  const btnMap = {
+    'A1': 'shadowing-level-btn-a1',
+    'A2': 'shadowing-level-btn-a2',
+    'B1': 'shadowing-level-btn-b1',
+    'B2': 'shadowing-level-btn-b2',
+    'C1': 'shadowing-level-btn-c1',
+    'all': 'shadowing-level-btn-all'
+  };
+  document.querySelectorAll("[id^='shadowing-level-btn-']").forEach(b => b.classList.remove("active"));
+  const activeBtn = document.getElementById(btnMap[lvl] || 'shadowing-level-btn-all');
+  if (activeBtn) activeBtn.classList.add("active");
+}
+
+async function selectShadowingLevel(lvl) {
+  state.listeningLevel = lvl;
+  updateShadowingLevelPills(lvl);
+
+  try {
+    const listRes = await fetch(`/api/listening/list?level=${lvl}&user_id=${state.currentUser}`);
+    shadowingTracksList = await listRes.json();
+
+    const select = document.getElementById("shadowing-track-select");
+    if (select && shadowingTracksList.length > 0) {
+      select.innerHTML = shadowingTracksList.map((t) => {
+        const prefix = t.is_completed ? '✅ ' : '🎧 ';
+        return `<option value="${t.id}">${prefix}${t.title}</option>`;
+      }).join("");
+
+      // Check if user had a saved track ID
+      const savedTrackId = parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
+      const foundIdx = shadowingTracksList.findIndex(t => t.id === savedTrackId);
+
+      if (foundIdx !== -1) {
+        currentShadowingTrackIndex = foundIdx;
+        select.value = savedTrackId;
+      } else {
+        currentShadowingTrackIndex = 0;
+        select.value = shadowingTracksList[0].id;
+      }
+
+      await loadShadowingById(select.value);
+    }
+  } catch (err) {
+    console.error("Error loading shadowing track list:", err);
+  }
+}
+
+async function onShadowingTrackDropdownChange(clipId) {
+  const cId = parseInt(clipId);
+  localStorage.setItem('duohub_listening_id_u' + state.currentUser, cId);
+  if (shadowingTracksList.length > 0) {
+    const idx = shadowingTracksList.findIndex(t => t.id === cId);
+    if (idx !== -1) currentShadowingTrackIndex = idx;
+  }
+  if (typeof invalidatePillarCache === "function") {
+    invalidatePillarCache('listening');
+  }
+  await loadShadowingById(cId);
+
+  // Sync with Listening dropdown if present
+  const listeningSelect = document.getElementById("listening-track-select");
+  if (listeningSelect && Array.from(listeningSelect.options).some(o => o.value == cId)) {
+    listeningSelect.value = cId;
+  }
+}
+
+async function navShadowingTrack(direction) {
+  if (!shadowingTracksList || shadowingTracksList.length === 0) return;
+  currentShadowingTrackIndex += direction;
+  if (currentShadowingTrackIndex < 0) currentShadowingTrackIndex = shadowingTracksList.length - 1;
+  if (currentShadowingTrackIndex >= shadowingTracksList.length) currentShadowingTrackIndex = 0;
+
+  const targetClip = shadowingTracksList[currentShadowingTrackIndex];
+  const select = document.getElementById("shadowing-track-select");
+  if (select) select.value = targetClip.id;
+
+  localStorage.setItem('duohub_listening_id_u' + state.currentUser, targetClip.id);
+  if (typeof invalidatePillarCache === "function") {
+    invalidatePillarCache('listening');
+  }
+  await loadShadowingById(targetClip.id);
+
+  // Sync with Listening dropdown
+  const listeningSelect = document.getElementById("listening-track-select");
+  if (listeningSelect && Array.from(listeningSelect.options).some(o => o.value == targetClip.id)) {
+    listeningSelect.value = targetClip.id;
+  }
 }
 
 function onShadowingSliderSeek(val) {
@@ -61,37 +175,30 @@ function toggleShadowingTranscript() {
   }
 }
 
-async function loadShadowingData(day) {
+async function loadShadowingById(clipId) {
   try {
-    // 1. Identify active listening track
-    let clipId = (currentListeningClip && currentListeningClip.id) 
-      ? currentListeningClip.id 
-      : parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
-
-    const lvl = state.listeningLevel || (state.currentUser === 1 ? 'A1' : 'A2');
-    const url = clipId ? `/api/listening?id=${clipId}&user_id=${state.currentUser}` : `/api/listening?level=${lvl}&user_id=${state.currentUser}`;
-    
-    const res = await fetch(url);
+    const res = await fetch(`/api/listening?id=${clipId}&user_id=${state.currentUser}`);
     const clip = await res.json();
     currentShadowingClip = clip;
 
     if (clip.error) {
-      const activeTag = document.getElementById("shadowing-active-track-name");
-      if (activeTag) activeTag.textContent = "Sin pista activa";
       const trackTitle = document.getElementById("shadowing-track-title");
-      if (trackTitle) trackTitle.textContent = "Selecciona una pista en Listening";
+      if (trackTitle) trackTitle.textContent = "Clip no disponible";
       return;
     }
 
-    // 2. Update track badges and title
-    const activeTag = document.getElementById("shadowing-active-track-name");
-    if (activeTag) activeTag.textContent = `${clip.title} (${clip.level})`;
+    // Update track badges and title
     const trackTitle = document.getElementById("shadowing-track-title");
     if (trackTitle) trackTitle.textContent = clip.title;
     const lvlBadge = document.getElementById("shadowing-level-badge");
     if (lvlBadge) lvlBadge.textContent = `${clip.level} Level`;
 
-    // 3. Set up Master Model Audio Player & Scrubber
+    const select = document.getElementById("shadowing-track-select");
+    if (select && select.value != clip.id) {
+      select.value = clip.id;
+    }
+
+    // Set up Master Model Audio Player & Scrubber
     const masterAudio = document.getElementById("shadowing-master-audio");
     const slider = document.getElementById("shadowing-audio-slider");
     const curTime = document.getElementById("shadowing-time-current");
@@ -137,10 +244,10 @@ async function loadShadowingData(day) {
       }
     }
 
-    // 4. Render Complete Transcript (Hidden by default for pure ear training)
+    // Render Complete Transcript
     renderShadowingTranscript(clip.transcript);
 
-    // 5. Check if user already completed shadowing for THIS track
+    // Check if user already completed shadowing for this track
     if (clip.shadowing_progress && clip.shadowing_progress.is_completed) {
       const sp = clip.shadowing_progress;
       const recDot = document.getElementById("rec-status-dot");
@@ -173,6 +280,20 @@ async function loadShadowingData(day) {
     }
   } catch (err) {
     console.error("Error loading shadowing track data:", err);
+  }
+}
+
+async function loadShadowingData(day) {
+  const lvl = state.listeningLevel || (state.currentUser === 1 ? 'A1' : 'A2');
+  if (!shadowingTracksList || shadowingTracksList.length === 0) {
+    await selectShadowingLevel(lvl);
+  } else {
+    updateShadowingLevelPills(lvl);
+    const savedTrackId = parseInt(localStorage.getItem('duohub_listening_id_u' + state.currentUser));
+    const targetId = savedTrackId || (currentShadowingClip ? currentShadowingClip.id : shadowingTracksList[0].id);
+    const select = document.getElementById("shadowing-track-select");
+    if (select) select.value = targetId;
+    await loadShadowingById(targetId);
   }
 }
 
@@ -556,3 +677,8 @@ window.toggleRecording = toggleRecording;
 window.auditShadowingWithAI = auditShadowingWithAI;
 window.markShadowingDone = markShadowingDone;
 window.loadShadowingData = loadShadowingData;
+window.selectShadowingLevel = selectShadowingLevel;
+window.onShadowingTrackDropdownChange = onShadowingTrackDropdownChange;
+window.navShadowingTrack = navShadowingTrack;
+window.shadowingRewind = shadowingRewind;
+window.shadowingForward = shadowingForward;

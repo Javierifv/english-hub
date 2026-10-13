@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="EnglishHub">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=3.4">
+  <link rel="stylesheet" href="/static/css/style.css?v=3.6">
 </head>
 <body>
 
@@ -638,6 +638,38 @@
         </div>
       </div>
 
+      <!-- Shadowing CEFR Level & Track Navigator Toolbar -->
+      <div class="shadowing-toolbar listening-toolbar">
+        <div class="track-nav-group">
+          <button class="btn btn-secondary btn-sm" onclick="navShadowingTrack(-1)" title="Pista Anterior">◀ Anterior</button>
+          <select id="shadowing-track-select" class="chapter-dropdown" onchange="onShadowingTrackDropdownChange(this.value)">
+            <!-- Tracks populated by JS -->
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="navShadowingTrack(1)" title="Siguiente Pista">Siguiente ▶</button>
+        </div>
+        <div class="level-pills-group">
+          <span class="toolbar-label">Nivel:</span>
+          <button type="button" class="level-pill-btn active pill-a1" id="shadowing-level-btn-a1" onclick="selectShadowingLevel('A1')">
+            🟢 A1
+          </button>
+          <button type="button" class="level-pill-btn" id="shadowing-level-btn-a2" onclick="selectShadowingLevel('A2')">
+            🔵 A2
+          </button>
+          <button type="button" class="level-pill-btn" id="shadowing-level-btn-b1" onclick="selectShadowingLevel('B1')">
+            📘 B1
+          </button>
+          <button type="button" class="level-pill-btn" id="shadowing-level-btn-b2" onclick="selectShadowingLevel('B2')">
+            📙 B2
+          </button>
+          <button type="button" class="level-pill-btn" id="shadowing-level-btn-c1" onclick="selectShadowingLevel('C1')">
+            🟣 C1
+          </button>
+          <button type="button" class="level-pill-btn" id="shadowing-level-btn-all" onclick="selectShadowingLevel('all')">
+            🌐 Todos (60)
+          </button>
+        </div>
+      </div>
+
       <div class="shadowing-dual-layout">
         <!-- Left: Audio Player & Complete Synchronized Transcript -->
         <div class="card shadowing-audio-card">
@@ -646,16 +678,15 @@
               <span id="shadowing-level-badge" class="badge badge-accent">A1 Level</span>
               <h3 id="shadowing-track-title">Pista de Listening</h3>
             </div>
-            <button class="btn btn-sm btn-outline" onclick="showPillar('listening')" title="Ir a Listening para cambiar de pista">
-              🎧 Cambiar Pista
-            </button>
           </div>
 
           <!-- Master Model Audio Player -->
           <div class="shadowing-player-bar">
             <audio id="shadowing-master-audio" preload="auto"></audio>
             <div class="audio-controls-row">
+              <button class="btn btn-secondary btn-icon" onclick="shadowingRewind(5)" title="Retroceder 5 segundos">⏪ -5s</button>
               <button id="btn-play-shadowing-model" class="btn btn-primary btn-icon-lg" onclick="togglePlayShadowingModel()">▶ Escuchar Audio Modelo</button>
+              <button class="btn btn-secondary btn-icon" onclick="shadowingForward(5)" title="Adelantar 5 segundos">⏩ +5s</button>
 
               <!-- Timeline & Slider Scrubber for Shadowing -->
               <div class="audio-timeline-wrap">
@@ -1109,11 +1140,11 @@
   </div>
 
   <!-- Scripts (Deferred for instant HTML rendering) -->
-  <script src="/static/js/app.js?v=3.5" defer></script>
-  <script src="/static/js/vocab.js?v=3.5" defer></script>
-  <script src="/static/js/reading.js?v=3.5" defer></script>
-  <script src="/static/js/listening.js?v=3.5" defer></script>
-  <script src="/static/js/shadowing.js?v=3.5" defer></script>
-  <script src="/static/js/speaking.js?v=3.5" defer></script>
+  <script src="/static/js/app.js?v=3.6" defer></script>
+  <script src="/static/js/vocab.js?v=3.6" defer></script>
+  <script src="/static/js/reading.js?v=3.6" defer></script>
+  <script src="/static/js/listening.js?v=3.6" defer></script>
+  <script src="/static/js/shadowing.js?v=3.6" defer></script>
+  <script src="/static/js/speaking.js?v=3.6" defer></script>
 </body>
 </html>

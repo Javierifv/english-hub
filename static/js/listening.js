@@ -203,6 +203,15 @@ async function loadListeningById(clipId) {
     document.getElementById("listening-title").textContent = clip.title;
     document.getElementById("listening-level").textContent = `${clip.level} Level`;
 
+    localStorage.setItem('duohub_listening_id_u' + state.currentUser, clip.id);
+    if (typeof invalidatePillarCache === "function") {
+      invalidatePillarCache('shadowing');
+    }
+    const shadowingSelect = document.getElementById("shadowing-track-select");
+    if (shadowingSelect && Array.from(shadowingSelect.options).some(o => o.value == clip.id)) {
+      shadowingSelect.value = clip.id;
+    }
+
     // Configure HTML5 Audio Player & Scrubber Slider
     const audioElem = document.getElementById("listening-html5-audio");
     const slider = document.getElementById("listening-audio-slider");
