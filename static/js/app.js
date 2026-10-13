@@ -28,13 +28,45 @@ const state = {
   listeningTrack: 1
 };
 
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días de sesión persistente (Best Practice)
+
 function getStoredAuthUser() {
   try {
     const raw = localStorage.getItem('duohub_auth_user');
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    
+    // Soporta formato anterior { id: 1, ... } y formato nuevo con metadata { user: {...}, expiresAt: ... }
+    const user = parsed.user || (parsed.id ? parsed : null);
+    if (!user || !user.id) return null;
+
+    const expiresAt = parsed.expiresAt;
+    if (expiresAt && Date.now() > expiresAt) {
+      // Sesión expirada tras 30 días de inactividad
+      localStorage.removeItem('duohub_auth_user');
+      localStorage.removeItem('duohub_active_user_id');
+      return null;
+    }
+
+    // Ventana deslizante (Sliding Window): renueva la sesión 30 días adicionales al usar activamente la app
+    saveStoredAuthUser(user);
+    return user;
   } catch (e) {
     return null;
   }
+}
+
+function saveStoredAuthUser(user) {
+  try {
+    if (!user || !user.id) return;
+    const sessionObj = {
+      user: user,
+      savedAt: Date.now(),
+      expiresAt: Date.now() + SESSION_TTL_MS
+    };
+    localStorage.setItem('duohub_auth_user', JSON.stringify(sessionObj));
+    localStorage.setItem('duohub_active_user_id', user.id);
+  } catch (e) {}
 }
 
 function isReadOnlyMode() {
@@ -489,8 +521,7 @@ async function submitLogin() {
       state.authUser = data.user;
       state.currentUser = data.user.id;
       state.isReadOnly = false;
-      localStorage.setItem('duohub_auth_user', JSON.stringify(data.user));
-      localStorage.setItem('duohub_active_user_id', data.user.id);
+      saveStoredAuthUser(data.user);
       closeAuthModal();
       speakEnglish(`Welcome back, ${data.user.display_name}!`, 1.0);
       await fetchUsersAndStatus();
@@ -550,8 +581,7 @@ async function submitRegister() {
       state.authUser = data.user;
       state.currentUser = data.user.id;
       state.isReadOnly = false;
-      localStorage.setItem('duohub_auth_user', JSON.stringify(data.user));
-      localStorage.setItem('duohub_active_user_id', data.user.id);
+      saveStoredAuthUser(data.user);
       closeAuthModal();
       speakEnglish(`Welcome to EnglishHub, ${data.user.display_name}!`, 1.0);
       alert(`🎉 ¡Cuenta creada con éxito! Bienvenido al grupo de estudio, ${data.user.display_name}.`);
@@ -573,6 +603,7 @@ async function submitRegister() {
 
 async function logoutUser() {
   localStorage.removeItem('duohub_auth_user');
+  localStorage.removeItem('duohub_active_user_id');
   state.authUserId = null;
   state.authUser = null;
   state.isReadOnly = false;
@@ -882,7 +913,7 @@ async function saveUserSettings() {
       if (state.authUser) {
         state.authUser.display_name = newName;
         state.authUser.preferred_level = state.selectedPreferredLevel;
-        localStorage.setItem('duohub_auth_user', JSON.stringify(state.authUser));
+        saveStoredAuthUser(state.authUser);
       }
       state.readingLevelSetByUser = false;
       state.listeningLevelSetByUser = false;

@@ -24,6 +24,7 @@ load_env()
 
 app = Flask(__name__)
 app.secret_key = "duohub-english-training-key"
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 
 @app.after_request
 def add_performance_headers(response):
@@ -278,13 +279,19 @@ def auth_register():
         INSERT INTO users (username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level)
         VALUES (?, ?, ?, ?, 'progressive', ?, ?)
     """, (username, display_name, color, words_per_day, pin, preferred_level))
-    new_user_id = cursor.lastrowid
     conn.commit()
+
+    new_user_id = getattr(cursor, "lastrowid", None)
+    if not new_user_id:
+        cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+        u_row = cursor.fetchone()
+        new_user_id = u_row["id"] if u_row else 1
 
     cursor.execute("SELECT id, username, display_name, avatar_color, words_per_day, selection_mode, pin, preferred_level FROM users WHERE id = ?", (new_user_id,))
     new_user = dict(cursor.fetchone() or {})
     conn.close()
 
+    session.permanent = True
     session["user_id"] = new_user_id
     return jsonify({"success": True, "user": new_user})
 
@@ -317,6 +324,7 @@ def auth_login():
         return jsonify({"error": "PIN o contraseña incorrecta."}), 401
 
     conn.close()
+    session.permanent = True
     session["user_id"] = user["id"]
     return jsonify({"success": True, "user": user})
 

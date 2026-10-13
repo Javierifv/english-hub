@@ -1,22 +1,299 @@
 import sqlite3
 import json
 import os
+import re
 from datetime import datetime
+
+# Load environment variables from .env if present
+def load_env():
+    env_path = os.path.join(os.path.dirname(__file__), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    if k.strip() not in os.environ:
+                        os.environ[k.strip()] = v.strip()
+
+load_env()
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "duohub.db")
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=20.0)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA synchronous = NORMAL")
-    conn.execute("PRAGMA cache_size = -64000")  # 64MB cache
-    conn.execute("PRAGMA temp_store = MEMORY")
-    return conn
+def convert_placeholders(sql):
+    parts = sql.split("'")
+    for i in range(0, len(parts), 2):
+        parts[i] = parts[i].replace("?", "%s")
+    return "'".join(parts)
+
+if DATABASE_URL:
+    import psycopg2
+    from psycopg2.extras import DictCursor
+
+    class PostgresCursorWrapper:
+        def __init__(self, cur):
+            self._cur = cur
+            self.lastrowid = None
+
+        def execute(self, sql, params=None):
+            sql_conv = convert_placeholders(sql) if params is not None else sql
+            return self._cur.execute(sql_conv, params)
+
+        def executemany(self, sql, params_list):
+            sql_conv = convert_placeholders(sql)
+            return self._cur.executemany(sql_conv, params_list)
+
+        def fetchone(self):
+            return self._cur.fetchone()
+
+        def fetchall(self):
+            return self._cur.fetchall()
+
+        def fetchmany(self, size=None):
+            return self._cur.fetchmany(size) if size else self._cur.fetchmany()
+
+        @property
+        def rowcount(self):
+            return self._cur.rowcount
+
+        @property
+        def description(self):
+            return self._cur.description
+
+        def close(self):
+            return self._cur.close()
+
+        def __iter__(self):
+            return iter(self._cur)
+
+    class PostgresConnectionWrapper:
+        def __init__(self, conn):
+            self._conn = conn
+            self.row_factory = None
+
+        def cursor(self):
+            return PostgresCursorWrapper(self._conn.cursor(cursor_factory=DictCursor))
+
+        def execute(self, sql, params=None):
+            cur = self.cursor()
+            cur.execute(sql, params)
+            return cur
+
+        def commit(self):
+            return self._conn.commit()
+
+        def rollback(self):
+            return self._conn.rollback()
+
+        def close(self):
+            return self._conn.close()
+
+    def get_db():
+        raw_conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+        return PostgresConnectionWrapper(raw_conn)
+
+    def init_postgres(conn):
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            avatar_color TEXT DEFAULT '#0B72E7',
+            words_per_day INTEGER DEFAULT 5,
+            selection_mode TEXT DEFAULT 'progressive',
+            pin TEXT DEFAULT '1234',
+            preferred_level TEXT DEFAULT 'A1',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vocabulary (
+            id SERIAL PRIMARY KEY,
+            day_number INTEGER NOT NULL,
+            word TEXT NOT NULL,
+            ipa TEXT,
+            part_of_speech TEXT,
+            translation TEXT NOT NULL,
+            definition TEXT,
+            example_en TEXT,
+            example_es TEXT,
+            category TEXT DEFAULT 'general'
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_word_progress (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users (id),
+            word_id INTEGER NOT NULL REFERENCES vocabulary (id),
+            mastery_level INTEGER DEFAULT 1,
+            review_count INTEGER DEFAULT 0,
+            personal_sentence TEXT,
+            last_reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, word_id)
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS readings (
+            id SERIAL PRIMARY KEY,
+            day_number INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            level TEXT DEFAULT 'B1',
+            topic TEXT NOT NULL,
+            estimated_minutes INTEGER DEFAULT 15,
+            content TEXT NOT NULL,
+            source TEXT,
+            key_vocabulary TEXT,
+            audio_url TEXT
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS listening_shadowing (
+            id SERIAL PRIMARY KEY,
+            day_number INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            level TEXT DEFAULT 'B1',
+            audio_url TEXT,
+            transcript TEXT NOT NULL,
+            duration_seconds INTEGER DEFAULT 60,
+            shadowing_chunks TEXT,
+            audio_filename TEXT,
+            source TEXT
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_reading_progress (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users (id),
+            reading_id INTEGER NOT NULL REFERENCES readings (id),
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            date TEXT NOT NULL,
+            day_number INTEGER DEFAULT 1,
+            translation_text TEXT,
+            translation_feedback TEXT,
+            summary_text TEXT,
+            summary_feedback TEXT,
+            highlights_json TEXT,
+            UNIQUE(user_id, reading_id)
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_listening_progress (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users (id),
+            clip_id INTEGER NOT NULL REFERENCES listening_shadowing (id),
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            date TEXT NOT NULL,
+            day_number INTEGER DEFAULT 1,
+            user_text TEXT,
+            accuracy REAL DEFAULT 0,
+            time_seconds INTEGER DEFAULT 0,
+            diff_tokens TEXT,
+            ai_audit TEXT,
+            UNIQUE(user_id, clip_id)
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_shadowing_progress (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users (id),
+            clip_id INTEGER NOT NULL REFERENCES listening_shadowing (id),
+            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            date TEXT NOT NULL,
+            day_number INTEGER DEFAULT 1,
+            audio_url TEXT,
+            ai_feedback TEXT,
+            UNIQUE(user_id, clip_id)
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS speaking_prompts (
+            id SERIAL PRIMARY KEY,
+            day_number INTEGER NOT NULL,
+            topic TEXT NOT NULL,
+            prompt_question TEXT NOT NULL,
+            suggested_guidelines TEXT
+        );
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS daily_logs (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users (id),
+            date TEXT NOT NULL,
+            day_number INTEGER NOT NULL,
+            vocab_done INTEGER DEFAULT 0,
+            vocab_notes TEXT,
+            reading_done INTEGER DEFAULT 0,
+            reading_translation TEXT,
+            reading_translation_feedback TEXT,
+            reading_summary TEXT,
+            reading_feedback TEXT,
+            listening_done INTEGER DEFAULT 0,
+            listening_attempt TEXT,
+            listening_accuracy REAL DEFAULT 0,
+            listening_time_seconds INTEGER DEFAULT 0,
+            shadowing_done INTEGER DEFAULT 0,
+            shadowing_audio_path TEXT,
+            shadowing_ai_feedback TEXT,
+            speaking_done INTEGER DEFAULT 0,
+            speaking_notes TEXT,
+            speaking_audio_path TEXT,
+            speaking_ai_feedback TEXT,
+            completed_count INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, date)
+        );
+        """)
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs (user_id, date);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_word_prog_lookup ON user_word_progress (user_id, word_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_word_prog_lvl ON user_word_progress (user_id, mastery_level);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_vocabulary_day ON vocabulary (day_number);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_readings_day_lvl ON readings (day_number, level);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_reading_prog ON user_reading_progress (user_id, reading_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_listening_day ON listening_shadowing (day_number);")
+
+        conn.commit()
+
+        # Seed initial curriculum if vocabulary table is empty
+        cursor.execute("SELECT COUNT(*) FROM vocabulary")
+        if cursor.fetchone()[0] == 0:
+            print("[Neon PostgreSQL] Initializing fresh database with curriculum from local duohub.db...")
+            from scripts.sync_sqlite_to_postgres import sync_sqlite_to_pg
+            sync_sqlite_to_pg(conn, DB_PATH)
+
+else:
+    def get_db():
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        conn = sqlite3.connect(DB_PATH, timeout=20.0)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
+        conn.execute("PRAGMA cache_size = -64000")  # 64MB cache
+        conn.execute("PRAGMA temp_store = MEMORY")
+        return conn
 
 def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = get_db()
+    if DATABASE_URL:
+        init_postgres(conn)
+        conn.close()
+        return
+
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     cursor = conn.cursor()
 
     # 1. Users table
