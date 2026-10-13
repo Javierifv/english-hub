@@ -15,7 +15,7 @@
   <meta name="apple-mobile-web-app-title" content="EnglishHub">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
   <link rel="icon" type="image/png" href="/static/icons/icon-192.png">
-  <link rel="stylesheet" href="/static/css/style.css?v=3.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=3.7">
 </head>
 <body>
 
@@ -293,11 +293,11 @@
       <!-- Reading CEFR Level & Chapter Navigator Toolbar -->
       <div class="reading-toolbar">
         <div class="chapter-nav-group">
-          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(-1)" title="Capítulo Anterior">◀ Anterior</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navReadingChapter(-1)" title="Capítulo Anterior" aria-label="Capítulo Anterior">◀</button>
           <select id="reading-chapter-select" class="chapter-dropdown" onchange="onReadingChapterDropdownChange(this.value)">
             <!-- Chapters populated by JS -->
           </select>
-          <button class="btn btn-secondary btn-sm" onclick="navReadingChapter(1)" title="Siguiente Capítulo">Siguiente ▶</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navReadingChapter(1)" title="Siguiente Capítulo" aria-label="Siguiente Capítulo">▶</button>
         </div>
         <div class="level-pills-group">
           <span class="toolbar-label">Nivel:</span>
@@ -466,11 +466,11 @@
       <!-- Listening CEFR Level & Track Navigator Toolbar -->
       <div class="listening-toolbar">
         <div class="track-nav-group">
-          <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(-1)" title="Pista Anterior">◀ Anterior</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navListeningTrack(-1)" title="Pista Anterior" aria-label="Pista Anterior">◀</button>
           <select id="listening-track-select" class="chapter-dropdown" onchange="onListeningTrackDropdownChange(this.value)">
             <!-- Tracks populated by JS -->
           </select>
-          <button class="btn btn-secondary btn-sm" onclick="navListeningTrack(1)" title="Siguiente Pista">Siguiente ▶</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navListeningTrack(1)" title="Siguiente Pista" aria-label="Siguiente Pista">▶</button>
         </div>
         <div class="level-pills-group">
           <span class="toolbar-label">Nivel:</span>
@@ -641,11 +641,11 @@
       <!-- Shadowing CEFR Level & Track Navigator Toolbar -->
       <div class="shadowing-toolbar listening-toolbar">
         <div class="track-nav-group">
-          <button class="btn btn-secondary btn-sm" onclick="navShadowingTrack(-1)" title="Pista Anterior">◀ Anterior</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navShadowingTrack(-1)" title="Pista Anterior" aria-label="Pista Anterior">◀</button>
           <select id="shadowing-track-select" class="chapter-dropdown" onchange="onShadowingTrackDropdownChange(this.value)">
             <!-- Tracks populated by JS -->
           </select>
-          <button class="btn btn-secondary btn-sm" onclick="navShadowingTrack(1)" title="Siguiente Pista">Siguiente ▶</button>
+          <button class="btn btn-secondary btn-sm nav-icon-btn" onclick="navShadowingTrack(1)" title="Siguiente Pista" aria-label="Siguiente Pista">▶</button>
         </div>
         <div class="level-pills-group">
           <span class="toolbar-label">Nivel:</span>
@@ -1140,11 +1140,11 @@
   </div>
 
   <!-- Scripts (Deferred for instant HTML rendering) -->
-  <script src="/static/js/app.js?v=3.6" defer></script>
-  <script src="/static/js/vocab.js?v=3.6" defer></script>
-  <script src="/static/js/reading.js?v=3.6" defer></script>
-  <script src="/static/js/listening.js?v=3.6" defer></script>
-  <script src="/static/js/shadowing.js?v=3.6" defer></script>
-  <script src="/static/js/speaking.js?v=3.6" defer></script>
+  <script src="/static/js/app.js?v=3.7" defer></script>
+  <script src="/static/js/vocab.js?v=3.7" defer></script>
+  <script src="/static/js/reading.js?v=3.7" defer></script>
+  <script src="/static/js/listening.js?v=3.7" defer></script>
+  <script src="/static/js/shadowing.js?v=3.7" defer></script>
+  <script src="/static/js/speaking.js?v=3.7" defer></script>
 </body>
 </html>

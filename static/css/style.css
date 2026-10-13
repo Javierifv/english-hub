@@ -2262,11 +2262,14 @@ body.read-only-mode .target-word-item {
 .track-nav-group {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
-.chapter-dropdown {
+.chapter-dropdown,
+#reading-chapter-select,
+#listening-track-select,
+#shadowing-track-select {
   background: #FFFFFF;
   border: 1.5px solid #CBD5E1;
   color: var(--text-main);
@@ -2275,21 +2278,41 @@ body.read-only-mode .target-word-item {
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  max-width: 260px;
+  width: 350px;
+  min-width: 350px;
+  max-width: 350px;
   text-overflow: ellipsis;
+  overflow: hidden;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
-.chapter-dropdown:focus {
+.chapter-dropdown:focus,
+#reading-chapter-select:focus,
+#listening-track-select:focus,
+#shadowing-track-select:focus {
   outline: none;
   border-color: var(--busuu-blue);
   box-shadow: 0 0 0 2px rgba(11, 114, 231, 0.15);
 }
 
-#listening-track-select {
-  min-width: 0;
-  max-width: 480px;
-  width: auto;
+.chapter-nav-group .btn,
+.track-nav-group .btn,
+.nav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 /* Minimalist Reading Status Strip */
@@ -4322,7 +4345,8 @@ mark.hl-word:hover, mark.hl-phrase:hover {
   .chapter-nav-group .chapter-dropdown,
   .track-nav-group .chapter-dropdown,
   #reading-chapter-select,
-  #listening-track-select {
+  #listening-track-select,
+  #shadowing-track-select {
     flex: 1 1 auto !important;
     min-width: 0 !important;
     max-width: none !important;
@@ -4334,10 +4358,18 @@ mark.hl-word:hover, mark.hl-phrase:hover {
   }
 
   .chapter-nav-group .btn,
-  .track-nav-group .btn {
-    flex: 0 0 auto !important;
-    padding: 0.45rem 0.65rem !important;
-    font-size: 0.78rem !important;
+  .track-nav-group .btn,
+  .nav-icon-btn {
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    max-width: 38px !important;
+    padding: 0 !important;
+    font-size: 0.92rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     white-space: nowrap !important;
   }
 
