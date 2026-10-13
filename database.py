@@ -25,7 +25,10 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 DB_PATH = os.path.join(os.path.dirname(__file__), "data", "duohub.db")
 
 def convert_placeholders(sql):
-    parts = sql.split("'")
+    # Escape literal % as %% so psycopg2 does not confuse with format specifiers
+    # Then replace ? with %s outside single quotes
+    escaped = sql.replace("%", "%%")
+    parts = escaped.split("'")
     for i in range(0, len(parts), 2):
         parts[i] = parts[i].replace("?", "%s")
     return "'".join(parts)
@@ -41,20 +44,31 @@ if DATABASE_URL:
 
         def execute(self, sql, params=None):
             sql_conv = convert_placeholders(sql) if params is not None else sql
-            return self._cur.execute(sql_conv, params)
+            self._cur.execute(sql_conv, params)
+            return self
 
         def executemany(self, sql, params_list):
             sql_conv = convert_placeholders(sql)
-            return self._cur.executemany(sql_conv, params_list)
+            self._cur.executemany(sql_conv, params_list)
+            return self
 
         def fetchone(self):
-            return self._cur.fetchone()
+            try:
+                return self._cur.fetchone()
+            except Exception:
+                return None
 
         def fetchall(self):
-            return self._cur.fetchall()
+            try:
+                return self._cur.fetchall()
+            except Exception:
+                return []
 
         def fetchmany(self, size=None):
-            return self._cur.fetchmany(size) if size else self._cur.fetchmany()
+            try:
+                return self._cur.fetchmany(size) if size else self._cur.fetchmany()
+            except Exception:
+                return []
 
         @property
         def rowcount(self):
